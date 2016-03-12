@@ -1,0 +1,18 @@
+{
+  "name": "hypcast",
+  "version": "0.0.1",
+  "description": "Easily stream television over the Internet with HTTP Live Streaming",
+  "main": "index.js",
+  "keywords": [
+    "tv",
+    "television",
+    "stream",
+    "hls"
+  ],
+  "author": "Alex Hamlin",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "bitbucket:ahamlinman/hypcast"
+  }
+}
