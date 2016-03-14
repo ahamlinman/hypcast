@@ -4,10 +4,6 @@ video {
   width: 100%;
 }
 
-button#stop {
-  display: none;
-}
-
 .hyp-error {
   display: none;
 }
