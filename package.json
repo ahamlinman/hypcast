@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "byline": "^4.2.1",
-    "expand-home-dir": "0.0.2"
+    "expand-home-dir": "0.0.2",
+    "machina": "^2.0.0-1"
   }
 }
