@@ -56,6 +56,7 @@ const HypcastClientController = machina.Fsm.extend({
     connecting: {
       _onEnter() {
         console.log('started connecting');
+        $('#tuner button').prop('disabled', false);
       },
     },
 
