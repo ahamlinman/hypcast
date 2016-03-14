@@ -3,3 +3,7 @@ video {
   width: 90%;
   margin: 2em auto;
 }
+
+.hyp-error {
+  display: none;
+}
