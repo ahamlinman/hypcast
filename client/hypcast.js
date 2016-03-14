@@ -78,13 +78,13 @@ const HypcastClientController = machina.Fsm.extend({
           this.socket.emit('tune', options);
         });
       },
-    },
 
-    inactive: {
-      _onEnter() {
+      _onExit() {
         $('#tuner button').prop('disabled', false);
       },
     },
+
+    inactive: {},
 
     tuning: {
       _onEnter() {
