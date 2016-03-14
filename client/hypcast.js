@@ -67,9 +67,12 @@ const HypcastClientController = machina.Fsm.extend({
 
         $('#tuner').submit((event) => {
           event.preventDefault();
+          let profile = this.profiles[$('#profile').val()];
+          profile.name = $('#profile').val();
+
           let options = {
+            profile,
             channel: $('#channel').val(),
-            profile: this.profiles[$('#profile').val()],
           };
           console.debug('tuning with options:', options);
           this.socket.emit('tune', options);
