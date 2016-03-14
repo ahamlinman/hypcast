@@ -87,6 +87,11 @@ const HypcastClientController = machina.Fsm.extend({
           console.debug('tuning with options:', options);
           this.socket.emit('tune', options);
         });
+
+        $('#stop').click((event) => {
+          event.preventDefault();
+          this.socket.emit('stop');
+        });
       },
 
       _onExit() {
@@ -95,7 +100,15 @@ const HypcastClientController = machina.Fsm.extend({
       },
     },
 
-    inactive: {},
+    inactive: {
+      _onEnter() {
+        $('#tuner #stop').hide();
+      },
+
+      _onExit() {
+        $('#tuner #stop').show();
+      },
+    },
 
     tuning: {
       _onEnter() {
