@@ -25,6 +25,9 @@
   "dependencies": {
     "byline": "^4.2.1",
     "expand-home-dir": "0.0.2",
-    "machina": "^2.0.0-1"
+    "fluent-ffmpeg": "^2.0.1",
+    "machina": "^2.0.0-1",
+    "tmp": "0.0.28",
+    "touch": "^1.0.0"
   }
 }
