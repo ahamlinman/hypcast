@@ -7,3 +7,21 @@ video {
 .hyp-error {
   display: none;
 }
+
+@keyframes text-tuning {
+  from { color: black; }
+  to { color: #8a6d3b; }
+}
+
+@keyframes text-buffering {
+  from { color: black; }
+  to { color: #337ab7; }
+}
+
+.hyp-tuning {
+  animation: text-tuning 0.5s alternate infinite;
+}
+
+.hyp-buffering {
+  animation: text-buffering 1s alternate infinite;
+}
