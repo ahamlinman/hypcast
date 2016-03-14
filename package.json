@@ -33,6 +33,7 @@
     "expand-home-dir": "0.0.2",
     "express": "^4.13.4",
     "fluent-ffmpeg": "^2.0.1",
+    "hls.js": "^0.5.11",
     "jquery": "^2.2.1",
     "machina": "^2.0.0-1",
     "socket.io": "^1.4.5",

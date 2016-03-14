@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import Hls from 'hls.js';
 import machina from 'machina';
 import socketio from 'socket.io-client';
 
@@ -105,11 +106,23 @@ const HypcastClientController = machina.Fsm.extend({
     active: {
       _onEnter() {
         $('h1').addClass('text-success');
-        $('video').slideDown();
+
+        let video = $('video');
+        video.slideDown();
+
+        this._hls = new Hls();
+        this._hls.loadSource('/stream/stream.m3u8');
+        this._hls.attachMedia(video[0]);
+        this._hls.on(Hls.Events.MANIFEST_PARSED, () => video[0].play());
       },
 
       _onExit() {
-        $('video').slideUp();
+        let video = $('video');
+        video[0].pause();
+        video.slideUp();
+        this._hls.detachMedia(video[0]);
+        delete this._hls;
+
         $('h1').removeClass('text-success');
       },
     },
