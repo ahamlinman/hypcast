@@ -1,0 +1,11 @@
+{
+  "medium": {
+    "description": "medium (~ 1 Mbps)",
+    "videoHeight": "480",
+    "videoBitrate": "768k",
+    "videoBufsize": "128k",
+    "videoPreset": "fast",
+    "audioBitrate": "128k",
+    "audioProfile": "aac_low"
+  }
+}
