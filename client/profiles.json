@@ -1,11 +1,41 @@
 {
+  "low": {
+    "description": "low (~ 300 kbps)",
+    "videoHeight": "240",
+    "videoBitrate": "160k",
+    "videoBufsize": "128k",
+    "videoPreset": "fast",
+    "audioBitrate": "64k",
+    "audioProfile": "aac_he"
+  },
+
   "medium": {
     "description": "medium (~ 1 Mbps)",
     "videoHeight": "480",
     "videoBitrate": "768k",
     "videoBufsize": "128k",
-    "videoPreset": "fast",
+    "videoPreset": "veryfast",
     "audioBitrate": "128k",
+    "audioProfile": "aac_low"
+  },
+
+  "high": {
+    "description": "high (~ 4 Mbps)",
+    "videoHeight": "720",
+    "videoBitrate": "3600k",
+    "videoBufsize": "128k",
+    "videoPreset": "ultrafast",
+    "audioBitrate": "192k",
+    "audioProfile": "aac_low"
+  },
+
+  "ultra": {
+    "description": "ultra (~ 8 Mbps)",
+    "videoHeight": "1080",
+    "videoBitrate": "7500k",
+    "videoBufsize": "256k",
+    "videoPreset": "ultrafast",
+    "audioBitrate": "192k",
     "audioProfile": "aac_low"
   }
 }
