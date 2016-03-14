@@ -69,6 +69,10 @@ const HypcastClientController = machina.Fsm.extend({
           })
           .on('disconnect', () => {
             this.transition('connecting');
+          })
+          .on('hypcastError', (err) => {
+            console.error('hypcast server error:', err);
+            this.emit('hypcastError', err);
           });
 
         $('#tuner').submit((event) => {
@@ -131,6 +135,7 @@ const HypcastClientController = machina.Fsm.extend({
         video[0].pause();
         video.slideUp();
         this._hls.detachMedia(video[0]);
+        this._hls.destroy();
         delete this._hls;
 
         $('h1').removeClass('text-success');
@@ -144,7 +149,7 @@ const HypcastClientController = machina.Fsm.extend({
       },
 
       _onExit() {
-        $('.hyp-error').hide();
+        setTimeout(() => $('.hyp-error').hide(), 5000);
         $('.hyp-ui').show();
       },
     },
