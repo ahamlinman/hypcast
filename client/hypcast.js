@@ -59,7 +59,7 @@ const HypcastClientController = machina.Fsm.extend({
     connecting: {
       _onEnter() {
         $('h1').addClass('text-muted');
-        $('#tuner button').prop('disabled', true);
+        $('#tuner *').prop('disabled', true);
 
         if (!this.socket) {
           this.socket = socketio()
@@ -101,17 +101,17 @@ const HypcastClientController = machina.Fsm.extend({
 
       _onExit() {
         $('h1').removeClass('text-muted');
-        $('#tuner button').prop('disabled', false);
+        $('#tuner *').prop('disabled', false);
       },
     },
 
     inactive: {
       _onEnter() {
-        $('#tuner #stop').hide();
+        $('#tuner #stop').prop('disabled', true);
       },
 
       _onExit() {
-        $('#tuner #stop').show();
+        $('#tuner #stop').prop('disabled', false);
       },
     },
 
