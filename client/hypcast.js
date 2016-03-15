@@ -2,6 +2,7 @@ import $ from 'jquery';
 import Hls from 'hls.js';
 import machina from 'machina';
 import socketio from 'socket.io-client';
+import { findKey } from 'lodash/object';
 
 import entries from 'object.entries';
 if (!Object.entries) {
@@ -67,6 +68,10 @@ const HypcastClientController = machina.Fsm.extend({
             })
             .on('transition', ({ toState, tuneData }) => {
               console.debug('received tuneData', tuneData);
+              if (tuneData) {
+                this._updateTunerControls(tuneData);
+              }
+
               this.transition(toState);
             })
             .on('disconnect', () => {
@@ -79,11 +84,8 @@ const HypcastClientController = machina.Fsm.extend({
 
           $('#tuner').submit((event) => {
             event.preventDefault();
-            let profile = this.profiles[$('#profile').val()];
-            profile.name = $('#profile').val();
-
             let options = {
-              profile,
+              profile: this.profiles[$('#profile').val()],
               channel: $('#channel').val(),
             };
             console.debug('tuning with options:', options);
@@ -169,6 +171,11 @@ const HypcastClientController = machina.Fsm.extend({
         $('.hyp-ui').show();
       },
     },
+  },
+
+  _updateTunerControls({ channel, profile }) {
+    $('#channel').val(channel);
+    $('#profile').val(findKey(this.profiles, profile));
   },
 });
 
