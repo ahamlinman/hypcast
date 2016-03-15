@@ -60,39 +60,41 @@ const HypcastClientController = machina.Fsm.extend({
         $('h1').addClass('text-muted');
         $('#tuner button').prop('disabled', true);
 
-        this.socket = socketio()
-          .on('connect', () => {
-            console.debug('connected to socket.io server');
-          })
-          .on('transition', ({ toState, tuneData }) => {
-            console.debug('received tuneData', tuneData);
-            this.transition(toState);
-          })
-          .on('disconnect', () => {
-            this.transition('connecting');
-          })
-          .on('hypcastError', (err) => {
-            console.error('hypcast server error:', err);
-            this.emit('hypcastError', err);
+        if (!this.socket) {
+          this.socket = socketio()
+            .on('connect', () => {
+              console.debug('connected to socket.io server');
+            })
+            .on('transition', ({ toState, tuneData }) => {
+              console.debug('received tuneData', tuneData);
+              this.transition(toState);
+            })
+            .on('disconnect', () => {
+              this.transition('connecting');
+            })
+            .on('hypcastError', (err) => {
+              console.error('hypcast server error:', err);
+              this.emit('hypcastError', err);
+            });
+
+          $('#tuner').submit((event) => {
+            event.preventDefault();
+            let profile = this.profiles[$('#profile').val()];
+            profile.name = $('#profile').val();
+
+            let options = {
+              profile,
+              channel: $('#channel').val(),
+            };
+            console.debug('tuning with options:', options);
+            this.socket.emit('tune', options);
           });
 
-        $('#tuner').submit((event) => {
-          event.preventDefault();
-          let profile = this.profiles[$('#profile').val()];
-          profile.name = $('#profile').val();
-
-          let options = {
-            profile,
-            channel: $('#channel').val(),
-          };
-          console.debug('tuning with options:', options);
-          this.socket.emit('tune', options);
-        });
-
-        $('#stop').click((event) => {
-          event.preventDefault();
-          this.socket.emit('stop');
-        });
+          $('#stop').click((event) => {
+            event.preventDefault();
+            this.socket.emit('stop');
+          });
+        }
       },
 
       _onExit() {
