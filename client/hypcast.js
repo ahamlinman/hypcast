@@ -64,7 +64,8 @@ const HypcastClientController = machina.Fsm.extend({
           .on('connect', () => {
             console.debug('connected to socket.io server');
           })
-          .on('transition', ({ toState }) => {
+          .on('transition', ({ toState, tuneData }) => {
+            console.debug('received tuneData', tuneData);
             this.transition(toState);
           })
           .on('disconnect', () => {
