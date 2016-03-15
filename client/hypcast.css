@@ -1,3 +1,15 @@
+body {
+  font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+h1 {
+  font-weight: 700;
+}
+
+select {
+  margin: 0 0.25em;
+}
+
 video {
   display: none;
   margin: 2em auto;
