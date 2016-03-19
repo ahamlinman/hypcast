@@ -4,12 +4,12 @@
   "description": "Easily stream television over the Internet with HTTP Live Streaming",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npm run buildServer & npm run buildClient",
-    "build:mini": "npm run buildServer & npm run buildClient:mini",
-    "buildServer": "babel lib -d dist",
-    "buildClient": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify",
-    "buildClient:mini": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify -g uglifyify",
-    "clean": "rm -r dist/ & rm client/*.dist.js",
+    "build": "npm run build:server & npm run build:client",
+    "build:mini": "npm run build:server & npm run build:client:mini",
+    "build:server": "babel lib -d dist",
+    "build:client": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify",
+    "build:client:mini": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify -g uglifyify",
+    "clean": "rm -rf dist/ & rm client/*.dist.js",
     "docker:build": "docker build -t hypcast .",
     "docker:run": "docker run --restart=always -d -p 9400:9400 --privileged --name hypcast hypcast",
     "start": "node dist/index.js"
