@@ -4,11 +4,6 @@ import machina from 'machina';
 import socketio from 'socket.io-client';
 import { findKey } from 'lodash/object';
 
-import entries from 'object.entries';
-if (!Object.entries) {
-  entries.shim();
-}
-
 const HypcastClientController = machina.Fsm.extend({
   initialState: 'loading',
   states: {
@@ -19,9 +14,10 @@ const HypcastClientController = machina.Fsm.extend({
           .done((profiles) => {
             this.profiles = profiles;
             let profileList = $('#profile');
-            for (let [name, options] of Object.entries(profiles)) {
+            for (let name of Object.keys(profiles)) {
+              let info = profiles[name];
               profileList.append(
-                $('<option>').prop('value', name).html(options.description));
+                $('<option>').prop('value', name).html(info.description));
             }
             this.handle('loadComplete');
           })
