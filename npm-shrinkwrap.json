@@ -967,11 +967,6 @@
       "from": "expand-brackets@>=0.1.4 <0.2.0",
       "resolved": "https://registry.npmjs.org/expand-brackets/-/expand-brackets-0.1.4.tgz"
     },
-    "expand-home-dir": {
-      "version": "0.0.2",
-      "from": "expand-home-dir@0.0.2",
-      "resolved": "https://registry.npmjs.org/expand-home-dir/-/expand-home-dir-0.0.2.tgz"
-    },
     "expand-range": {
       "version": "1.8.1",
       "from": "expand-range@>=1.8.1 <2.0.0",
