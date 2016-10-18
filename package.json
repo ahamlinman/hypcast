@@ -10,8 +10,8 @@
     "build:client": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify",
     "build:client:mini": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify -g uglifyify",
     "clean": "rm -rf dist/ & rm client/*.dist.js",
-    "docker:build": "docker build -t ahamlinman/hypcast .",
-    "docker:run": "docker run --restart=always -d -p 9400:9400 --privileged --name hypcast ahamlinman/hypcast",
+    "docker:build": "sudo docker build -t ahamlinman/hypcast .",
+    "docker:run": "sudo docker run --restart=always -d -p 9400:9400 --privileged --name hypcast ahamlinman/hypcast",
     "start": "node dist/index.js"
   },
   "keywords": [
