@@ -10,15 +10,19 @@ RUN apt-get update \
 		&& apt-get install -y --no-install-recommends libfdk-aac1 ffmpeg dvb-apps \
 		&& rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir -p /hypcast
+WORKDIR /hypcast
 
-COPY package.json /usr/src/app
-COPY npm-shrinkwrap.json /usr/src/app
+
+COPY package.json /hypcast
+COPY npm-shrinkwrap.json /hypcast
 RUN npm install
 
-COPY . /usr/src/app
+COPY . /hypcast
 RUN npm run build:mini
+
+RUN useradd -r -g video -d /hypcast -s /sbin/nologin hypcast
+USER hypcast
 
 ENTRYPOINT exec npm start
 EXPOSE 9400
