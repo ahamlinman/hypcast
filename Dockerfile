@@ -1,4 +1,4 @@
-FROM node:6.0.0
+FROM node:6.8.1
 MAINTAINER Alex Hamlin
 
 RUN echo 'deb http://www.deb-multimedia.org stable main non-free' >> \
