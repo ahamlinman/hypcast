@@ -1,4 +1,4 @@
-FROM node:6.8.1
+FROM node:6.9.1
 MAINTAINER Alex Hamlin
 
 RUN echo 'deb http://www.deb-multimedia.org stable main non-free' >> \
@@ -12,7 +12,6 @@ RUN apt-get update \
 
 RUN mkdir -p /hypcast
 WORKDIR /hypcast
-
 
 COPY package.json /hypcast
 COPY npm-shrinkwrap.json /hypcast
