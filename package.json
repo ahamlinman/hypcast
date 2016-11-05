@@ -12,6 +12,7 @@
     "clean": "rm -rf dist/ & rm client/*.dist.js",
     "docker:build": "sudo docker build --pull -t ahamlinman/hypcast .",
     "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 --name=hypcast ahamlinman/hypcast",
+    "docker:restart": "sudo docker stop hypcast && sudo docker rm hypcast && npm run docker:run",
     "start": "node dist/index.js"
   },
   "keywords": [
