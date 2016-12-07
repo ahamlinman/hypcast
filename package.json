@@ -11,7 +11,7 @@
     "build:client:mini": "browserify client/hypcast.js -o client/hypcast.dist.js -t babelify -g uglifyify",
     "clean": "rm -rf dist/ & rm -f client/*.dist.js",
     "docker:build": "sudo docker build --pull -t ahamlinman/hypcast .",
-    "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 -v $HOME/.hypcast:/hypcast/config --name=hypcast ahamlinman/hypcast",
+    "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast ahamlinman/hypcast",
     "docker:restart": "sudo docker stop hypcast && sudo docker rm hypcast && npm run docker:run",
     "start": "node dist/index.js"
   },
