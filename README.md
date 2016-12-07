@@ -58,9 +58,28 @@ dependencies into a Docker image, along with some npm scripts to help build
 and run the image. By default, this runs Hypcast as a non-root user and makes
 it available on port 9400 (Hypcast's default port) on the host.
 
-Note that you will need to give the container access to your TV tuner devices
-using Docker's `--device` option. Passing `--device=/dev/dvb` to `docker
-start` should be sufficient.
+## Usage
+
+Hypcast requires two configuration files: `channels.conf` and `profiles.json`.
+Examples are provided in the `doc/` directory of this repository.
+
+* `channels.conf` is a list of channels suitable for use with the `azap`
+  utility. This can be generated using a utility like `scan` or `w_scan`. For
+  more information, see https://www.linuxtv.org/wiki/index.php/Frequency\_scan
+* `profiles.json` contains sets of options that will be passed to ffmpeg when
+  encoding the stream, such as the video size, x264 preset, audio bitrate,
+  etc. Multiple profiles give you the flexibility to select stream parameters
+  based on the nature of your connection to the computer where Hypcast is
+  running. For example, if you are on a mobile network you can select a
+  lower-quality profile to conserve your data. The example profiles should be
+  sufficient for a reasonably well-powered desktop computer, but they have
+  been determined through trial and error and may not be appropriate for all
+  systems.
+
+When running Hypcast in a Docker container, a directory containing these files
+should be mounted read-only as `/hypcast/config`. You will also need to give
+the container access to your TV tuner devices using Docker's `--device`
+option (e.g. `--device=/dev/dvb`).
 
 ## Additional Questions
 
