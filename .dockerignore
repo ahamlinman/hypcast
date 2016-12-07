@@ -1,3 +1,4 @@
-node_modules
-dist
 client/*.dist.js
+dist
+doc
+node_modules
