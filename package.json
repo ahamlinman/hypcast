@@ -25,7 +25,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "bitbucket:ahamlinman/hypcast"
+    "url": "https://gitlab.alexhamlin.co/ahamlinman/hypcast.git"
   },
   "devDependencies": {
     "babel-cli": "^6.6.5",
