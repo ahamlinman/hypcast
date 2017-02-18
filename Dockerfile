@@ -13,17 +13,8 @@ RUN apt-get update \
 RUN mkdir -p /hypcast
 WORKDIR /hypcast
 
-COPY package.json /hypcast
-COPY yarn.lock /hypcast
-
-RUN npm install --global yarn \
-		&& yarn install \
-		&& yarn cache clean \
-		&& npm uninstall --global yarn \
-		&& npm cache clean
-
 COPY . /hypcast
-RUN npm run build:mini
+RUN ./scripts/docker-internal-build.sh
 
 RUN useradd -r -g video -d /hypcast -s /sbin/nologin hypcast
 USER hypcast
