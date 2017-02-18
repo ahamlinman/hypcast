@@ -14,7 +14,13 @@ RUN mkdir -p /hypcast
 WORKDIR /hypcast
 
 COPY package.json /hypcast
-RUN npm install
+COPY yarn.lock /hypcast
+
+RUN npm install --global yarn \
+		&& yarn install \
+		&& yarn cache clean \
+		&& npm uninstall --global yarn \
+		&& npm cache clean
 
 COPY . /hypcast
 RUN npm run build:mini
