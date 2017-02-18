@@ -1,4 +1,5 @@
 *.swp
+config
 node_modules
 dist
 client/*.dist.js
