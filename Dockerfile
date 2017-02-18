@@ -14,7 +14,6 @@ RUN mkdir -p /hypcast
 WORKDIR /hypcast
 
 COPY package.json /hypcast
-COPY npm-shrinkwrap.json /hypcast
 RUN npm install
 
 COPY . /hypcast
