@@ -39,7 +39,7 @@
     "webpack": "^2.2.1"
   },
   "dependencies": {
-    "byline": "^4.2.1",
+    "byline": "^5.0.0",
     "express": "^4.13.4",
     "fluent-ffmpeg": "^2.0.1",
     "machina": "^2.0.0-1",
