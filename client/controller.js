@@ -24,26 +24,10 @@ export default machina.Fsm.extend({
 	    console.error('Profile retrieval failed:', xhr);
 	    this.handle('error');
 	  });
-
-	// Retrieve channels
-	$.get('/channels')
-	  .done((channels) => {
-	    this.channels = channels;
-	    let channelList = $('#channel');
-	    for (let channel of channels) {
-	      channelList.append(
-		$('<option>').prop('value', channel).html(channel));
-	    }
-	    this.handle('loadComplete');
-	  })
-	  .fail((xhr) => {
-	    console.error('Channel retrieval failed:', xhr);
-	    this.handle('error');
-	  });
       },
 
       loadComplete() {
-	if (this.profiles && this.channels) {
+	if (this.profiles) {
 	  this.transition('connecting');
 	}
       },
