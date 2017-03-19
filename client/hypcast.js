@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom';
 
 import HypcastClientController from './controller';
 import ChannelSelector from './ui/ChannelSelector';
+import ProfileSelector from './ui/ProfileSelector';
 
 function updateTunerControls({ channel, profile }) {
   $('#channel').val(channel);
@@ -20,7 +21,30 @@ $(() => {
 
   controller.on('updateTuning', updateTunerControls);
   setupChannelSelector();
+  setupProfileSelector();
 });
+
+function setupProfileSelector() {
+  let profiles = {};
+  renderSelector();
+
+  // Retrieve profiles
+  $.get('/profiles')
+    .done((loadedProfiles) => {
+      profiles = loadedProfiles;
+      renderSelector();
+    })
+    .fail((xhr) => {
+      console.error('Profile retrieval failed:', xhr);
+    });
+
+  function renderSelector() {
+    ReactDOM.render(
+      <ProfileSelector profiles={profiles} />,
+      document.getElementById('profile-selector')
+    );
+  }
+}
 
 function setupChannelSelector() {
   let channels = [];

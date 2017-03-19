@@ -4,37 +4,8 @@ import machina from 'machina';
 import socketio from 'socket.io-client';
 
 export default machina.Fsm.extend({
-  initialState: 'loading',
+  initialState: 'connecting',
   states: {
-    loading: {
-      _onEnter() {
-	// Retrieve profiles
-	$.get('/profiles')
-	  .done((profiles) => {
-	    this.profiles = profiles;
-	    let profileList = $('#profile');
-	    for (let name of Object.keys(profiles)) {
-	      let info = profiles[name];
-	      profileList.append(
-		$('<option>').prop('value', name).html(info.description));
-	    }
-	    this.handle('loadComplete');
-	  })
-	  .fail((xhr) => {
-	    console.error('Profile retrieval failed:', xhr);
-	    this.handle('error');
-	  });
-      },
-
-      loadComplete() {
-	if (this.profiles) {
-	  this.transition('connecting');
-	}
-      },
-
-      error: 'error',
-    },
-
     connecting: {
       _onEnter() {
 	$('h1').addClass('text-muted');
