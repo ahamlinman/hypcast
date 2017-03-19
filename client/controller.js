@@ -2,7 +2,6 @@ import $ from 'jquery';
 import Hls from 'hls.js';
 import machina from 'machina';
 import socketio from 'socket.io-client';
-import { findKey } from 'lodash/object';
 
 export default machina.Fsm.extend({
   initialState: 'loading',
@@ -63,9 +62,8 @@ export default machina.Fsm.extend({
 	      console.debug('connected to socket.io server');
 	    })
 	    .on('transition', ({ toState, tuneData }) => {
-	      console.debug('received tuneData', tuneData);
 	      if (tuneData) {
-		this._updateTunerControls(tuneData);
+		this.emit('updateTuning', tuneData);
 	      }
 
 	      this.transition(toState);
@@ -167,10 +165,5 @@ export default machina.Fsm.extend({
 	$('.hyp-ui').show();
       },
     },
-  },
-
-  _updateTunerControls({ channel, profile }) {
-    $('#channel').val(channel);
-    $('#profile').val(findKey(this.profiles, profile));
   },
 });
