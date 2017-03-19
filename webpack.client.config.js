@@ -19,7 +19,8 @@ module.exports = {
           {
             loader: 'babel-loader',
             options: {
-              presets: [['es2015', { modules: false }]]
+              presets: [['es2015', { modules: false }]],
+              plugins: ['transform-react-jsx']
             }
           },
         ],
