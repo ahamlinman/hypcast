@@ -42,12 +42,36 @@ module.exports = {
           { loader: 'file-loader' },
         ],
       },
+
+      {
+        test: /\.html/,
+        use: [
+          {
+            loader: 'html-loader',
+            options: {
+              attrs: ['img:src', 'link:href'],
+            },
+          },
+        ],
+      },
+
+      {
+        test: /\/favicon\.ico$/,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'favicon.ico',
+            },
+          },
+        ],
+      },
     ],
   },
 
   plugins: [
     new HtmlWebpackPlugin({
-      template: './client/index.ejs',
+      template: './client/index.html',
     }),
   ],
 };
