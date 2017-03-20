@@ -36,7 +36,7 @@ export default class ControllerBar extends React.Component {
     return (
       <form className="form-inline text-center lead" id="tuner" onSubmit={this.handleSubmit}>
 	<div className="form-group">
-	  <label htmlFor="channel">Watch&nbsp;</label>
+	  <label htmlFor="channel">Watch</label>
 	  <ChannelSelector
 	    enabled={this.props.enabled}
 	    channels={this.props.channels}
@@ -45,20 +45,18 @@ export default class ControllerBar extends React.Component {
 	</div>
 
 	<div className="form-group">
-	  <label htmlFor="profile">&nbsp;at&nbsp;</label>
+	  <label htmlFor="profile">at</label>
 	  <ProfileSelector
 	    enabled={this.props.enabled}
 	    profiles={this.props.profiles}
 	    selected={findKey(this.props.profiles, this.props.tuneData.profile)}
 	    onChange={this.handleProfileChanged} />
-	  <label htmlFor="profile">&nbsp;quality&nbsp;</label>
+	  <label htmlFor="profile">quality</label>
 	</div>
 
 	<button type="submit" className="btn btn-default" disabled={!this.props.enabled}>
 	  <span className="glyphicon glyphicon-play"></span>
 	</button>
-
-	&nbsp;
 
 	<button type="button" className="btn btn-default"
 	    onClick={this.handleStop} disabled={!this.props.enabled}>
