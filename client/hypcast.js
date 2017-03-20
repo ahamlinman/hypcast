@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import HypcastClientController from './controller';
+import HypcastTitle from './ui/HypcastTitle';
 import ControllerBar from './ui/ControllerBar';
 
 $(() => {
@@ -13,8 +14,20 @@ $(() => {
     console.debug(`state machine moving from ${fromState} to ${toState}`);
   });
 
+  setupTitle(controller);
   setupControllerBar(controller);
 });
+
+function setupTitle(controller) {
+  controller.on('transition', render);
+
+  function render() {
+    ReactDOM.render(
+      <HypcastTitle state={controller.state} />,
+      document.getElementById('hypcast-title')
+    );
+  }
+}
 
 function setupControllerBar(controller) {
   let channels = [];

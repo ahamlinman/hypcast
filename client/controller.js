@@ -8,8 +8,6 @@ export default machina.Fsm.extend({
   states: {
     connecting: {
       _onEnter() {
-	$('h1').addClass('text-muted');
-
 	if (!this.socket) {
 	  this.socket = socketio()
 	    .on('connect', () => {
@@ -31,38 +29,16 @@ export default machina.Fsm.extend({
 	    });
 	}
       },
-
-      _onExit() {
-	$('h1').removeClass('text-muted');
-      },
     },
 
     inactive: {},
 
-    tuning: {
-      _onEnter() {
-	$('h1').addClass('hyp-tuning');
-      },
+    tuning: {},
 
-      _onExit() {
-	$('h1').removeClass('hyp-tuning');
-      },
-    },
-
-    buffering: {
-      _onEnter() {
-	$('h1').addClass('hyp-buffering');
-      },
-
-      _onExit() {
-	$('h1').removeClass('hyp-buffering');
-      },
-    },
+    buffering: {},
 
     active: {
       _onEnter() {
-	$('h1').addClass('text-success');
-
 	let video = $('video');
 	video.slideDown();
 
@@ -79,8 +55,6 @@ export default machina.Fsm.extend({
 	this._hls.detachMedia(video[0]);
 	this._hls.destroy();
 	delete this._hls;
-
-	$('h1').removeClass('text-success');
       },
     },
 
