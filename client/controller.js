@@ -30,21 +30,6 @@ export default machina.Fsm.extend({
 	      console.error('hypcast server error:', err);
 	      this.emit('hypcastError', err);
 	    });
-
-	  $('#tuner').submit((event) => {
-	    event.preventDefault();
-	    let options = {
-	      profile: this.profiles[$('#profile').val()],
-	      channel: $('#channel').val(),
-	    };
-	    console.debug('tuning with options:', options);
-	    this.socket.emit('tune', options);
-	  });
-
-	  $('#stop').click((event) => {
-	    event.preventDefault();
-	    this.socket.emit('stop');
-	  });
 	}
       },
 
@@ -120,5 +105,13 @@ export default machina.Fsm.extend({
 	$('.hyp-ui').show();
       },
     },
+  },
+
+  tune(tuneData) {
+    this.socket.emit('tune', tuneData);
+  },
+
+  stop() {
+    this.socket.emit('stop');
   },
 });

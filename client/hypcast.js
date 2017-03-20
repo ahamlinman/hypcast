@@ -63,6 +63,14 @@ function setupControllerBar(controller) {
     render();
   }
 
+  function handleTune() {
+    controller.tune(tuneData);
+  }
+
+  function handleStop() {
+    controller.stop();
+  }
+
   function render() {
     ReactDOM.render(
       <ControllerBar
@@ -70,7 +78,9 @@ function setupControllerBar(controller) {
         onChannelChanged={handleChannelChanged}
         profiles={profiles}
         onProfileChanged={handleProfileChanged}
-        tuneData={tuneData} />,
+        tuneData={tuneData}
+        onTune={handleTune}
+        onStop={handleStop} />,
       document.getElementById('controller-bar')
     );
   }
