@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
 import HypcastController from './controller';
 import HypcastUi from './ui';
 
-$(() => {
+document.addEventListener('DOMContentLoaded', () => {
   let controller = new HypcastController();
 
   controller.on('transition', ({ fromState, toState }) => {
