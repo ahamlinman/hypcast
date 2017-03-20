@@ -4,9 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import HypcastClientController from './controller';
-import HypcastTitle from './ui/HypcastTitle';
-import HlsVideoPlayer from './ui/HlsVideoPlayer';
-import ControllerBar from './ui/ControllerBar';
+import HypcastUi from './ui';
 
 $(() => {
   let controller = new HypcastClientController();
@@ -15,36 +13,6 @@ $(() => {
     console.debug(`state machine moving from ${fromState} to ${toState}`);
   });
 
-  setupTitle(controller);
-  setupVideo(controller);
-  setupControllerBar(controller);
-});
-
-function setupTitle(controller) {
-  controller.on('transition', render);
-
-  function render() {
-    ReactDOM.render(
-      <HypcastTitle state={controller.state} />,
-      document.getElementById('hypcast-title')
-    );
-  }
-}
-
-function setupVideo(controller) {
-  controller.on('transition', render);
-
-  function render() {
-    ReactDOM.render(
-      (controller.state === 'active' ?
-        <HlsVideoPlayer src="/stream/stream.m3u8" /> :
-        <span></span>),
-      document.getElementById('video-container')
-    );
-  }
-}
-
-function setupControllerBar(controller) {
   let channels = [];
   let profiles = {};
   let tuneData = {
@@ -83,10 +51,6 @@ function setupControllerBar(controller) {
 
   controller.on('transition', render);
 
-  function getEnabled() {
-    return controller.state !== 'connecting';
-  }
-
   function handleTuneDataChange(update) {
     tuneData = assign({}, tuneData, update);
     render();
@@ -102,15 +66,15 @@ function setupControllerBar(controller) {
 
   function render() {
     ReactDOM.render(
-      <ControllerBar
-        enabled={getEnabled()}
+      <HypcastUi
+        state={controller.state}
         channels={channels}
         profiles={profiles}
         tuneData={tuneData}
         onTuneDataChange={handleTuneDataChange}
         onTune={handleTune}
         onStop={handleStop} />,
-      document.getElementById('controller-bar')
+      document.getElementById('hypcast-app')
     );
   }
-}
+});
