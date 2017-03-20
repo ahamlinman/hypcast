@@ -3,11 +3,11 @@ import { assign } from 'lodash/object';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import HypcastClientController from './controller';
+import HypcastController from './controller';
 import HypcastUi from './ui';
 
 $(() => {
-  let controller = new HypcastClientController();
+  let controller = new HypcastController();
 
   controller.on('transition', ({ fromState, toState }) => {
     console.debug(`state machine moving from ${fromState} to ${toState}`);
