@@ -16,10 +16,6 @@ video {
   width: 100%;
 }
 
-.hyp-error {
-  display: none;
-}
-
 @keyframes text-tuning {
   from { color: black; }
   to { color: #8a6d3b; }

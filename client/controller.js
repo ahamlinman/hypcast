@@ -22,10 +22,6 @@ export default machina.Fsm.extend({
 	    })
 	    .on('disconnect', () => {
 	      this.transition('connecting');
-	    })
-	    .on('hypcastError', (err) => {
-	      console.error('hypcast server error:', err);
-	      this.emit('hypcastError', err);
 	    });
 	}
       },
@@ -55,18 +51,6 @@ export default machina.Fsm.extend({
 	this._hls.detachMedia(video[0]);
 	this._hls.destroy();
 	delete this._hls;
-      },
-    },
-
-    error: {
-      _onEnter() {
-	$('.hyp-ui').hide();
-	$('.hyp-error').show();
-      },
-
-      _onExit() {
-	setTimeout(() => $('.hyp-error').hide(), 5000);
-	$('.hyp-ui').show();
       },
     },
   },
