@@ -1,0 +1,25 @@
+.connecting {
+  color: #777777;
+}
+
+@keyframes text-tuning {
+  from { color: black; }
+  to { color: #8a6d3b; }
+}
+
+.tuning {
+  animation: text-tuning 0.5s alternate infinite;
+}
+
+@keyframes text-buffering {
+  from { color: black; }
+  to { color: #337ab7; }
+}
+
+.buffering {
+  animation: text-buffering 1s alternate infinite;
+}
+
+.active {
+  color: #3c763d;
+}

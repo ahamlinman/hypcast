@@ -40,6 +40,19 @@ module.exports = {
       },
 
       {
+        test: /\.css$/,
+        use: [
+          { loader: 'style-loader' },
+          {
+            loader: 'css-loader',
+            options: {
+              modules: true,
+            },
+          },
+        ],
+      },
+
+      {
         test: /(\.woff2?|\.eot|\.ttf|\.svg)$/,
         use: [
           { loader: 'file-loader' },
