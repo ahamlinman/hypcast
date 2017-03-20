@@ -11,7 +11,7 @@ export default class ChannelSelector extends React.Component {
   }
 
   render() {
-    let options = this.props.list.map((channel) => {
+    let options = this.props.channels.map((channel) => {
       return <option value={channel}>{channel}</option>;
     });
 

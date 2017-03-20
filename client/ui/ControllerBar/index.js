@@ -38,7 +38,7 @@ export default class ControllerBar extends React.Component {
 	<div className="form-group">
 	  <label htmlFor="channel">Watch&nbsp;</label>
 	  <ChannelSelector
-	    list={this.props.channels}
+	    channels={this.props.channels}
 	    selected={this.props.tuneData.channel}
 	    onChange={this.handleChannelChanged} />
 	</div>
