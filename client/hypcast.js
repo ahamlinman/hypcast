@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom';
 
 import HypcastClientController from './controller';
 import HypcastTitle from './ui/HypcastTitle';
+import HlsVideoPlayer from './ui/HlsVideoPlayer';
 import ControllerBar from './ui/ControllerBar';
 
 $(() => {
@@ -15,6 +16,7 @@ $(() => {
   });
 
   setupTitle(controller);
+  setupVideo(controller);
   setupControllerBar(controller);
 });
 
@@ -25,6 +27,19 @@ function setupTitle(controller) {
     ReactDOM.render(
       <HypcastTitle state={controller.state} />,
       document.getElementById('hypcast-title')
+    );
+  }
+}
+
+function setupVideo(controller) {
+  controller.on('transition', render);
+
+  function render() {
+    ReactDOM.render(
+      (controller.state === 'active' ?
+        <HlsVideoPlayer src="/stream/stream.m3u8" /> :
+        <span></span>),
+      document.getElementById('video-container')
     );
   }
 }
