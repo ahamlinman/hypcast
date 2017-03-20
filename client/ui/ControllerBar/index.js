@@ -34,7 +34,7 @@ export default class ControllerBar extends React.Component {
 
   render() {
     return (
-      <form className="form-inline text-center lead" id="tuner" onSubmit={this.handleSubmit}>
+      <form className="tuner form-inline text-center lead" onSubmit={this.handleSubmit}>
 	<div className="form-group">
 	  <label htmlFor="channel">Watch</label>
 	  <ChannelSelector
