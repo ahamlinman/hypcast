@@ -2,19 +2,19 @@
   "name": "hypcast",
   "version": "0.0.1",
   "description": "Easily stream television over the Internet with HTTP Live Streaming",
-  "main": "dist/index.js",
+  "main": "dist/server/index.js",
   "scripts": {
     "build": "npm run build:server & npm run build:client",
     "build:mini": "npm run build:server & npm run build:client:mini",
-    "build:server": "babel lib -d dist",
+    "build:server": "babel lib -d dist/server",
     "build:client": "webpack --progress --config webpack.client.config.js",
     "build:client:mini": "webpack --progress --config webpack.client.config.js -p",
-    "clean": "rm -rf dist/ & rm -f client/*.dist.js",
+    "clean": "rm -rf dist/",
     "docker:build": "sudo docker build --pull -t docker.alexhamlin.co/ahamlinman/hypcast .",
     "docker:dev": "sudo docker run --rm -it --device=/dev/dvb -p 9400:9400 -v \"$(pwd):/hypcast\" -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast-dev docker.alexhamlin.co/ahamlinman/hypcast",
     "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast docker.alexhamlin.co/ahamlinman/hypcast",
     "docker:restart": "sudo docker stop hypcast && sudo docker rm hypcast && npm run docker:run",
-    "start": "node dist/index.js"
+    "start": "node dist/server/index.js"
   },
   "keywords": [
     "tv",
