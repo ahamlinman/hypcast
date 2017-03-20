@@ -22,22 +22,18 @@ $(() => {
 
   render();
 
-  // Retrieve profiles
   $.get('/profiles')
     .done((loadedProfiles) => {
       profiles = loadedProfiles;
-      controller.profiles = profiles;
       render();
     })
     .fail((xhr) => {
       console.error('Profile retrieval failed:', xhr);
     });
 
-  // Retrieve channels
   $.get('/channels')
     .done((loadedChannels) => {
       channels = loadedChannels;
-      controller.channels = channels;
       render();
     })
     .fail((xhr) => {
