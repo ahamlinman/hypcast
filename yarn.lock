@@ -150,6 +150,12 @@ aws4@^1.2.1:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/aws4/-/aws4-1.6.0.tgz#83ef5ca860b2b32e4a0deedee8c771b9db57471e"
 
+axios@^0.15.3:
+  version "0.15.3"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.15.3.tgz#2c9d638b2e191a08ea1d6cc988eadd6ba5bdc053"
+  dependencies:
+    follow-redirects "1.0.0"
+
 babel-cli@^6.6.5:
   version "6.24.0"
   resolved "https://registry.yarnpkg.com/babel-cli/-/babel-cli-6.24.0.tgz#a05ffd210dca0c288a26d5319c5ac8669a265ad0"
@@ -1287,6 +1293,12 @@ fluent-ffmpeg@^2.0.1:
     async ">=0.2.9"
     which "^1.1.1"
 
+follow-redirects@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.0.0.tgz#8e34298cbd2e176f254effec75a1c78cc849fd37"
+  dependencies:
+    debug "^2.2.0"
+
 for-in@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/for-in/-/for-in-1.0.2.tgz#81068d295a8142ec0ac726c6e2200c30fb6d5e80"
@@ -1671,10 +1683,6 @@ jodid25519@^1.0.0:
   resolved "https://registry.yarnpkg.com/jodid25519/-/jodid25519-1.0.2.tgz#06d4912255093419477d425633606e0e90782967"
   dependencies:
     jsbn "~0.1.0"
-
-jquery@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.2.0.tgz#3bdbba66e1eee0785532dddadb0e0d2521ca584b"
 
 js-tokens@^3.0.0:
   version "3.0.1"

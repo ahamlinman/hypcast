@@ -1,4 +1,4 @@
-import $ from 'jquery';
+import axios from 'axios';
 import { assign } from 'lodash/object';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -22,22 +22,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   render();
 
-  $.get('/profiles')
-    .done((loadedProfiles) => {
-      profiles = loadedProfiles;
+  axios.get('/profiles')
+    .then((response) => {
+      profiles = response.data;
       render();
     })
-    .fail((xhr) => {
-      console.error('Profile retrieval failed:', xhr);
+    .catch((err) => {
+      console.error('Profile retrieval failed:', err);
     });
 
-  $.get('/channels')
-    .done((loadedChannels) => {
-      channels = loadedChannels;
+  axios.get('/channels')
+    .then((response) => {
+      channels = response.data;
       render();
     })
-    .fail((xhr) => {
-      console.error('Channel retrieval failed:', xhr);
+    .catch((err) => {
+      console.error('Channel retrieval failed:', err);
     });
 
   controller.on('updateTuning', (update) => {
