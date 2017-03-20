@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { findKey } from 'lodash/object';
+import { assign } from 'lodash/object';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -48,18 +48,13 @@ function setupControllerBar(controller) {
       console.error('Channel retrieval failed:', xhr);
     });
 
-  controller.on('updateTuning', (updatedTuneData) => {
-    tuneData = updatedTuneData;
+  controller.on('updateTuning', (update) => {
+    tuneData = update;
     render();
   });
 
-  function handleChannelChanged(channelName) {
-    tuneData.channel = channelName;
-    render();
-  }
-
-  function handleProfileChanged(profileName) {
-    tuneData.profile = profiles[profileName];
+  function handleTuneDataChange(update) {
+    tuneData = assign({}, tuneData, update);
     render();
   }
 
@@ -75,10 +70,9 @@ function setupControllerBar(controller) {
     ReactDOM.render(
       <ControllerBar
         channels={channels}
-        onChannelChanged={handleChannelChanged}
         profiles={profiles}
-        onProfileChanged={handleProfileChanged}
         tuneData={tuneData}
+        onTuneDataChange={handleTuneDataChange}
         onTune={handleTune}
         onStop={handleStop} />,
       document.getElementById('controller-bar')

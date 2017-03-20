@@ -8,8 +8,18 @@ export default class ControllerBar extends React.Component {
   constructor(props) {
     super(props);
 
+    this.handleChannelChanged = this.handleChannelChanged.bind(this);
+    this.handleProfileChanged = this.handleProfileChanged.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleStop = this.handleStop.bind(this);
+  }
+
+  handleChannelChanged(channel) {
+    this.props.onTuneDataChange({ channel });
+  }
+
+  handleProfileChanged(profileName) {
+    this.props.onTuneDataChange({ profile: this.props.profiles[profileName] });
   }
 
   handleSubmit(event) {
@@ -30,22 +40,28 @@ export default class ControllerBar extends React.Component {
 	  <ChannelSelector
 	    list={this.props.channels}
 	    selected={this.props.tuneData.channel}
-	    onChange={this.props.onChannelChanged} />
+	    onChange={this.handleChannelChanged} />
 	</div>
+
 	&nbsp;
+
 	<div className="form-group">
 	  <label htmlFor="profile">at&nbsp;</label>
 	  <ProfileSelector
 	    profiles={this.props.profiles}
 	    selected={findKey(this.props.profiles, this.props.tuneData.profile)}
-	    onChange={this.props.onProfileChanged} />
+	    onChange={this.handleProfileChanged} />
 	  <label htmlFor="profile">&nbsp;quality</label>
 	</div>
+
 	&nbsp;
+
 	<button type="submit" className="btn btn-default">
 	  <span className="glyphicon glyphicon-play"></span>
 	</button>
+
 	&nbsp;
+
 	<button type="button" className="btn btn-default" onClick={this.handleStop}>
 	  <span className="glyphicon glyphicon-stop"></span>
 	</button>
