@@ -43,18 +43,14 @@ export default class ControllerBar extends React.Component {
 	    onChange={this.handleChannelChanged} />
 	</div>
 
-	&nbsp;
-
 	<div className="form-group">
-	  <label htmlFor="profile">at&nbsp;</label>
+	  <label htmlFor="profile">&nbsp;at&nbsp;</label>
 	  <ProfileSelector
 	    profiles={this.props.profiles}
 	    selected={findKey(this.props.profiles, this.props.tuneData.profile)}
 	    onChange={this.handleProfileChanged} />
-	  <label htmlFor="profile">&nbsp;quality</label>
+	  <label htmlFor="profile">&nbsp;quality&nbsp;</label>
 	</div>
-
-	&nbsp;
 
 	<button type="submit" className="btn btn-default">
 	  <span className="glyphicon glyphicon-play"></span>
