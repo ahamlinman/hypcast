@@ -1,4 +1,3 @@
-import $ from 'jquery';
 import machina from 'machina';
 import socketio from 'socket.io-client';
 
@@ -8,22 +7,24 @@ export default machina.Fsm.extend({
   states: {
     connecting: {
       _onEnter() {
-	if (!this.socket) {
-	  this.socket = socketio()
-	    .on('connect', () => {
-	      console.debug('connected to socket.io server');
-	    })
-	    .on('transition', ({ toState, tuneData }) => {
-	      if (tuneData) {
-		this.emit('updateTuning', tuneData);
-	      }
-
-	      this.transition(toState);
-	    })
-	    .on('disconnect', () => {
-	      this.transition('connecting');
-	    });
+	if (this.socket) {
+	  return;
 	}
+
+	this.socket = socketio()
+	  .on('connect', () => {
+	    console.debug('connected to socket.io server');
+	  })
+	  .on('transition', ({ toState, tuneData }) => {
+	    if (tuneData) {
+	      this.emit('updateTuning', tuneData);
+	    }
+
+	    this.transition(toState);
+	  })
+	  .on('disconnect', () => {
+	    this.transition('connecting');
+	  });
       },
     },
 
