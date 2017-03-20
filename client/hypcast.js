@@ -4,8 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import HypcastClientController from './controller';
-import ChannelSelector from './ui/ChannelSelector';
-import ProfileSelector from './ui/ProfileSelector';
+import ControllerBar from './ui/ControllerBar';
 
 $(() => {
   let controller = new HypcastClientController();
@@ -14,81 +13,42 @@ $(() => {
     console.debug(`state machine moving from ${fromState} to ${toState}`);
   });
 
-  setupChannelSelector(controller);
-  setupProfileSelector(controller);
+  setupControllerBar(controller);
 });
 
-function setupProfileSelector(controller) {
+function setupControllerBar(controller) {
+  let channels = [];
   let profiles = {};
-  let selected = '';
-  renderSelector();
+  render();
 
   // Retrieve profiles
   $.get('/profiles')
     .done((loadedProfiles) => {
       profiles = loadedProfiles;
       controller.profiles = profiles;
-      selected = Object.keys(loadedProfiles)[0];
-      renderSelector();
+      render();
     })
     .fail((xhr) => {
       console.error('Profile retrieval failed:', xhr);
     });
-
-  controller.on('updateTuning', ({profile}) => {
-    selected = findKey(profiles, profile);
-    renderSelector();
-  });
-
-  function updateSelection(value) {
-    selected = value;
-    renderSelector();
-  }
-
-  function renderSelector() {
-    ReactDOM.render(
-      <ProfileSelector
-        profiles={profiles}
-        selected={selected}
-        onChange={updateSelection} />,
-      document.getElementById('profile-selector')
-    );
-  }
-}
-
-function setupChannelSelector(controller) {
-  let channels = [];
-  let selected = '';
-  renderSelector();
 
   // Retrieve channels
   $.get('/channels')
     .done((loadedChannels) => {
       channels = loadedChannels;
       controller.channels = channels;
-      renderSelector();
+      render();
     })
     .fail((xhr) => {
       console.error('Channel retrieval failed:', xhr);
     });
 
-  controller.on('updateTuning', ({channel}) => {
-    selected = channel;
-    renderSelector();
-  });
-
-  function updateSelection(value) {
-    selected = value;
-    renderSelector();
-  }
-
-  function renderSelector() {
+  function render() {
     ReactDOM.render(
-      <ChannelSelector
-        list={channels}
-        selected={selected}
-        onChange={updateSelection} />,
-      document.getElementById('channel-selector')
+      <ControllerBar
+        channels={channels}
+        profiles={profiles} />,
+      document.getElementById('controller-bar')
     );
   }
 }
