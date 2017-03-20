@@ -53,6 +53,12 @@ function setupControllerBar(controller) {
     render();
   });
 
+  controller.on('transition', render);
+
+  function getEnabled() {
+    return controller.state !== 'connecting';
+  }
+
   function handleTuneDataChange(update) {
     tuneData = assign({}, tuneData, update);
     render();
@@ -69,6 +75,7 @@ function setupControllerBar(controller) {
   function render() {
     ReactDOM.render(
       <ControllerBar
+        enabled={getEnabled()}
         channels={channels}
         profiles={profiles}
         tuneData={tuneData}

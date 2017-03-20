@@ -20,6 +20,7 @@ export default class ProfileSelector extends React.Component {
       <select
 	  name="profile"
 	  className="form-control"
+	  disabled={!this.props.enabled}
 	  value={this.props.selected}
 	  onChange={this.handleChange}>
 	{options}

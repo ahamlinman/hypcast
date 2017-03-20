@@ -9,7 +9,6 @@ export default machina.Fsm.extend({
     connecting: {
       _onEnter() {
 	$('h1').addClass('text-muted');
-	$('#tuner *').prop('disabled', true);
 
 	if (!this.socket) {
 	  this.socket = socketio()
@@ -35,19 +34,10 @@ export default machina.Fsm.extend({
 
       _onExit() {
 	$('h1').removeClass('text-muted');
-	$('#tuner *').prop('disabled', false);
       },
     },
 
-    inactive: {
-      _onEnter() {
-	$('#tuner #stop').prop('disabled', true);
-      },
-
-      _onExit() {
-	$('#tuner #stop').prop('disabled', false);
-      },
-    },
+    inactive: {},
 
     tuning: {
       _onEnter() {
