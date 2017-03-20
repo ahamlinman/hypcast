@@ -8,8 +8,11 @@ import HypcastUi from './ui';
 document.addEventListener('DOMContentLoaded', () => {
   let controller = new HypcastController();
 
-  controller.on('transition', ({ fromState, toState }) => {
-    console.debug(`state machine moving from ${fromState} to ${toState}`);
+  controller.on('transition', render);
+
+  controller.on('updateTuning', (update) => {
+    tuneData = update;
+    render();
   });
 
   let channels = [];
@@ -38,13 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch((err) => {
       console.error('Channel retrieval failed:', err);
     });
-
-  controller.on('updateTuning', (update) => {
-    tuneData = update;
-    render();
-  });
-
-  controller.on('transition', render);
 
   function handleTuneDataChange(update) {
     tuneData = Object.assign({}, tuneData, update);
