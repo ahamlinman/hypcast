@@ -1,4 +1,5 @@
 import React from 'react';
+import { findKey } from 'lodash/object';
 
 import ChannelSelector from './ChannelSelector';
 import ProfileSelector from './ProfileSelector';
@@ -11,7 +12,7 @@ export default class ControllerBar extends React.Component {
 	  <label htmlFor="channel">Watch </label>
 	  <ChannelSelector
 	    list={this.props.channels}
-	    selected={this.props.selectedChannel}
+	    selected={this.props.tuneData.channel}
 	    onChange={this.props.onChannelChanged} />
 	</div>
 
@@ -19,7 +20,7 @@ export default class ControllerBar extends React.Component {
 	  <label htmlFor="profile"> at </label>
 	  <ProfileSelector
 	    profiles={this.props.profiles}
-	    selected={this.props.selectedProfile}
+	    selected={findKey(this.props.profiles, this.props.tuneData.profile)}
 	    onChange={this.props.onProfileChanged} />
 	  <label htmlFor="profile"> quality</label>
 	</div>

@@ -19,8 +19,11 @@ $(() => {
 function setupControllerBar(controller) {
   let channels = [];
   let profiles = {};
-  let selectedChannel = '';
-  let selectedProfile = '';
+  let tuneData = {
+    channel: '',
+    profile: {}
+  };
+
   render();
 
   // Retrieve profiles
@@ -45,19 +48,18 @@ function setupControllerBar(controller) {
       console.error('Channel retrieval failed:', xhr);
     });
 
-  controller.on('updateTuning', ({ channel, profile }) => {
-    selectedChannel = channel;
-    selectedProfile = findKey(profiles, profile);
+  controller.on('updateTuning', (updatedTuneData) => {
+    tuneData = updatedTuneData;
     render();
   });
 
   function handleChannelChanged(channelName) {
-    selectedChannel = channelName;
+    tuneData.channel = channelName;
     render();
   }
 
   function handleProfileChanged(profileName) {
-    selectedProfile = profileName;
+    tuneData.profile = profiles[profileName];
     render();
   }
 
@@ -65,11 +67,10 @@ function setupControllerBar(controller) {
     ReactDOM.render(
       <ControllerBar
         channels={channels}
-        selectedChannel={selectedChannel}
         onChannelChanged={handleChannelChanged}
         profiles={profiles}
-        selectedProfile={selectedProfile}
-        onProfileChanged={handleProfileChanged} />,
+        onProfileChanged={handleProfileChanged}
+        tuneData={tuneData} />,
       document.getElementById('controller-bar')
     );
   }
