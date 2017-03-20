@@ -18,9 +18,8 @@ export default class ChannelSelector extends React.Component {
     return (
       <select
 	  name="channel"
-	  id="channel"
-	  value={this.props.selected}
 	  className="form-control"
+	  value={this.props.selected}
 	  onChange={this.handleChange}>
 	{options}
       </select>
