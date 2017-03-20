@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ExtractTextWebpackPlugin = require('extract-text-webpack-plugin');
 
 module.exports = {
   entry: {
@@ -29,11 +30,13 @@ module.exports = {
 
       {
         test: /\.less$/,
-        use: [
-          { loader: 'style-loader' },
-          { loader: 'css-loader' },
-          { loader: 'less-loader' },
-        ],
+        use: ExtractTextWebpackPlugin.extract({
+          fallback: 'style-loader',
+          use: [
+            { loader: 'css-loader' },
+            { loader: 'less-loader' },
+          ],
+        }),
       },
 
       {
@@ -73,5 +76,6 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './client/index.html',
     }),
+    new ExtractTextWebpackPlugin('hypcast.dist.css'),
   ],
 };
