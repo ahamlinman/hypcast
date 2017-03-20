@@ -1,5 +1,20 @@
+html, body, .container {
+  height: 100%;
+}
+
 body {
   font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+div.loading {
+  display: table;
+  height: 100%;
+  width: 100%;
+}
+
+div.loading p {
+  display: table-cell;
+  vertical-align: middle;
 }
 
 h1 {
