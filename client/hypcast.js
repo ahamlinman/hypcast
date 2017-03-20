@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { assign } from 'lodash/object';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -48,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   controller.on('transition', render);
 
   function handleTuneDataChange(update) {
-    tuneData = assign({}, tuneData, update);
+    tuneData = Object.assign({}, tuneData, update);
     render();
   }
 
