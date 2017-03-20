@@ -34,6 +34,13 @@ module.exports = {
           { loader: 'less-loader' },
         ],
       },
+
+      {
+        test: /(\.woff2?|\.eot|\.ttf|\.svg)$/,
+        use: [
+          { loader: 'file-loader' },
+        ],
+      },
     ],
   },
 };
