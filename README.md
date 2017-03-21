@@ -49,6 +49,10 @@ Hypcast is currently built with the following assumptions and design choices:
   destroys the stream when stopped and does not support any kind of recording
   functionality. There are already far better solutions for this use case,
   like MythTV and Tvheadend.
+* The web UI is designed to run in modern browsers, and relies on native
+  support for some ES2015 features. Recent versions of Chrome, Firefox, Edge,
+  and Safari should work. I can guarantee that *no version* of Internet Explorer
+  will work.
 
 ## Installation
 
