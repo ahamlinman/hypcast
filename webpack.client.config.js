@@ -2,6 +2,21 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextWebpackPlugin = require('extract-text-webpack-plugin');
 
+function extractStylesPlugin(options = {}) {
+  return ExtractTextWebpackPlugin.extract({
+    fallback: 'style-loader',
+    use: [
+      {
+        loader: 'css-loader',
+        options: Object.assign({ importLoaders: 1 }, options),
+      },
+      {
+        loader: 'less-loader'
+      },
+    ],
+  });
+}
+
 module.exports = {
   entry: {
     hypcast: './client/hypcast.js',
@@ -9,7 +24,7 @@ module.exports = {
 
   output: {
     filename: '[name].dist.js',
-    path: path.resolve('dist/client'),
+    path: path.resolve(__dirname, 'dist', 'client'),
   },
 
   module: {
@@ -30,24 +45,13 @@ module.exports = {
 
       {
         test: /\.less$/,
-        use: ExtractTextWebpackPlugin.extract({
-          fallback: 'style-loader',
-          use: [
-            { loader: 'css-loader' },
-            { loader: 'less-loader' },
-          ],
-        }),
-      },
-
-      {
-        test: /\.css$/,
-        use: [
-          { loader: 'style-loader' },
+        oneOf: [
           {
-            loader: 'css-loader',
-            options: {
-              modules: true,
-            },
+            include: path.resolve(__dirname, 'client', 'ui'),
+            use: extractStylesPlugin({ modules: true }),
+          },
+          {
+            use: extractStylesPlugin(),
           },
         ],
       },

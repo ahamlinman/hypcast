@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './styles.css';
+import styles from './styles.less';
 
 export default class HypcastTitle extends React.Component {
   getClassNames() {
