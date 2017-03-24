@@ -17,12 +17,12 @@ export default class ChannelSelector extends React.Component {
 
     return (
       <select
-	  name="channel"
-	  className="form-control"
-	  disabled={!this.props.enabled}
-	  value={this.props.selected}
-	  onChange={this.handleChange}>
-	{options}
+          name="channel"
+          className="form-control"
+          disabled={!this.props.enabled}
+          value={this.props.selected}
+          onChange={this.handleChange}>
+        {options}
       </select>
     );
   }

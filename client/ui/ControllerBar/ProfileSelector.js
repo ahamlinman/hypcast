@@ -18,12 +18,12 @@ export default class ProfileSelector extends React.Component {
 
     return (
       <select
-	  name="profile"
-	  className="form-control"
-	  disabled={!this.props.enabled}
-	  value={this.props.selected}
-	  onChange={this.handleChange}>
-	{options}
+          name="profile"
+          className="form-control"
+          disabled={!this.props.enabled}
+          value={this.props.selected}
+          onChange={this.handleChange}>
+        {options}
       </select>
     );
   }
