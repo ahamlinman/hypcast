@@ -45,7 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
   axios.get('/profiles')
     .then((response) => {
       profiles = response.data;
-      render();
+
+      if (tuneData.profile.description === undefined) {
+        handleTuneDataChange({ profile: profiles[Object.keys(profiles)[0]] });
+      } else {
+        render();
+      }
     })
     .catch((err) => {
       console.error('Profile retrieval failed:', err);
@@ -54,7 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
   axios.get('/channels')
     .then((response) => {
       channels = response.data;
-      render();
+
+      if (tuneData.channel === '') {
+        handleTuneDataChange({ channel: channels[0] });
+      } else {
+        render();
+      }
     })
     .catch((err) => {
       console.error('Channel retrieval failed:', err);
