@@ -13,7 +13,7 @@ export default class ProfileSelector extends React.Component {
   render() {
     let options = Object.keys(this.props.profiles).map((name) => {
       let profile = this.props.profiles[name];
-      return <option value={name}>{profile.description}</option>;
+      return <option key={name} value={name}>{profile.description}</option>;
     });
 
     return (
