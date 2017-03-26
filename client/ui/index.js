@@ -1,17 +1,28 @@
 import React from 'react';
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
 
 import HypcastTitle from './HypcastTitle';
 import HlsVideoPlayer from './HlsVideoPlayer';
 import ControllerBar from './ControllerBar';
 
+import videoTransitions from './videoTransitions.less';
+
 export default class HypcastUi extends React.Component {
   getVideoElement() {
-    return (
+    let videoElement = (
       this.props.state === 'active' ?
-      <HlsVideoPlayer src="/stream/stream.m3u8" /> :
-      <span />
+      <HlsVideoPlayer key="player" src="/stream/stream.m3u8" /> :
+      <span key="hidden" />
     );
 
+    return (
+      <ReactCSSTransitionGroup
+          transitionName={videoTransitions}
+          transitionEnterTimeout={350}
+          transitionLeaveTimeout={350}>
+        { videoElement }
+      </ReactCSSTransitionGroup>
+    );
   }
 
   getControllerBarEnabled() {
