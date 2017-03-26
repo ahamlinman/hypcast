@@ -1,21 +1,35 @@
-.enter {
+// Endpoints for video player transitions (for internal mixin use)
+
+.playerClosed {
+  position: relative;
+  left: 50%;
   width: 0;
   opacity: 0;
 }
 
-.enterActive {
+.playerOpen {
+  position: relative;
+  left: 0;
   width: 100%;
   opacity: 1;
+}
+
+// Class definitions for ReactCSSTransitionGroup (for external use)
+
+.enter {
+  .playerClosed;
+}
+
+.enterActive {
+  .playerOpen;
   transition: all 350ms ease-out;
 }
 
 .leave {
-  width: 100%;
-  opacity: 1;
+  .playerOpen;
 }
 
 .leaveActive {
-  width: 0;
-  opacity: 0;
+  .playerClosed;
   transition: all 350ms ease-in;
 }
