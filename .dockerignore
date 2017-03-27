@@ -1,4 +1,3 @@
-client/*.dist.js
 dist
 doc
 node_modules
