@@ -3,7 +3,7 @@
 Hypcast is an interactive web app designed to let you watch live TV from a
 [LinuxTV][1]-compatible tuner card in your browser. On the frontend, you select a
 channel and video quality. On the backend, a Node app manages the `azap` and
-`ffmpeg` programs and produces an [HLS][1] video stream. This lets you bring
+`ffmpeg` programs and produces an [HLS][2] video stream. This lets you bring
 your TV experience anywhere in the world for free.
 
 [1]: https://www.linuxtv.org/wiki/index.php/Main_Page
