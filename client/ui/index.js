@@ -20,7 +20,7 @@ export default class HypcastUi extends React.Component {
           transitionName={videoTransitions}
           transitionEnterTimeout={350}
           transitionLeaveTimeout={350}>
-        { videoElement }
+        {videoElement}
       </ReactCSSTransitionGroup>
     );
   }
