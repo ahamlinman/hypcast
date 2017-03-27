@@ -15,7 +15,7 @@
     "docker:dev": "sudo docker run --rm -it --device=/dev/dvb -p 9400:9400 -v \"$(pwd):/hypcast\" -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast-dev docker.alexhamlin.co/ahamlinman/hypcast",
     "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast docker.alexhamlin.co/ahamlinman/hypcast",
     "docker:restart": "sudo docker stop hypcast && sudo docker rm hypcast && npm run docker:run",
-    "start": "node dist/server/index.js"
+    "start": "NODE_ENV=production node dist/server/index.js"
   },
   "keywords": [
     "tv",
