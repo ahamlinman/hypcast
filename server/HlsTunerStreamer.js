@@ -246,7 +246,7 @@ const TunerMachine = Machina.Fsm.extend({
   },
 });
 
-class HlsTunerStreamer extends TunerMachine {
+export default class HlsTunerStreamer extends TunerMachine {
   tune(data) {
     this.handle('tune', data);
   }
@@ -259,5 +259,3 @@ class HlsTunerStreamer extends TunerMachine {
     return this._tuneData;
   }
 }
-
-export default HlsTunerStreamer;

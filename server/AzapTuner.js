@@ -1,10 +1,11 @@
-import AzapError from './AzapError';
 import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import byline from 'byline';
 
-class AzapTuner extends EventEmitter {
+import AzapError from './AzapError';
+
+export default class AzapTuner extends EventEmitter {
   constructor({
     channelsPath,
     adapter = 0,
@@ -105,5 +106,3 @@ class AzapTuner extends EventEmitter {
     }
   }
 }
-
-export default AzapTuner;

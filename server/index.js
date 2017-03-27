@@ -1,9 +1,10 @@
-import AzapTuner from './AzapTuner';
-import HlsTunerStreamer from './HlsTunerStreamer';
 import express from 'express';
 import socketio from 'socket.io';
 import path from 'path';
 import fs from 'fs';
+
+import AzapTuner from './AzapTuner';
+import HlsTunerStreamer from './HlsTunerStreamer';
 
 let tuner = new AzapTuner({
   channelsPath: path.resolve('config', 'channels.conf')
