@@ -14,6 +14,3 @@ yarn install --production
 
 # Clean up the Yarn cache
 yarn cache clean
-
-# Clean up the NPM cache
-npm cache clean
