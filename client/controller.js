@@ -33,24 +33,24 @@ export default machina.Fsm.extend({
   states: {
     connecting: {
       _onEnter() {
-	if (this.socket) {
-	  return;
-	}
+        if (this.socket) {
+          return;
+        }
 
-	this.socket = socketio()
-	  .on('connect', () => {
-	    console.debug('connected to socket.io server');
-	  })
-	  .on('transition', ({ toState, tuneData }) => {
-	    if (tuneData) {
-	      this.emit('updateTuning', tuneData);
-	    }
+        this.socket = socketio()
+          .on('connect', () => {
+            console.debug('connected to socket.io server');
+          })
+          .on('transition', ({ toState, tuneData }) => {
+            if (tuneData) {
+              this.emit('updateTuning', tuneData);
+            }
 
-	    this.transition(toState);
-	  })
-	  .on('disconnect', () => {
-	    this.transition('connecting');
-	  });
+            this.transition(toState);
+          })
+          .on('disconnect', () => {
+            this.transition('connecting');
+          });
       },
     },
 
