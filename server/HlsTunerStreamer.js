@@ -128,7 +128,7 @@ const TunerMachine = Machina.Fsm.extend({
           ])
           .audioCodec('libfdk_aac').audioBitrate(profile.audioBitrate)
           .outputOptions(`-profile:a ${profile.audioProfile}`)
-          .outputOptions(['-f hls', '-hls_wrap 20', '-hls_list_size 20'])
+          .outputOptions(['-f hls', '-hls_list_size 20', '-hls_flags delete_segments'])
           .on('start', (cmd) => console.log('ffmpeg started:', cmd))
           .on('error', (err, stdout, stderr) => this.handle('ffmpegError', err, stdout, stderr))
           .on('end', (stdout, stderr) => this.handle('ffmpegEnd', stdout, stderr))
