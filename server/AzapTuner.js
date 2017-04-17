@@ -55,6 +55,7 @@ export default class AzapTuner extends EventEmitter {
       fs.readFile(path, 'ascii', (err, data) => {
         if (err) {
           reject(err);
+          return;
         }
 
         let channelList = data.split('\n')
