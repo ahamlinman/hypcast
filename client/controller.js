@@ -38,9 +38,6 @@ export default machina.Fsm.extend({
         }
 
         this.socket = socketio()
-          .on('connect', () => {
-            console.debug('connected to socket.io server');
-          })
           .on('transition', ({ toState, tuneData }) => {
             if (tuneData) {
               this.emit('updateTuning', tuneData);
