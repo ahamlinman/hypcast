@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import express from 'express';
 import socketio from 'socket.io';
 import path from 'path';
@@ -48,7 +50,7 @@ app.get('/channels', (req, res) => {
       res.json(channels);
     })
     .catch((err) => {
-      res.status(500).send(err)
+      res.status(500).send(err);
     });
 });
 
@@ -56,7 +58,7 @@ let server = app.listen(9400, () => {
   console.log('hypcast server started on *:9400');
 });
 
-let io = socketio(server)
+socketio(server)
   .on('connection', (socket) => {
     console.log('client connected');
     socket.emit('transition', {

@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import Machina from 'machina';
 import FfmpegCommand from 'fluent-ffmpeg';
 import Tmp from 'tmp';
@@ -9,7 +11,7 @@ const TunerMachine = Machina.Fsm.extend({
   initialize(tuner) {
     this._tuner = tuner;
 
-    this._tuner.on('lock', (chan) => this.handle('tunerLock', chan));
+    this._tuner.on('lock', () => this.handle('tunerLock'));
     this._tuner.on('error', (err) => this.handle('tunerError', err));
     this._tuner.on('stop', () => this.handle('tunerStop'));
   },
@@ -35,7 +37,7 @@ const TunerMachine = Machina.Fsm.extend({
       },
 
       // ...and we'll start FFmpeg when we have a signal lock
-      tunerLock(chan) {
+      tunerLock() {
         this.transition('buffering');
       },
 
@@ -52,7 +54,7 @@ const TunerMachine = Machina.Fsm.extend({
 
       // If the user quickly tries to change the channel, just go back to the
       // inactive state and start tuning again from there. A clean start.
-      tune(data) {
+      tune() {
         this.deferUntilTransition('inactive');
         this.handle('stop');
       },
@@ -116,15 +118,15 @@ const TunerMachine = Machina.Fsm.extend({
 
         this._ffmpeg = new FfmpegCommand({ source: this._tuner.device, logger: console })
           .complexFilter([
-              `scale=-2:ih*min(1\\,${profile.videoHeight}/ih)`,
-              'aresample=async=1000'
+            `scale=-2:ih*min(1\\,${profile.videoHeight}/ih)`,
+            'aresample=async=1000'
           ])
           .videoCodec('libx264').videoBitrate(profile.videoBitrate)
           .outputOptions([
-              '-profile:v main',
-              '-tune zerolatency',
-              `-bufsize ${profile.videoBufsize}`,
-              `-preset ${profile.videoPreset}`,
+            '-profile:v main',
+            '-tune zerolatency',
+            `-bufsize ${profile.videoBufsize}`,
+            `-preset ${profile.videoPreset}`,
           ])
           .audioCodec('libfdk_aac').audioBitrate(profile.audioBitrate)
           .outputOptions(`-profile:a ${profile.audioProfile}`)
@@ -162,7 +164,7 @@ const TunerMachine = Machina.Fsm.extend({
         this.handle('stop');
       },
 
-      tune(data) {
+      tune() {
         this.deferUntilTransition('inactive');
         this.handle('stop');
       },
@@ -174,7 +176,7 @@ const TunerMachine = Machina.Fsm.extend({
 
     active: {
       // If the user changes the channel, just start everything over
-      tune(data) {
+      tune() {
         this.deferUntilTransition('inactive');
         this.handle('stop');
       },
@@ -225,7 +227,7 @@ const TunerMachine = Machina.Fsm.extend({
         this.transition('detuning');
       },
 
-      tune(data) {
+      tune() {
         this.deferUntilTransition('inactive');
       },
     },
