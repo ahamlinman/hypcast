@@ -19,7 +19,7 @@ function extractStylesPlugin(options = {}) {
 
 module.exports = {
   entry: {
-    hypcast: './client/hypcast.js',
+    hypcast: './client/hypcast.jsx',
   },
 
   output: {
@@ -30,7 +30,7 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.jsx?$/,
         exclude: /node_modules/,
         use: [
           {
@@ -87,6 +87,10 @@ module.exports = {
         ],
       },
     ],
+  },
+
+  resolve: {
+    extensions: ['.js', '.json', '.jsx'],
   },
 
   plugins: [
