@@ -7,7 +7,7 @@ set -v
 yarn install
 
 # Run the full build for server and client
-npm run build:mini
+yarn run build:mini
 
 # Clean up all non-production dependencies
 yarn install --production

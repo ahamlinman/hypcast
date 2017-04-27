@@ -4,8 +4,8 @@
   "description": "Easily stream television over the Internet with HTTP Live Streaming",
   "main": "dist/server/index.js",
   "scripts": {
-    "build": "npm run build:server & npm run build:client",
-    "build:mini": "npm run build:server & npm run build:client:mini",
+    "build": "yarn run build:server & yarn run build:client",
+    "build:mini": "yarn run build:server & yarn run build:client:mini",
     "build:server": "babel server -d dist/server",
     "build:client": "webpack --progress --config webpack.client.config.js",
     "build:client:mini": "webpack --progress --config webpack.client.config.js -p",
@@ -15,7 +15,7 @@
     "docker:build": "sudo docker build --pull -t docker.alexhamlin.co/ahamlinman/hypcast .",
     "docker:dev": "sudo docker run --rm -it --device=/dev/dvb -p 9400:9400 -v \"$(pwd):/hypcast\" -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast-dev docker.alexhamlin.co/ahamlinman/hypcast",
     "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 -v $HOME/.hypcast:/hypcast/config:ro --name=hypcast docker.alexhamlin.co/ahamlinman/hypcast",
-    "docker:restart": "sudo docker stop hypcast && sudo docker rm hypcast && npm run docker:run",
+    "docker:restart": "sudo docker stop hypcast && sudo docker rm hypcast && yarn run docker:run",
     "start": "NODE_ENV=production node dist/server/index.js"
   },
   "keywords": [
