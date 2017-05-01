@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactCSSTransitionGroup from 'react-addons-css-transition-group';
+import { CSSTransitionGroup } from 'react-transition-group';
 
 import HypcastTitle from './HypcastTitle';
 import HlsVideoPlayer from './HlsVideoPlayer';
@@ -16,12 +16,12 @@ export default class HypcastUi extends React.Component {
     );
 
     return (
-      <ReactCSSTransitionGroup
+      <CSSTransitionGroup
           transitionName={videoTransitions}
           transitionEnterTimeout={350}
           transitionLeaveTimeout={350}>
         {videoElement}
-      </ReactCSSTransitionGroup>
+      </CSSTransitionGroup>
     );
   }
 
