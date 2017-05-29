@@ -40,7 +40,7 @@
     "bootstrap": "^3.3.7",
     "css-loader": "^0.28.0",
     "eslint": "^3.19.0",
-    "eslint-plugin-react": "^6.10.3",
+    "eslint-plugin-react": "^7.0.1",
     "extract-text-webpack-plugin": "^2.1.0",
     "file-loader": "^0.11.1",
     "hls.js": "^0.7.6",
@@ -52,8 +52,8 @@
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
     "react-transition-group": "^1.1.2",
-    "socket.io-client": "^1.4.5",
-    "style-loader": "^0.16.0",
+    "socket.io-client": "^2.0.1",
+    "style-loader": "^0.18.1",
     "webpack": "^2.2.1"
   },
   "dependencies": {
@@ -61,7 +61,7 @@
     "express": "^4.13.4",
     "fluent-ffmpeg": "^2.1.2",
     "machina": "^2.0.0-1",
-    "socket.io": "^1.4.5",
+    "socket.io": "^2.0.1",
     "tmp": "^0.0.31",
     "touch": "^1.0.0"
   }
