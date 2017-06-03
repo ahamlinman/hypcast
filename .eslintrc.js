@@ -89,7 +89,6 @@ module.exports = {
         "wrap-iife": [ "error", "inside" ],
         "yoda": [ "error", "never" ],
 
-        "array-bracket-spacing": [ "warn", "always" ],
         "arrow-body-style": [ "warn", "as-needed" ],
         "arrow-parens": [ "warn" ],
         "jsx-quotes": [ "warn", "prefer-single" ],
