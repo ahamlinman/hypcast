@@ -92,7 +92,6 @@ module.exports = {
         "arrow-body-style": [ "warn", "as-needed" ],
         "arrow-parens": [ "warn" ],
         "jsx-quotes": [ "warn", "prefer-single" ],
-        "no-magic-numbers": [ "warn" ],
         "object-curly-newline": [ "warn" ],
         "prefer-const": [ "warn" ],
         "prefer-destructuring": [ "warn" ],
