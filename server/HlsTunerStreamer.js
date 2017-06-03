@@ -6,6 +6,7 @@ import Tmp from 'tmp';
 import fs from 'fs';
 import touch from 'touch';
 import path from 'path';
+import { promisify } from 'util';
 
 const TunerMachine = Machina.Fsm.extend({
   initialize(tuner) {
@@ -88,17 +89,16 @@ const TunerMachine = Machina.Fsm.extend({
       // for the client, the playlist file will get updated. That's when we
       // make the streamer's state active and notify the client that they can
       // start watching.
-      tmpPathReady() {
+      async tmpPathReady() {
         this.playlistPath = path.join(this.streamPath, 'stream.m3u8');
 
-        touch(this.playlistPath, (err) => {
-          if (err) {
-            this.emit('error', err);
-            this.transition('debuffering');
-          }
-
+        try {
+          await promisify(touch)(this.playlistPath);
           this.handle('playlistReady');
-        });
+        } catch (err) {
+          this.emit('error', err);
+          this.transition('debuffering');
+        }
       },
 
       // Now that our dummy playlist file is ready to go, we watch it for real
