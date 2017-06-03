@@ -34,9 +34,9 @@ export default class ControllerBar extends React.Component {
 
   render() {
     return (
-      <form className="tuner form-inline text-center lead" onSubmit={this.handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="channel">Watch</label>
+      <form className='tuner form-inline text-center lead' onSubmit={this.handleSubmit}>
+        <div className='form-group'>
+          <label htmlFor='channel'>Watch</label>
           <ChannelSelector
             enabled={this.props.enabled}
             channels={this.props.channels}
@@ -44,23 +44,23 @@ export default class ControllerBar extends React.Component {
             onChange={this.handleChannelChanged} />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="profile">at</label>
+        <div className='form-group'>
+          <label htmlFor='profile'>at</label>
           <ProfileSelector
             enabled={this.props.enabled}
             profiles={this.props.profiles}
             selected={findKey(this.props.profiles, this.props.tuneData.profile)}
             onChange={this.handleProfileChanged} />
-          <label htmlFor="profile">quality</label>
+          <label htmlFor='profile'>quality</label>
         </div>
 
-        <button type="submit" className="btn btn-default" disabled={!this.props.enabled}>
-          <span className="glyphicon glyphicon-play"></span>
+        <button type='submit' className='btn btn-default' disabled={!this.props.enabled}>
+          <span className='glyphicon glyphicon-play'></span>
         </button>
 
-        <button type="button" className="btn btn-default"
+        <button type='button' className='btn btn-default'
             onClick={this.handleStop} disabled={!this.props.enabled}>
-          <span className="glyphicon glyphicon-stop"></span>
+          <span className='glyphicon glyphicon-stop'></span>
         </button>
       </form>
     );

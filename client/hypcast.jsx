@@ -26,7 +26,7 @@ import HypcastUi from './ui';
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  let controller = new HypcastController();
+  const controller = new HypcastController();
 
   controller.on('transition', render);
 

@@ -9,10 +9,10 @@ import videoTransitions from './videoTransitions.less';
 
 export default class HypcastUi extends React.Component {
   getVideoElement() {
-    let videoElement = (
+    const videoElement = (
       this.props.state === 'active' ?
-      <HlsVideoPlayer key="player" src="/stream/stream.m3u8" /> :
-      <span key="hidden" />
+      <HlsVideoPlayer key='player' src='/stream/stream.m3u8' /> :
+      <span key='hidden' />
     );
 
     return (
@@ -32,18 +32,18 @@ export default class HypcastUi extends React.Component {
   render() {
     return (
       <div>
-        <div className="page-header text-center">
+        <div className='page-header text-center'>
           <HypcastTitle state={this.props.state} />
         </div>
 
-        <div className="row">
-          <div className="col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2">
+        <div className='row'>
+          <div className='col-xs-12 col-sm-10 col-sm-push-1 col-md-8 col-md-push-2'>
             {this.getVideoElement()}
           </div>
         </div>
 
-        <div className="row">
-          <div className="col-xs-10 col-xs-push-1">
+        <div className='row'>
+          <div className='col-xs-10 col-xs-push-1'>
             <ControllerBar
               enabled={this.getControllerBarEnabled()}
               channels={this.props.channels}

@@ -11,15 +11,15 @@ export default class ProfileSelector extends React.Component {
   }
 
   render() {
-    let options = Object.keys(this.props.profiles).map((name) => {
-      let profile = this.props.profiles[name];
+    const options = Object.keys(this.props.profiles).map((name) => {
+      const profile = this.props.profiles[name];
       return <option key={name} value={name}>{profile.description}</option>;
     });
 
     return (
       <select
-          name="profile"
-          className="form-control"
+          name='profile'
+          className='form-control'
           disabled={!this.props.enabled}
           value={this.props.selected}
           onChange={this.handleChange}>
