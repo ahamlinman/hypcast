@@ -8,14 +8,13 @@ import fs from 'fs';
 import AzapTuner from './AzapTuner';
 import HlsTunerStreamer from './HlsTunerStreamer';
 
-let tuner = new AzapTuner({
-  channelsPath: path.resolve('config', 'channels.conf'),
-});
+const channelsPath = path.resolve('config', 'channels.conf');
+const tuner = new AzapTuner({ channelsPath });
 
-tuner.on('error', err => console.log('[AzapTuner error]', err));
+tuner.on('error', (err) => console.log('[AzapTuner error]', err));
 
-let streamer = new HlsTunerStreamer(tuner);
-streamer.on('error', err => console.log('[HlsTunerStreamer error]', err));
+const streamer = new HlsTunerStreamer(tuner);
+streamer.on('error', (err) => console.log('[HlsTunerStreamer error]', err));
 streamer.on('transition', ({ fromState, toState }) => {
   console.log(`streamer moving from ${fromState} to ${toState}`);
 });
@@ -34,7 +33,7 @@ app.use('/stream', (req, res, next) => {
 });
 
 app.get('/profiles', (req, res) => {
-  let profilePath = path.resolve('config', 'profiles.json');
+  const profilePath = path.resolve('config', 'profiles.json');
   fs.readFile(profilePath, (err, contents) => {
     if (err) {
       res.status(500).send(err);
@@ -54,7 +53,7 @@ app.get('/channels', (req, res) => {
     });
 });
 
-let server = app.listen(9400, () => {
+const server = app.listen(9400, () => {
   console.log('hypcast server started on *:9400');
 });
 
@@ -66,17 +65,17 @@ socketio(server)
       tuneData: streamer.tuneData,
     });
 
-    socket.on('tune', options => streamer.tune(options));
+    socket.on('tune', (options) => streamer.tune(options));
     socket.on('stop', () => streamer.stop());
 
-    let transSub = streamer.on('transition', ({ toState }) => {
+    const transSub = streamer.on('transition', ({ toState }) => {
       socket.emit('transition', {
         toState,
         tuneData: streamer.tuneData,
       });
     });
 
-    let errSub = streamer.on('error', (err) => {
+    const errSub = streamer.on('error', (err) => {
       socket.emit('hypcastError', err);
     });
 

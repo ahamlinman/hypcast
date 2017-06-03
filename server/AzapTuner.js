@@ -56,8 +56,8 @@ export default class AzapTuner extends EventEmitter {
     const data = await readFile(path, 'ascii');
 
     return data.split('\n')
-      .filter(entry => entry !== '')
-      .map(entry => entry.split(':')[0])
+      .filter((entry) => entry !== '')
+      .map((entry) => entry.split(':')[0])
       .filter((val, i, arr) => arr.indexOf(val) === i);
   }
 

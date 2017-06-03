@@ -104,7 +104,7 @@ const TunerMachine = Machina.Fsm.extend({
       // Now that our dummy playlist file is ready to go, we watch it for real
       // and start up FFmpeg so that it will eventually get changed.
       playlistReady() {
-        let watcher = fs.watch(this.playlistPath)
+        const watcher = fs.watch(this.playlistPath)
           .once('change', () => {
             watcher.close();
             this.handle('buffered');
@@ -114,7 +114,7 @@ const TunerMachine = Machina.Fsm.extend({
             this.transition('debuffering');
           });
 
-        let profile = this._tuneData.profile;
+        const profile = this._tuneData.profile;
 
         this._ffmpeg = new FfmpegCommand({ source: this._tuner.device, logger: console })
           .complexFilter([
