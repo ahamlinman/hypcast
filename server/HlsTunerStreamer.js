@@ -114,7 +114,7 @@ const TunerMachine = Machina.Fsm.extend({
             this.transition('debuffering');
           });
 
-        const profile = this._tuneData.profile;
+        const { profile } = this._tuneData;
 
         this._ffmpeg = new FfmpegCommand({ source: this._tuner.device, logger: console })
           .complexFilter([
