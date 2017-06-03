@@ -8,6 +8,22 @@ import touch from 'touch';
 import path from 'path';
 import { promisify } from 'util';
 
+// Helper function to create a temporary directory using promises. This is
+// required because the function has a non-standard callback with multiple
+// "success" arguments, which we need both of. As a result, we construct a
+// custom object to resolve the promise.
+function createTmpDir() {
+  return new Promise((resolve, reject) => {
+    Tmp.dir({ unsafeCleanup: true }, (err, path, clean) => {
+      if (err) {
+        reject(err);
+      }
+
+      resolve({ path, clean });
+    });
+  });
+}
+
 const TunerMachine = Machina.Fsm.extend({
   initialize(tuner) {
     this._tuner = tuner;
@@ -69,18 +85,17 @@ const TunerMachine = Machina.Fsm.extend({
     buffering: {
       // Start by making a temp directory for the encoded files. This will be
       // removed when the streamer is stopped.
-      _onEnter() {
-        Tmp.dir({ unsafeCleanup: true }, (err, path, clean) => {
-          if (err) {
-            this.emit('error', err);
-            this.transition('detuning');
-          }
+      async _onEnter() {
+        try {
+          const { path, clean } = await createTmpDir();
 
-          this._ffmpegCleanup = clean;
           this.streamPath = path;
-
+          this._ffmpegCleanup = clean;
           this.handle('tmpPathReady');
-        });
+        } catch (err) {
+          this.emit('error', err);
+          this.transition('detuning');
+        }
       },
 
       // Once we have a temp directory, create a playlist file so that we can
