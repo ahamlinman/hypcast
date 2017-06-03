@@ -4,6 +4,7 @@ import express from 'express';
 import socketio from 'socket.io';
 import path from 'path';
 import fs from 'fs';
+import { promisify } from 'util';
 
 import AzapTuner from './AzapTuner';
 import HlsTunerStreamer from './HlsTunerStreamer';
@@ -32,25 +33,25 @@ app.use('/stream', (req, res, next) => {
   }
 });
 
-app.get('/profiles', (req, res) => {
+app.get('/profiles', async (req, res) => {
   const profilePath = path.resolve('config', 'profiles.json');
-  fs.readFile(profilePath, (err, contents) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.json(JSON.parse(contents));
-    }
-  });
+  const readFile = promisify(fs.readFile);
+
+  try {
+    const contents = await readFile(profilePath);
+    res.json(JSON.parse(contents));
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
 
-app.get('/channels', (req, res) => {
-  tuner.loadChannels()
-    .then((channels) => {
-      res.json(channels);
-    })
-    .catch((err) => {
-      res.status(500).send(err);
-    });
+app.get('/channels', async (req, res) => {
+  try {
+    const channels = await tuner.loadChannels();
+    res.json(channels);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
 
 const server = app.listen(9400, () => {
