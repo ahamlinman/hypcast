@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
+import { promisify } from 'util';
 import fs from 'fs';
 import byline from 'byline';
 
@@ -50,22 +51,14 @@ export default class AzapTuner extends EventEmitter {
     }
   }
 
-  static loadChannels(path) {
-    return new Promise((resolve, reject) => {
-      fs.readFile(path, 'ascii', (err, data) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+  static async loadChannels(path) {
+    const readFile = promisify(fs.readFile);
+    const data = await readFile(path, 'ascii');
 
-        let channelList = data.split('\n')
-          .filter(entry => entry !== '')
-          .map(entry => entry.split(':')[0])
-          .filter((val, i, arr) => arr.indexOf(val) === i);
-
-        resolve(channelList);
-      });
-    });
+    return data.split('\n')
+      .filter(entry => entry !== '')
+      .map(entry => entry.split(':')[0])
+      .filter((val, i, arr) => arr.indexOf(val) === i);
   }
 
   loadChannels(path = this.channelsPath) {
