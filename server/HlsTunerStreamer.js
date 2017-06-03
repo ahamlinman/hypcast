@@ -14,12 +14,12 @@ import { promisify } from 'util';
 // custom object to resolve the promise.
 function createTmpDir() {
   return new Promise((resolve, reject) => {
-    Tmp.dir({ unsafeCleanup: true }, (err, path, clean) => {
+    Tmp.dir({ unsafeCleanup: true }, (err, dirPath, clean) => {
       if (err) {
         reject(err);
       }
 
-      resolve({ path, clean });
+      resolve({ dirPath, clean });
     });
   });
 }
@@ -83,42 +83,29 @@ const TunerMachine = Machina.Fsm.extend({
     },
 
     buffering: {
-      // Start by making a temp directory for the encoded files. This will be
-      // removed when the streamer is stopped.
       async _onEnter() {
         try {
-          const { path, clean } = await createTmpDir();
-
-          this.streamPath = path;
+          // Start by making a temp directory for the encoded files. This will
+          // be removed when the streamer is stopped.
+          const { dirPath, clean } = await createTmpDir();
+          this.streamPath = dirPath;
           this._ffmpegCleanup = clean;
-          this.handle('tmpPathReady');
-        } catch (err) {
-          this.emit('error', err);
-          this.transition('detuning');
-        }
-      },
 
-      // Once we have a temp directory, create a playlist file so that we can
-      // watch it for changes. When we start FFmpeg, it will take a little
-      // while to get the HLS stream going. Once the first .ts file is ready
-      // for the client, the playlist file will get updated. That's when we
-      // make the streamer's state active and notify the client that they can
-      // start watching.
-      async tmpPathReady() {
-        this.playlistPath = path.join(this.streamPath, 'stream.m3u8');
-
-        try {
+          // Once we have a temp directory, create a playlist file so that we
+          // can watch it for changes. When we start FFmpeg, it will take a
+          // little while to get the HLS stream going. Once the first .ts file
+          // is ready for the client, the playlist file will get updated.
+          // That's when we make the streamer's state active and notify the
+          // client that they can start watching.
+          this.playlistPath = path.join(this.streamPath, 'stream.m3u8');
           await promisify(touch)(this.playlistPath);
-          this.handle('playlistReady');
         } catch (err) {
           this.emit('error', err);
           this.transition('debuffering');
         }
-      },
 
-      // Now that our dummy playlist file is ready to go, we watch it for real
-      // and start up FFmpeg so that it will eventually get changed.
-      playlistReady() {
+        // Now that our dummy playlist file is ready to go, we watch it for
+        // real and start up FFmpeg so that it will eventually get changed.
         const watcher = fs.watch(this.playlistPath)
           .once('change', () => {
             watcher.close();

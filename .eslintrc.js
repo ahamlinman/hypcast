@@ -55,6 +55,7 @@ module.exports = {
         "no-return-assign": [ "error" ],
         "no-return-await": [ "error" ],
         "no-sequences": [ "error" ],
+        "no-shadow": [ "error" ],
         "no-sync": [ "error" ],
         "no-tabs": [ "error" ],
         "no-template-curly-in-string": [ "error" ],
