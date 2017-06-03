@@ -20,5 +20,9 @@ module.exports = {
         "quotes": [ "error", "single" ],
         "semi": [ "error", "always" ],
         "require-await": [ "warn" ],
+
+        "react/jsx-uses-vars": [ "error" ],
+        "react/jsx-uses-react": [ "error" ],
+        "react/react-in-jsx-scope": [ "error" ],
     }
 };
