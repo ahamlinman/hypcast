@@ -12,7 +12,7 @@ export default class AzapTuner extends EventEmitter {
     adapter = 0,
     frontend = 0,
     demux = 0,
-    device = '/dev/dvb/adapter0/dvr0'
+    device = '/dev/dvb/adapter0/dvr0',
   } = {}) {
     super();
 
@@ -70,7 +70,7 @@ export default class AzapTuner extends EventEmitter {
       'azap', '-r',
       '-a', this.adapter,
       '-f', this.frontend,
-      '-d', this.demux
+      '-d', this.demux,
     ];
 
     if (this.channelsPath) {

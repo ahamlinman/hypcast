@@ -119,7 +119,7 @@ const TunerMachine = Machina.Fsm.extend({
         this._ffmpeg = new FfmpegCommand({ source: this._tuner.device, logger: console })
           .complexFilter([
             `scale=-2:ih*min(1\\,${profile.videoHeight}/ih)`,
-            'aresample=async=1000'
+            'aresample=async=1000',
           ])
           .videoCodec('libx264').videoBitrate(profile.videoBitrate)
           .outputOptions([

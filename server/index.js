@@ -9,7 +9,7 @@ import AzapTuner from './AzapTuner';
 import HlsTunerStreamer from './HlsTunerStreamer';
 
 let tuner = new AzapTuner({
-  channelsPath: path.resolve('config', 'channels.conf')
+  channelsPath: path.resolve('config', 'channels.conf'),
 });
 
 tuner.on('error', err => console.log('[AzapTuner error]', err));

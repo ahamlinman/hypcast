@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import './hypcast.less';
 
 import axios from 'axios';
@@ -37,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let profiles = {};
   let tuneData = {
     channel: '',
-    profile: {}
+    profile: {},
   };
 
   render();
