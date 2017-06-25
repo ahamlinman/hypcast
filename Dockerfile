@@ -1,7 +1,7 @@
 FROM node:8-slim
 MAINTAINER Alex Hamlin
 
-RUN echo 'deb http://www.deb-multimedia.org stable main non-free' >> \
+RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> \
 		/etc/apt/sources.list.d/deb-multimedia.list
 
 RUN apt-get update \
