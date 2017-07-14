@@ -4,7 +4,6 @@ import Machina from 'machina';
 import FfmpegCommand from 'fluent-ffmpeg';
 import Tmp from 'tmp';
 import fs from 'fs';
-import touch from 'touch';
 import path from 'path';
 import { promisify } from 'util';
 
@@ -22,6 +21,15 @@ function createTmpDir() {
       resolve({ dirPath, clean });
     });
   });
+}
+
+// Helper function to create a new file. This simply helps create the playlist
+// file before watching it. We require the path to be exclusive as a safety
+// measure. Hypcast shouldn't have a problem with this since a new temp dir is
+// created for every stream.
+async function createNewFile(filePath) {
+  const fd = await promisify(fs.open)(filePath, 'wx');
+  await promisify(fs.close)(fd);
 }
 
 const TunerMachine = Machina.Fsm.extend({
@@ -98,7 +106,7 @@ const TunerMachine = Machina.Fsm.extend({
           // That's when we make the streamer's state active and notify the
           // client that they can start watching.
           this.playlistPath = path.join(this.streamPath, 'stream.m3u8');
-          await promisify(touch)(this.playlistPath);
+          await createNewFile(this.playlistPath);
         } catch (err) {
           this.emit('error', err);
           this.transition('debuffering');
