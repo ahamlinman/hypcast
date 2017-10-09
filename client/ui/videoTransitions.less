@@ -14,7 +14,7 @@
   opacity: 1;
 }
 
-// Class definitions for ReactCSSTransitionGroup (for external use)
+// Class definitions for CSSTransition (for external use)
 
 .enter {
   .playerClosed;
@@ -25,11 +25,11 @@
   transition: all 350ms ease-out;
 }
 
-.leave {
+.exit {
   .playerOpen;
 }
 
-.leaveActive {
+.exitActive {
   .playerClosed;
   transition: all 350ms ease-in;
 }

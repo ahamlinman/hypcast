@@ -1,5 +1,5 @@
 import React from 'react';
-import { CSSTransitionGroup } from 'react-transition-group';
+import CSSTransition from 'react-transition-group/CSSTransition';
 
 import HypcastTitle from './HypcastTitle';
 import HlsVideoPlayer from './HlsVideoPlayer';
@@ -9,19 +9,13 @@ import videoTransitions from './videoTransitions.less';
 
 export default class HypcastUi extends React.Component {
   getVideoElement() {
-    const videoElement = (
-      this.props.state === 'active' ?
-      <HlsVideoPlayer key='player' src='/stream/stream.m3u8' /> :
-      <span key='hidden' />
-    );
+    const active = this.props.state === 'active';
 
     return (
-      <CSSTransitionGroup
-          transitionName={videoTransitions}
-          transitionEnterTimeout={350}
-          transitionLeaveTimeout={350}>
-        {videoElement}
-      </CSSTransitionGroup>
+      <CSSTransition in={active} mountOnEnter={true} unmountOnExit={true}
+          classNames={videoTransitions} timeout={350}>
+        <HlsVideoPlayer src='/stream/stream.m3u8' />
+      </CSSTransition>
     );
   }
 
