@@ -10,17 +10,13 @@ function extractStylesPlugin(options = {}) {
         loader: 'css-loader',
         options: Object.assign({ importLoaders: 1 }, options),
       },
-      {
-        loader: 'less-loader'
-      },
+      { loader: 'less-loader' },
     ],
   });
 }
 
 module.exports = {
-  entry: {
-    hypcast: './client/hypcast.jsx',
-  },
+  entry: { hypcast: './client/hypcast.jsx' },
 
   output: {
     filename: '[name].dist.js',
@@ -37,8 +33,8 @@ module.exports = {
             loader: 'babel-loader',
             options: {
               presets: [['es2015', { modules: false }]],
-              plugins: ['transform-react-jsx']
-            }
+              plugins: ['transform-react-jsx'],
+            },
           },
         ],
       },
@@ -50,9 +46,7 @@ module.exports = {
             include: path.resolve(__dirname, 'client', 'ui'),
             use: extractStylesPlugin({ modules: true }),
           },
-          {
-            use: extractStylesPlugin(),
-          },
+          { use: extractStylesPlugin() },
         ],
       },
 
@@ -68,9 +62,7 @@ module.exports = {
         use: [
           {
             loader: 'html-loader',
-            options: {
-              attrs: ['img:src', 'link:href'],
-            },
+            options: { attrs: ['img:src', 'link:href'] },
           },
         ],
       },
@@ -80,23 +72,17 @@ module.exports = {
         use: [
           {
             loader: 'file-loader',
-            options: {
-              name: 'favicon.ico',
-            },
+            options: { name: 'favicon.ico' },
           },
         ],
       },
     ],
   },
 
-  resolve: {
-    extensions: ['.js', '.json', '.jsx'],
-  },
+  resolve: { extensions: ['.js', '.json', '.jsx'] },
 
   plugins: [
-    new HtmlWebpackPlugin({
-      template: './client/index.html',
-    }),
+    new HtmlWebpackPlugin({ template: './client/index.html' }),
     new ExtractTextWebpackPlugin('hypcast.dist.css'),
   ],
 };
