@@ -32,6 +32,33 @@ async function createNewFile(filePath) {
   await promisify(fs.close)(fd);
 }
 
+// Common error handlers for while the tuner / streamer are initializing or
+// active. In all cases, everything is stopped and errors are dumped where
+// possible.
+const ErrorHandlers = {
+  tunerError(err) {
+    this.emit('error', err);
+    this.handle('stop');
+  },
+
+  tunerStop() {
+    this.emit('error', new Error('The tuner unexpectedly stopped'));
+    this.handle('stop');
+  },
+
+  ffmpegError(err, stdout, stderr) {
+    console.error('Dumping FFmpeg output:', stdout, stderr);
+    this.emit('error', err);
+    this.handle('stop');
+  },
+
+  ffmpegEnd(stdout, stderr) {
+    console.error('Dumping FFmpeg output:', stdout, stderr);
+    this.emit('error', new Error('FFmpeg unexpectedly stopped'));
+    this.handle('stop');
+  },
+};
+
 const TunerMachine = Machina.Fsm.extend({
   initialize(tuner) {
     this._tuner = tuner;
@@ -56,6 +83,8 @@ const TunerMachine = Machina.Fsm.extend({
     },
 
     tuning: {
+      ...ErrorHandlers,
+
       // We begin by starting up the tuner...
       _onEnter() {
         this._tuner.tune(this._tuneData.channel);
@@ -64,17 +93,6 @@ const TunerMachine = Machina.Fsm.extend({
       // ...and we'll start FFmpeg when we have a signal lock
       tunerLock() {
         this.transition('buffering');
-      },
-
-      // If anything goes wrong, just give up
-      tunerError(err) {
-        this.emit('error', err);
-        this.transition('inactive');
-      },
-
-      tunerStop() {
-        this.emit('error', new Error('The tuner unexpectedly stopped'));
-        this.handle('stop');
       },
 
       // If the user quickly tries to change the channel, just go back to the
@@ -91,6 +109,8 @@ const TunerMachine = Machina.Fsm.extend({
     },
 
     buffering: {
+      ...ErrorHandlers,
+
       async _onEnter() {
         try {
           // Start by making a temp directory for the encoded files. This will
@@ -153,27 +173,6 @@ const TunerMachine = Machina.Fsm.extend({
         this.transition('active');
       },
 
-      ffmpegError(err, stdout, stderr) {
-        console.error('Dumping FFmpeg output:', stdout, stderr);
-        this.emit('error', err);
-        this.handle('stop');
-      },
-
-      ffmpegEnd(stdout, stderr) {
-        console.error('Dumping FFmpeg output:', stdout, stderr);
-        this.handle('stop');
-      },
-
-      tunerError(err) {
-        this.emit('error', err);
-        this.handle('stop');
-      },
-
-      tunerStop() {
-        this.emit('error', new Error('The tuner unexpectedly stopped'));
-        this.handle('stop');
-      },
-
       tune() {
         this.deferUntilTransition('inactive');
         this.handle('stop');
@@ -185,6 +184,8 @@ const TunerMachine = Machina.Fsm.extend({
     },
 
     active: {
+      ...ErrorHandlers,
+
       // If the user changes the channel, just start everything over
       tune() {
         this.deferUntilTransition('inactive');
@@ -193,28 +194,6 @@ const TunerMachine = Machina.Fsm.extend({
 
       stop() {
         this.transition('debuffering');
-      },
-
-      tunerError(err) {
-        this.emit('error', err);
-        this.handle('stop');
-      },
-
-      tunerStop() {
-        this.emit('error', new Error('The tuner unexpectedly stopped'));
-        this.handle('stop');
-      },
-
-      ffmpegError(err, stdout, stderr) {
-        console.error('Dumping FFmpeg output:', stdout, stderr);
-        this.emit('error', err);
-        this.handle('stop');
-      },
-
-      ffmpegEnd(stdout, stderr) {
-        console.error('Dumping FFmpeg output:', stdout, stderr);
-        this.emit('error', new Error('FFmpeg unexpectedly stopped'));
-        this.handle('stop');
       },
     },
 
