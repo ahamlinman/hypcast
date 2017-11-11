@@ -1,8 +1,17 @@
 import React from 'react';
-import { findKey } from 'lodash/object';
 
 import ChannelSelector from './ChannelSelector';
 import ProfileSelector from './ProfileSelector';
+
+function findKey(obj, value) {
+  const target = JSON.stringify(value);
+
+  for (const [k, v] of Object.entries(obj)) {
+    if (JSON.stringify(v) === target) {
+      return k;
+    }
+  }
+}
 
 export default class ControllerBar extends React.Component {
   constructor(props) {
