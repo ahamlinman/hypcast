@@ -34,7 +34,6 @@
     "url": "https://gitlab.alexhamlin.co/ahamlinman/hypcast.git"
   },
   "devDependencies": {
-    "axios": "^0.17.0",
     "babel-cli": "^6.6.5",
     "babel-core": "^6.23.1",
     "babel-loader": "^7.0.0",

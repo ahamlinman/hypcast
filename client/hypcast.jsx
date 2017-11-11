@@ -2,7 +2,6 @@
 
 import './hypcast.less';
 
-import axios from 'axios';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -44,32 +43,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   render();
 
-  axios.get('/profiles')
+  fetch('/profiles')
     .then((response) => {
-      profiles = response.data;
+      if (!response.ok) {
+        console.error('Profile retrieval failed', response);
+        throw new Error('Profile retrieval failed');
+      }
+
+      return response.json();
+    })
+    .then((profileData) => {
+      profiles = profileData;
 
       if (tuneData.profile.description === undefined) {
         handleTuneDataChange({ profile: profiles[Object.keys(profiles)[0]] });
       } else {
         render();
       }
-    })
-    .catch((err) => {
-      console.error('Profile retrieval failed:', err);
     });
 
-  axios.get('/channels')
+  fetch('/channels')
     .then((response) => {
-      channels = response.data;
+      if (!response.ok) {
+        console.error('Channel retrieval failed', response);
+        throw new Error('Channel retrieval failed');
+      }
+
+      return response.json();
+    })
+    .then((channelData) => {
+      channels = channelData;
 
       if (tuneData.channel === '') {
         handleTuneDataChange({ channel: channels[0] });
       } else {
         render();
       }
-    })
-    .catch((err) => {
-      console.error('Channel retrieval failed:', err);
     });
 
   function handleTuneDataChange(update) {
