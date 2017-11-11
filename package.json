@@ -8,7 +8,7 @@
     "build:mini": "yarn run build:server & yarn run build:client:mini",
     "build:server": "babel server -d dist/server",
     "build:client": "webpack --progress --config webpack.config.js",
-    "build:client:mini": "webpack --progress --config webpack.config.js -p",
+    "build:client:mini": "webpack --progress --config webpack.config.js --env production",
     "watch:client": "webpack --progress --config webpack.config.js --watch",
     "clean": "rm -rf dist/",
     "docker:build": "sudo docker build --pull -t docker.alexhamlin.co/ahamlinman/hypcast .",
@@ -40,7 +40,6 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-react-jsx": "^6.23.0",
     "babel-preset-env": "^1.5.1",
-    "babel-preset-es2015": "^6.22.0",
     "bootstrap": "^3.3.7",
     "css-loader": "^0.28.0",
     "eslint": "^4.1.0",
@@ -58,6 +57,7 @@
     "react-transition-group": "^2.2.1",
     "socket.io-client": "^2.0.1",
     "style-loader": "^0.19.0",
+    "uglifyjs-webpack-plugin": "^1.0.1",
     "webpack": "^3.0.0"
   },
   "dependencies": {
