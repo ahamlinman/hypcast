@@ -85,6 +85,25 @@ should be mounted read-only as `/hypcast/config`. You will also need to give
 the container access to your TV tuner devices using Docker's `--device`
 option (e.g. `--device=/dev/dvb`).
 
+## A Note About Dependencies...
+
+Due to my never-ending quest to optimize the Hypcast build process in
+interesting (but ultimately pointless and stupid) ways, there is a unique
+strategy for managing dependencies:
+
+* Packages required at runtime are saved under `dependencies` in package.json.
+  This includes things like Express (that are useful only on the server) and
+  Machina (which is used by both the server *and* client). These packages will
+  be available in the Hypcast Docker image.
+* Packages required only during build time are saved under `devDependencies`.
+  This includes things like Babel and Bootstrap, that either help produce the
+  final JavaScript output or are bundled into it. These packages are cleaned up
+  during the Docker image build, and so are not in the final image.
+* Packages that are not run during the build process, but that may be run at
+  other times, are saved under `optionalDependencies`. This includes things
+  like ESLint. These packages are never even installed during the Docker build
+  process.
+
 ## Additional Questions
 
 You can view the most up-to-date methods for contacting me at

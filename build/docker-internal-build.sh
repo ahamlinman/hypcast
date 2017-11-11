@@ -1,10 +1,9 @@
 #!/bin/bash
 
-set -e
-set -v
+set -ev
 
-# Install all dependencies using Yarn
-yarn install
+# Install all build-time dependencies using Yarn
+yarn install --ignore-optional
 
 # Run the full build for server and client
 yarn run build:mini
