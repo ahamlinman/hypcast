@@ -43,43 +43,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   render();
 
-  fetch('/profiles')
-    .then((response) => {
-      if (!response.ok) {
-        console.error('Profile retrieval failed', response);
-        throw new Error('Profile retrieval failed');
-      }
+  (async function getProfiles() {
+    const response = await fetch('/profiles');
 
-      return response.json();
-    })
-    .then((profileData) => {
-      profiles = profileData;
+    if (!response.ok) {
+      console.error('Profile retrieval failed', response);
+      throw new Error('Profile retrieval failed');
+    }
 
-      if (tuneData.profile.description === undefined) {
-        handleTuneDataChange({ profile: profiles[Object.keys(profiles)[0]] });
-      } else {
-        render();
-      }
-    });
+    profiles = await response.json();
 
-  fetch('/channels')
-    .then((response) => {
-      if (!response.ok) {
-        console.error('Channel retrieval failed', response);
-        throw new Error('Channel retrieval failed');
-      }
+    if (tuneData.profile.description === undefined) {
+      handleTuneDataChange({ profile: profiles[Object.keys(profiles)[0]] });
+    } else {
+      render();
+    }
+  })();
 
-      return response.json();
-    })
-    .then((channelData) => {
-      channels = channelData;
+  (async function getChannels() {
+    const response = await fetch('/channels');
 
-      if (tuneData.channel === '') {
-        handleTuneDataChange({ channel: channels[0] });
-      } else {
-        render();
-      }
-    });
+    if (!response.ok) {
+      console.error('Channel retrieval failed', response);
+      throw new Error('Channel retrieval failed');
+    }
+
+    channels = await response.json();
+
+    if (tuneData.channel === '') {
+      handleTuneDataChange({ channel: channels[0] });
+    } else {
+      render();
+    }
+  })();
 
   function handleTuneDataChange(update) {
     tuneData = Object.assign({}, tuneData, update);
