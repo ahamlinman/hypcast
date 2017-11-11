@@ -1,4 +1,4 @@
-FROM node:8-slim
+FROM node:9-slim
 MAINTAINER Alex Hamlin
 
 RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> \
