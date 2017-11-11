@@ -146,20 +146,49 @@ const TunerMachine = Machina.Fsm.extend({
 
         const { profile } = this._tuneData;
 
+        // Let's go through everything that FFmpeg is doing...
         this._ffmpeg = new FfmpegCommand({ source: this._tuner.device, logger: console })
           .complexFilter([
+            // This scales the video down to videoHeight, unless it is already
+            // smaller. -2 means that the width will proportionally match.
             `scale=-2:ih*min(1\\,${profile.videoHeight}/ih)`,
+            // This will "stretch/squeeze [audio] samples to the given
+            // timestamps." The goal is to let audio get back in sync after
+            // reading a corrupted stream (e.g. if we're using an antenna and
+            // the signal strength is low).
             'aresample=async=1000',
           ])
           .videoCodec('libx264').videoBitrate(profile.videoBitrate)
           .outputOptions([
+            // Modern mobile devices should support the H.264 Main Profile.
+            // This gives us a small quality boost at the same bitrate.
             '-profile:v main',
+            // Naturally, this option optimizes x264 for faster encoding. From
+            // what I understand this basically means inserting more I-frames
+            // than usual.
             '-tune zerolatency',
+            // This will determine how often FFmpeg computes the average
+            // bitrate for the stream, to keep it within the specified
+            // videoBitrate. Personally, I keep this relatively small (128k for
+            // smaller output, 256k for larger output).
             `-bufsize ${profile.videoBufsize}`,
+            // This helps set a tradeoff between encoding speed and video
+            // quality, based on the videoHeight and how powerful your computer
+            // is. Ideally, set this to be as slow as your computer can handle
+            // while still encoding the video in realtime. Personally, I can
+            // handle "fast" for 240p, "veryfast" for 480p, and need
+            // "ultrafast" for anything beyond that.
             `-preset ${profile.videoPreset}`,
           ])
+          // libfdk_aac is the only AAC encoder that supports High-Efficiency
+          // AAC. If your playback device supports it, audioProfile == aac_he
+          // will noticeably improve quality at low bitrates.
           .audioCodec('libfdk_aac').audioBitrate(profile.audioBitrate)
           .outputOptions(`-profile:a ${profile.audioProfile}`)
+          // hls_list_size is a tradeoff between disk usage and how far back in
+          // time you can travel. At the hardcoded option of 20 segments, you
+          // can typically pause for or rewind a few minutes. This is
+          // considered okay, since Hypcast is designed for *live* streaming.
           .outputOptions(['-f hls', '-hls_list_size 20', '-hls_flags delete_segments'])
           .on('start', (cmd) => console.log('ffmpeg started:', cmd))
           .on('error', (err, stdout, stderr) => this.handle('ffmpegError', err, stdout, stderr))
