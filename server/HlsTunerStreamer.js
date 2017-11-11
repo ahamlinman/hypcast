@@ -199,8 +199,10 @@ const TunerMachine = Machina.Fsm.extend({
 
     debuffering: {
       _onEnter() {
-        // Kill FFmpeg if it is running
+        // Kill FFmpeg if it is running (note that it will emit an error on
+        // SIGKILL that we need to absorb)
         if (this._ffmpeg) {
+          this._ffmpeg.removeAllListeners('error').once('error', () => {});
           this._ffmpeg.kill();
           delete this._ffmpeg;
         }
