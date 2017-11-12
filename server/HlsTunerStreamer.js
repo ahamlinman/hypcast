@@ -179,6 +179,9 @@ const TunerMachine = Machina.Fsm.extend({
             // handle "fast" for 240p, "veryfast" for 480p, and need
             // "ultrafast" for anything beyond that.
             `-preset ${profile.videoPreset}`,
+            // This "group of pictures" option forces more frequent keyframes,
+            // in an attempt to make Hypcast streams start up more quickly.
+            '-g 120',
           ])
           // libfdk_aac is the only AAC encoder that supports High-Efficiency
           // AAC. If your playback device supports it, audioProfile == aac_he
