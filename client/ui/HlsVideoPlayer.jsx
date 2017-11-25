@@ -1,5 +1,5 @@
 import React from 'react';
-import Hls from 'hls.js';
+import Hls from 'hls.js/dist/hls.light.js';
 
 export default class HlsVideoPlayer extends React.Component {
   componentDidMount() {
