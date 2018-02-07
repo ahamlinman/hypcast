@@ -149,10 +149,10 @@ const TunerMachine = Machina.Fsm.extend({
         // Let's go through everything that FFmpeg is doing...
         this._ffmpeg = new FfmpegCommand({ source: this._tuner.device, logger: console })
           .inputOptions([
-            // Analyze only the first 1.5 seconds of video to determine the
+            // Analyze only the first 2 seconds of video to determine the
             // format. This should make the stream start faster, and manual
             // testing has shown this to be generally enough time.
-            '-analyzeduration 1500000',
+            '-analyzeduration 2000000',
           ])
           .complexFilter([
             // This scales the video down to videoHeight, unless it is already
