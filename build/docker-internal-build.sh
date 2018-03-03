@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ev
+set -xeuo pipefail
 
 # Install all build-time dependencies using Yarn. Usually I'd ignore optional
 # packages, but Yarn is buggy here: https://github.com/yarnpkg/yarn/issues/4876
