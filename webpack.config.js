@@ -66,7 +66,10 @@ module.exports = function(_, argv) {
           use: [
             {
               loader: 'html-loader',
-              options: { attrs: ['img:src', 'link:href'] },
+              options: Object.assign(
+                { attrs: ['img:src', 'link:href'] },
+                (mode === 'production') ? { minimize: true } : {},
+              ),
             },
           ],
         },
