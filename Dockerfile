@@ -17,7 +17,11 @@ WORKDIR /hypcast
 COPY . /hypcast
 RUN ./build/docker-internal-build.sh
 
-RUN useradd -r -g video -d /hypcast -s /sbin/nologin hypcast
+# For some reason, Docker changes the group of my dvb devices to "root" inside
+# the container (it's "video" outside the container). I honestly think this
+# might be a regression in Docker. In any case, it would be nice to remove the
+# "root" group from this user in the future.
+RUN useradd -r -G root,video -d /hypcast -s /sbin/nologin hypcast
 USER hypcast
 
 ENTRYPOINT exec npm start
