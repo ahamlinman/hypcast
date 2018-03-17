@@ -3,18 +3,23 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-function getStyleLoaders(options = {}) {
+function getStyleLoaders(mode, extOptions = {}) {
+  const options = Object.assign(
+    { importLoaders: 1 },
+    (mode === 'production') ? { minimize: true } : {},
+    extOptions,
+  );
+
   return [
     { loader: MiniCssExtractPlugin.loader },
-    {
-      loader: 'css-loader',
-      options: Object.assign({ importLoaders: 1 }, options),
-    },
+    { loader: 'css-loader', options },
     { loader: 'less-loader' },
   ];
 }
 
-module.exports = function() {
+module.exports = function(_, argv) {
+  const mode = (argv.mode || 'development');
+
   return {
     entry: { hypcast: './client/hypcast.jsx' },
 
@@ -43,9 +48,9 @@ module.exports = function() {
           oneOf: [
             {
               include: path.resolve(__dirname, 'client', 'ui'),
-              use: getStyleLoaders({ modules: true }),
+              use: getStyleLoaders(mode, { modules: true }),
             },
-            { use: getStyleLoaders() },
+            { use: getStyleLoaders(mode) },
           ],
         },
 
