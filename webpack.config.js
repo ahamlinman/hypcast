@@ -90,7 +90,7 @@ module.exports = function(_, argv) {
 
     plugins: [
       new HtmlWebpackPlugin({ template: './client/index.html' }),
-      new MiniCssExtractPlugin({ filename: 'hypcast.dist.css' }),
+      new MiniCssExtractPlugin({ filename: '[name].dist.css' }),
     ],
   };
 }
