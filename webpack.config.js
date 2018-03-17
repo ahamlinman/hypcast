@@ -1,34 +1,20 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ExtractTextWebpackPlugin = require('extract-text-webpack-plugin');
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-function extractStylesPlugin(options = {}) {
-  return ExtractTextWebpackPlugin.extract({
-    fallback: 'style-loader',
-    use: [
-      {
-        loader: 'css-loader',
-        options: Object.assign({ importLoaders: 1 }, options),
-      },
-      { loader: 'less-loader' },
-    ],
-  });
+function getStyleLoaders(options = {}) {
+  return [
+    { loader: MiniCssExtractPlugin.loader },
+    {
+      loader: 'css-loader',
+      options: Object.assign({ importLoaders: 1 }, options),
+    },
+    { loader: 'less-loader' },
+  ];
 }
 
-function environmentPlugins(environment) {
-  if (environment === 'production') {
-    return [
-      new webpack.EnvironmentPlugin({ NODE_ENV: 'production' }),
-      new UglifyJSPlugin(),
-    ];
-  }
-
-  return [];
-}
-
-module.exports = function(environment) {
+module.exports = function() {
   return {
     entry: { hypcast: './client/hypcast.jsx' },
 
@@ -57,9 +43,9 @@ module.exports = function(environment) {
           oneOf: [
             {
               include: path.resolve(__dirname, 'client', 'ui'),
-              use: extractStylesPlugin({ modules: true }),
+              use: getStyleLoaders({ modules: true }),
             },
-            { use: extractStylesPlugin() },
+            { use: getStyleLoaders() },
           ],
         },
 
@@ -96,8 +82,7 @@ module.exports = function(environment) {
 
     plugins: [
       new HtmlWebpackPlugin({ template: './client/index.html' }),
-      new ExtractTextWebpackPlugin('hypcast.dist.css'),
-      ...environmentPlugins(environment),
+      new MiniCssExtractPlugin({ filename: 'hypcast.dist.css' }),
     ],
   };
 }
