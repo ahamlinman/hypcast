@@ -1,4 +1,4 @@
-FROM node:9-slim
+FROM node:9.9.0-slim
 MAINTAINER Alex Hamlin <alex@alexhamlin.co>
 
 RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> \
