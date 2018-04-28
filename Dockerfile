@@ -17,12 +17,14 @@ WORKDIR /hypcast
 COPY . /hypcast
 RUN ./build/docker-internal-build.sh
 
-# For some reason, Docker changes the group of my dvb devices to "root" inside
-# the container (it's "video" outside the container). I honestly think this
-# might be a regression in Docker. In any case, it would be nice to remove the
-# "root" group from this user in the future.
-RUN useradd -r -G root,video -d /hypcast -s /sbin/nologin hypcast
-USER hypcast
+# TODO: Hypcast runs in my Ubuntu installation, but not my Arch installation.
+# On the Arch system, the group setup and ownership of the dvb device is
+# different from what the Debian environment in the container expects. I'm
+# switching back to root in the short term, but want to find another long-term
+# way to fix this (dynamically creating the user when the container is run?).
+
+# RUN useradd -r -G root,video -d /hypcast -s /sbin/nologin hypcast
+# USER hypcast
 
 ENTRYPOINT exec npm start
 EXPOSE 9400
