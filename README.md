@@ -1,108 +1,93 @@
 ![Screenshot of the main Hypcast UI](/doc/screenshot.png)
 
-Hypcast is an interactive web app designed to let you watch live TV from a
-[LinuxTV][1]-compatible tuner card in your browser. On the frontend, you select a
-channel and video quality. On the backend, a Node app manages the `azap` and
-`ffmpeg` programs and produces an [HLS][2] video stream. This lets you bring
-your TV experience anywhere in the world for free.
+**Hypcast is an interactive web app that lets you take your TV anywhere.**
 
-[1]: https://www.linuxtv.org/wiki/index.php/Main_Page
-[2]: https://en.wikipedia.org/wiki/HTTP_Live_Streaming
+Specifically, Hypcast combines all of this:
 
-## How it Works
+* A TV tuner card in your computer
+* Software from the [LinuxTV] project
+* [HTTP Live Streaming] technology
 
-When you first open the Hypcast UI, you will be presented with a list of
-channel and video quality options. Once you select a channel and quality, you
-can use the start button to start the stream. This will activate your tuner,
-tune it to the selected channel, and start encoding the video stream in real
-time. Once there is enough video encoded for your browser to download, a video
-player will appear and the stream will begin playing. You can select another
-channel and quality and press the start button again to tune to a different
-channel, or you can press the stop button to stop the stream.
+…with a simple web-based interface. The upshot is that you can watch television
+streams in any modern web browser, from any device that has access to your
+Hypcast server. Thanks to real-time communication, the tuner state is
+synchronized across all connected devices. Start on your desktop and move to
+your tablet, or control your desktop's stream from your phone!
 
-The state of the tuner is synchronized across all Hypcast clients. In other
-words, if you are watching on your laptop and visit Hypcast on your phone at
-the same time, you will see the same video stream that you are already
-watching (though you will probably start at an earlier point in the stream).
-If you stop the stream or change the channel on your phone, the change will be
-reflected almost immediately on your laptop and vice-versa. Anyone who can
-connect to Hypcast has an equal ability to control the tuner. This makes it
-easy to change channels from your phone or pick up where you left off on
-another device, but it means that you should be careful about who can access
-your Hypcast instance.
+[LinuxTV]: https://www.linuxtv.org/wiki/index.php/Main_Page
+[HTTP Live Streaming]: https://en.wikipedia.org/wiki/HTTP_Live_Streaming
 
-## Assumptions
+## Requirements
 
-Hypcast is currently built with the following assumptions and design choices:
+* A Linux server, preferably with [Docker] installed
+* A [LinuxTV]-compatible tuner card (see "Hardware device information" on the
+  linked wiki page)
+  - Currently, only ATSC tuning is supported. However, the ATSC code should be
+    fairly adaptable to other tuner types (by running `szap`, `tzap`, etc.
+    rather than `azap`).
+* A `channels.conf` file suitable for use with the `azap` utility. This can be
+  generated with a utility like `scan` or `w_scan`. For more information, see
+  https://www.linuxtv.org/wiki/index.php/Frequency\_scan. An example file with
+  some over-the-air channels for Seattle, WA is in the `doc/` directory.
+* A `profiles.json` file defining the set of video qualities you want to make
+  available, based on your server's real-time transcoding capability. Many
+  computers are not powerful enough to transcode multiple live video streams
+  simultaneously, so Hypcast requires that a specific quality be chosen when a
+  stream is started. An example file with my personal settings (used with an
+  Intel Core i5-3570k at 3.4 GHz) is in the `doc/` directory.
 
-* It is designed for a single tuner per system. It should be possible to
-  support multiple tuners on the backend, though this will require some API
-  and UI changes.
-* It is designed for ATSC tuners (i.e. those that can be controlled with the
-  azap utility) only. However, it should be very easy to support the other
-  \*zap utilities by working from the existing azap code.
-* It is designed for any client to have equal access to control the tuner. You
-  should probably not make a Hypcast instance public, as it is too easy to
-  abuse if you're not careful.
-* It is designed for live TV only. Hypcast generally keeps enough of the
-  stream around for you to rewind or pause for a few minutes at a time, but it
-  destroys the stream when stopped and does not support any kind of recording
-  functionality. There are already far better solutions for this use case,
-  like MythTV and Tvheadend.
-* The web UI relies on native support for ES2017 features, and thus only runs
-  in *very* modern browsers. The latest versions of Chrome, Firefox, Edge, or
-  Safari should work. I can guarantee that *no* version of Internet Explorer
-  will *ever* work.
+If you choose to run Hypcast without Docker, you'll also need:
 
-## Installation
+* [ffmpeg], with support for libx264 and libfdk\_aac
+* [dvb-apps] from LinuxTV
 
-Hypcast requires node, dvb-apps and ffmpeg with libfdk\_aac support. A
-Dockerfile is included in this repository that will nicely roll all of these
-dependencies into a Docker image, along with some npm scripts to help build
-and run the image. By default, this runs Hypcast as a non-root user and makes
-it available on port 9400 (Hypcast's default port) on the host.
+[Docker]: https://www.docker.com/community-edition
+[ffmpeg]: https://www.ffmpeg.org/
+[dvb-apps]: https://linuxtv.org/wiki/index.php/LinuxTV_dvb-apps
 
-## Usage
+## Setup
 
-Hypcast requires two configuration files: `channels.conf` and `profiles.json`.
-Examples are provided in the `doc/` directory of this repository.
+These instructions assume that you'll be running Hypcast in a Docker container.
+Helper scripts are defined in `package.json` to help facilitate this use. To
+use them, you should install the [Yarn] package manager.
 
-* `channels.conf` is a list of channels suitable for use with the `azap`
-  utility. This can be generated using a utility like `scan` or `w_scan`. For
-  more information, see https://www.linuxtv.org/wiki/index.php/Frequency\_scan
-* `profiles.json` contains sets of options that will be passed to ffmpeg when
-  encoding the stream, such as the video size, x264 preset, audio bitrate,
-  etc. Multiple profiles give you the flexibility to select stream parameters
-  based on the nature of your connection to the computer where Hypcast is
-  running. For example, if you are on a mobile network you can select a
-  lower-quality profile to conserve your data. The example profiles should be
-  sufficient for a reasonably well-powered desktop computer, but they have
-  been determined through trial and error and may not be appropriate for all
-  systems.
+(Note that the `package.json` helpers invoke the `docker` CLI using `sudo`, so
+that your user is not required to be in the `docker` group. Remember, users in
+the `docker` group effectively have passwordless root access to the system
+running the Docker daemon!)
 
-When running Hypcast in a Docker container, a directory containing these files
-should be mounted read-only as `/hypcast/config`. You will also need to give
-the container access to your TV tuner devices using Docker's `--device`
-option (e.g. `--device=/dev/dvb`).
+0. Place your `channels.conf` and `profiles.json` files under `/etc/hypcast` on
+   your server.
+0. Run `yarn run docker:build` to create the Hypcast image.
+0. Run `yarn run docker:run` to start a Hypcast container. The container will
+   have access to the tuner devices under `/dev/dvb` on your server, and will
+   automatically restart if it terminates or if your system is rebooted.
+0. Go to http://localhost:9400.
 
-## A Note About Dependencies...
+[Yarn]: https://yarnpkg.com/en/docs/install
 
-Due to my never-ending quest to optimize the Hypcast build process in
-interesting (but ultimately pointless and stupid) ways, there is a unique
-strategy for managing dependencies:
+## Caveats and Limitations
 
-* Packages required at runtime are saved under `dependencies` in package.json.
-  This includes things like Express (that are useful only on the server) and
-  Machina (which is used by both the server *and* client). These packages will
-  be available in the Hypcast Docker image.
-* Packages required only during build time are saved under `devDependencies`.
-  This includes things like Babel and Bootstrap, that either help produce the
-  final JavaScript output or are bundled into it. These packages are cleaned up
-  during the Docker image build, and so are not in the final image.
-* Packages that are not run during the build process, but that may be run at
-  other times, are saved under `optionalDependencies`. This includes things
-  like ESLint. These packages are never even installed during the Docker build
-  process.
+* Only one tuner per system is currently supported. (Multi-tuner support is
+  possible, but requires both backend and UI changes.)
+* As mentioned above, only ATSC tuning is supported. However, this should be
+  easily extendable.
+* Hypcast is not designed to support any form of time-shifting. While a stream
+  can usually be paused for a few minutes at a time, all data for the stream is
+  destroyed as soon as it's stopped. There are already far better solutions for
+  this use case (e.g. MythTV or Tvheadend).
+* The web UI requires a *very* modern browser. The latest versions of Firefox,
+  Chrome, Safari, or Edge should generally work. (I can guarantee that no
+  version of Internet Explorer will ever work.)
+
+Finally, **you should not expose the Hypcast UI directly to the Internet.**
+First, there is no access control, and all connected clients have an equal
+ability to control the stream. Second — keeping in mind the major caveat that
+_I am not a lawyer, and this is not legal advice_ — this would pretty much be a
+guaranteed [violation of copyright laws][1]. Hypcast is designed for your
+private use of your private tuner.
+
+[1]: https://en.wikipedia.org/wiki/American_Broadcasting_Cos._v._Aereo,_Inc.
 
 ## Additional Questions
 
