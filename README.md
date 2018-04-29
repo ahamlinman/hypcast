@@ -1,4 +1,4 @@
-# Hypcast
+![Screenshot of the main Hypcast UI](/doc/screenshot.png)
 
 Hypcast is an interactive web app designed to let you watch live TV from a
 [LinuxTV][1]-compatible tuner card in your browser. On the frontend, you select a
