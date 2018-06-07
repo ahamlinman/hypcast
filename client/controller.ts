@@ -1,5 +1,5 @@
 import machina from 'machina';
-import socketio from 'socket.io-client';
+import * as socketio from 'socket.io-client';
 
 /**
  * This FSM actually used to control the entire Hypcast UI. But now that it's
