@@ -1,13 +1,19 @@
-import React from 'react';
-import CSSTransition from 'react-transition-group/CSSTransition';
+import * as React from 'react';
+import * as CSSTransition from 'react-transition-group/CSSTransition';
 
 import HypcastTitle from './HypcastTitle';
 import HlsVideoPlayer from './HlsVideoPlayer';
-import ControllerBar from './ControllerBar';
+import ControllerBar, { ProfileSet, TuneDataProps } from './ControllerBar';
 
-import videoTransitions from './videoTransitions.less';
+import * as videoTransitions from './videoTransitions.less';
 
-export default class HypcastUi extends React.Component {
+interface HypcastUiProps extends TuneDataProps {
+  state: string;
+  channels: string[];
+  profiles: ProfileSet;
+}
+
+export default class HypcastUi extends React.Component<HypcastUiProps, {}> {
   getVideoElement() {
     const active = this.props.state === 'active';
 

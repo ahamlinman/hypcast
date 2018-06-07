@@ -4,11 +4,13 @@ export interface Profile {
   description: string;
 }
 
+export type ProfileSet = { [name: string]: Profile };
+
 interface ProfileSelectorProps {
   enabled: boolean;
   onChange: (value: string) => void;
   selected: string | undefined;
-  profiles: { [name: string]: Profile };
+  profiles: ProfileSet;
 }
 
 export default class ProfileSelector extends React.Component<ProfileSelectorProps, {}> {

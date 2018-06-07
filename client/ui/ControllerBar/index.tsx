@@ -1,7 +1,9 @@
 import * as React from 'react';
 
 import ChannelSelector from './ChannelSelector';
-import ProfileSelector, { Profile } from './ProfileSelector';
+import ProfileSelector, { Profile, ProfileSet } from './ProfileSelector';
+
+export { ProfileSet };
 
 function findKey(obj, value) {
   const target = JSON.stringify(value);
@@ -23,16 +25,18 @@ interface TuneData {
   profile: Profile;
 }
 
-interface ControllerBarProps {
-  enabled: boolean;
-
+export interface TuneDataProps {
+  tuneData: TuneData;
   onTuneDataChange: (evt: TuneDataChange) => void;
   onTune: () => void;
   onStop: () => void;
+}
+
+interface ControllerBarProps extends TuneDataProps {
+  enabled: boolean;
 
   channels: string[];
-  profiles: { [name: string]: Profile };
-  tuneData: TuneData;
+  profiles: ProfileSet;
 }
 
 export default class ControllerBar extends React.Component<ControllerBarProps, {}> {
