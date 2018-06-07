@@ -30,7 +30,7 @@ module.exports = function webpackConfig(_, argv) {
     module: {
       rules: [
         {
-          test: /\.[tj]sx?$/,
+          test: /\.tsx?$/,
           exclude: /node_modules/,
           use: [
             { loader: 'awesome-typescript-loader' },
@@ -80,7 +80,7 @@ module.exports = function webpackConfig(_, argv) {
       ],
     },
 
-    resolve: { extensions: ['.js', '.json', '.jsx', '.ts', '.tsx'] },
+    resolve: { extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'] },
 
     plugins: [
       new HtmlWebpackPlugin({ template: './client/index.html' }),
