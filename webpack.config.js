@@ -17,7 +17,7 @@ function getStyleLoaders(mode, extOptions = {}) {
   ];
 }
 
-module.exports = function(_, argv) {
+module.exports = function webpackConfig(_, argv) {
   const mode = (argv.mode || 'development');
 
   return {
@@ -31,15 +31,10 @@ module.exports = function(_, argv) {
     module: {
       rules: [
         {
-          test: /\.jsx?$/,
+          test: /\.[tj]sx?$/,
           exclude: /node_modules/,
           use: [
-            {
-              loader: 'babel-loader',
-              options: {
-                plugins: ['transform-react-jsx'],
-              },
-            },
+            { loader: 'awesome-typescript-loader' },
           ],
         },
 
@@ -86,11 +81,11 @@ module.exports = function(_, argv) {
       ],
     },
 
-    resolve: { extensions: ['.js', '.json', '.jsx'] },
+    resolve: { extensions: ['.js', '.json', '.jsx', '.ts', '.tsx'] },
 
     plugins: [
       new HtmlWebpackPlugin({ template: './client/index.html' }),
       new MiniCssExtractPlugin({ filename: '[name].dist.css' }),
     ],
   };
-}
+};
