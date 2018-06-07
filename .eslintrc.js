@@ -102,5 +102,14 @@ module.exports = {
         "react/jsx-uses-react": [ "error" ],
         "react/jsx-uses-vars": [ "error" ],
         "react/react-in-jsx-scope": [ "error" ],
-    }
+    },
+    "overrides": [
+        {
+            files: [ "**/*.ts", "**/*.tsx" ],
+            parser: "typescript-eslint-parser",
+            rules: {
+                "no-undef": "off",
+            },
+        },
+    ],
 };
