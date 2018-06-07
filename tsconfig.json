@@ -2,10 +2,14 @@
   "compilerOptions": {
     "allowJs": true,
     "jsx": "react",
-    "module": "es2015",
+    "lib": [
+      "DOM",
+      "ES2017"
+    ],
+    "module": "ES2015",
     "moduleResolution": "node",
     "sourceMap": true,
     "strictNullChecks": true,
-    "target": "es2015"
+    "target": "ES2017"
   }
 }

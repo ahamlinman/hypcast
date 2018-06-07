@@ -3,7 +3,7 @@ import * as React from 'react';
 interface ChannelSelectorProps {
   enabled: boolean;
   onChange: (value: string) => void;
-  selected: string;
+  selected: string | undefined;
   channels: string[];
 }
 

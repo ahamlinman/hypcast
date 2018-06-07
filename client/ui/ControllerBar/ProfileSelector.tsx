@@ -1,13 +1,13 @@
 import * as React from 'react';
 
-interface Profile {
+export interface Profile {
   description: string;
 }
 
 interface ProfileSelectorProps {
   enabled: boolean;
   onChange: (value: string) => void;
-  selected: string;
+  selected: string | undefined;
   profiles: { [name: string]: Profile };
 }
 
