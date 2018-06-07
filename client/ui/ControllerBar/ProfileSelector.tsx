@@ -1,6 +1,17 @@
-import React from 'react';
+import * as React from 'react';
 
-export default class ProfileSelector extends React.Component {
+interface Profile {
+  description: string;
+}
+
+interface ProfileSelectorProps {
+  enabled: boolean;
+  onChange: (value: string) => void;
+  selected: string;
+  profiles: { [name: string]: Profile };
+}
+
+export default class ProfileSelector extends React.Component<ProfileSelectorProps, {}> {
   constructor(props) {
     super(props);
     this.handleChange = this.handleChange.bind(this);
