@@ -15,12 +15,12 @@ function findKey(obj, value) {
   }
 }
 
-interface TuneDataChange {
+export interface TuneDataChange {
   channel?: string;
   profile?: Profile;
 }
 
-interface TuneData {
+export interface TuneData {
   channel: string;
   profile: Profile;
 }

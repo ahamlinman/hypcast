@@ -1,5 +1,4 @@
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -21,7 +20,7 @@ module.exports = function webpackConfig(_, argv) {
   const mode = (argv.mode || 'development');
 
   return {
-    entry: { hypcast: './client/hypcast.jsx' },
+    entry: { hypcast: './client/hypcast.tsx' },
 
     output: {
       filename: '[name].dist.js',

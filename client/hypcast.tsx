@@ -2,11 +2,11 @@
 
 import './hypcast.less';
 
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 
 import HypcastController from './controller';
-import HypcastUi from './ui';
+import HypcastUi, { ProfileSet, TuneData, TuneDataChange } from './ui';
 
 /**
  * This is the top level of the Hypcast client, which glues together its two
@@ -34,11 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   });
 
-  let channels = [];
-  let profiles = {};
-  let tuneData = {
+  let channels: string[] = [];
+  let profiles: ProfileSet = {};
+  let tuneData: TuneData = {
     channel: '',
-    profile: {},
+    profile: { description: '' },
   };
 
   render();
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })();
 
-  function handleTuneDataChange(update) {
+  function handleTuneDataChange(update: TuneDataChange) {
     tuneData = Object.assign({}, tuneData, update);
     render();
   }

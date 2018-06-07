@@ -3,9 +3,11 @@ import * as CSSTransition from 'react-transition-group/CSSTransition';
 
 import HypcastTitle from './HypcastTitle';
 import HlsVideoPlayer from './HlsVideoPlayer';
-import ControllerBar, { ProfileSet, TuneDataProps } from './ControllerBar';
+import ControllerBar, { ProfileSet, TuneData, TuneDataChange, TuneDataProps } from './ControllerBar';
 
 import * as videoTransitions from './videoTransitions.less';
+
+export { ProfileSet, TuneData, TuneDataChange };
 
 interface HypcastUiProps extends TuneDataProps {
   state: string;
