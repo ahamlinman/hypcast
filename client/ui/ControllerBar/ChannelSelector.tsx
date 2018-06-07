@@ -1,6 +1,13 @@
-import React from 'react';
+import * as React from 'react';
 
-export default class ChannelSelector extends React.Component {
+interface ChannelSelectorProps {
+  enabled: boolean;
+  onChange: (value: string) => void;
+  selected: string;
+  channels: string[];
+}
+
+export default class ChannelSelector extends React.Component<ChannelSelectorProps, {}> {
   constructor(props) {
     super(props);
     this.handleChange = this.handleChange.bind(this);
