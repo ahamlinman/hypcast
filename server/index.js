@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
 
-import express from 'express';
-import socketio from 'socket.io';
-import path from 'path';
-import fs from 'fs';
+import * as express from 'express';
+import * as socketio from 'socket.io';
+import * as path from 'path';
+import * as fs from 'fs';
 import { promisify } from 'util';
 
 import AzapTuner from './AzapTuner';

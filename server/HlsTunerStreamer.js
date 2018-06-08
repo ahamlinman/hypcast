@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
 
-import Machina from 'machina';
-import FfmpegCommand from 'fluent-ffmpeg';
-import Tmp from 'tmp';
-import fs from 'fs';
-import path from 'path';
+import * as Machina from 'machina';
+import * as FfmpegCommand from 'fluent-ffmpeg';
+import * as Tmp from 'tmp';
+import * as fs from 'fs';
+import * as path from 'path';
 import { promisify } from 'util';
 
 // Helper function to create a temporary directory using promises. This is

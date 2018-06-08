@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import fs from 'fs';
-import byline from 'byline';
+import * as fs from 'fs';
+import * as byline from 'byline';
 
 import AzapError from './AzapError';
 

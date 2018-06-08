@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": [
+      "DOM",
+      "ES2018"
+    ],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "../dist/server/",
+    "strictNullChecks": true,
+    "target": "ES2018"
+  }
+}
