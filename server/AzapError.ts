@@ -1,6 +1,5 @@
 export default class AzapError extends Error {
-  constructor(message, output) {
+  constructor(message, public readonly output) {
     super(message);
-    this.output = output;
   }
 }
