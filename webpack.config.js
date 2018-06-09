@@ -33,7 +33,10 @@ module.exports = function webpackConfig(_, argv) {
           test: /\.tsx?$/,
           exclude: /node_modules/,
           use: [
-            { loader: 'awesome-typescript-loader' },
+            {
+              loader: 'awesome-typescript-loader',
+              options: { configFileName: './client/tsconfig.json' },
+            },
           ],
         },
 
