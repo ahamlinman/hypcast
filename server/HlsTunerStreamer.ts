@@ -11,7 +11,7 @@ import { promisify } from 'util';
 // required because the function has a non-standard callback with multiple
 // "success" arguments, which we need both of. As a result, we construct a
 // custom object to resolve the promise.
-function createTmpDir() {
+function createTmpDir(): Promise<{ dirPath: string, clean: () => void }> {
   return new Promise((resolve, reject) => {
     Tmp.dir({ unsafeCleanup: true }, (err, dirPath, clean) => {
       if (err) {
@@ -277,16 +277,20 @@ const TunerMachine = Machina.Fsm.extend({
   },
 });
 
+interface MachinaFsm {
+  handle: (action: string, ...args: any[]) => void;
+}
+
 export default class HlsTunerStreamer extends TunerMachine {
-  tune(data) {
+  tune(this: MachinaFsm, data) {
     this.handle('tune', data);
   }
 
-  stop() {
+  stop(this: MachinaFsm) {
     this.handle('stop');
   }
 
-  get tuneData() {
+  get tuneData(this: { _tuneData: any }) {
     return this._tuneData;
   }
 }
