@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "alwaysStrict": true,
     "jsx": "react",
     "lib": [
       "DOM",
@@ -9,14 +8,10 @@
     "module": "ES2015",
     "moduleResolution": "node",
     "noEmit": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "sourceMap": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
+    "strict": true,
     "target": "ES2017"
   }
 }
