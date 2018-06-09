@@ -33,19 +33,19 @@ app.use('/stream', (req, res, next) => {
   }
 });
 
-app.get('/profiles', async (req, res) => {
+app.get('/profiles', async (_, res) => {
   const profilePath = path.resolve('config', 'profiles.json');
   const readFile = promisify(fs.readFile);
 
   try {
-    const contents = await readFile(profilePath);
+    const contents = await readFile(profilePath, 'utf-8');
     res.json(JSON.parse(contents));
   } catch (err) {
     res.status(500).send(err);
   }
 });
 
-app.get('/channels', async (req, res) => {
+app.get('/channels', async (_, res) => {
   try {
     const channels = await tuner.loadChannels();
     res.json(channels);
@@ -69,20 +69,20 @@ socketio(server)
     socket.on('tune', (options) => streamer.tune(options));
     socket.on('stop', () => streamer.stop());
 
-    const transSub = streamer.on('transition', ({ toState }) => {
+    const transitionHandler = ({ toState }) => {
       socket.emit('transition', {
         toState,
         tuneData: streamer.tuneData,
       });
-    });
+    };
+    streamer.on('transition', transitionHandler);
 
-    const errSub = streamer.on('error', (err) => {
-      socket.emit('hypcastError', err);
-    });
+    const errorHandler = (err) => { socket.emit('hypcastError', err); };
+    streamer.on('error', errorHandler);
 
     socket.on('disconnect', () => {
       console.log('client disconnected');
-      transSub.off();
-      errSub.off();
+      streamer.off('transition', transitionHandler);
+      streamer.off('error', errorHandler);
     });
   });

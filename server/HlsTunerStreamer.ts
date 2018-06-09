@@ -5,6 +5,7 @@ import * as FfmpegCommand from 'fluent-ffmpeg';
 import * as Tmp from 'tmp';
 import * as fs from 'fs';
 import * as path from 'path';
+import { EventEmitter } from 'events';
 import { promisify } from 'util';
 
 // Helper function to create a temporary directory using promises. This is
@@ -59,7 +60,15 @@ const ErrorHandlers = {
   },
 };
 
-const TunerMachine = Machina.Fsm.extend({
+interface TunerMachine extends EventEmitter {
+  state: string;
+  streamPath: string;
+
+  new(tuner: any): TunerMachine;
+  handle: (action: string, ...args: any[]) => void;
+}
+
+const TunerMachine: TunerMachine = Machina.Fsm.extend({
   initialize(tuner) {
     this._tuner = tuner;
 
@@ -277,16 +286,12 @@ const TunerMachine = Machina.Fsm.extend({
   },
 });
 
-interface MachinaFsm {
-  handle: (action: string, ...args: any[]) => void;
-}
-
 export default class HlsTunerStreamer extends TunerMachine {
-  tune(this: MachinaFsm, data) {
+  tune(data) {
     this.handle('tune', data);
   }
 
-  stop(this: MachinaFsm) {
+  stop() {
     this.handle('stop');
   }
 
