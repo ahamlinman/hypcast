@@ -5,7 +5,7 @@ import ProfileSelector, { Profile, ProfileSet } from './ProfileSelector';
 
 export { ProfileSet };
 
-function findKey(obj, value) {
+function findKey(obj: object, value: object) {
   const target = JSON.stringify(value);
 
   for (const [k, v] of Object.entries(obj)) {
@@ -40,7 +40,7 @@ interface ControllerBarProps extends TuneDataProps {
 }
 
 export default class ControllerBar extends React.Component<ControllerBarProps, {}> {
-  constructor(props) {
+  constructor(props: ControllerBarProps) {
     super(props);
 
     this.handleChannelChanged = this.handleChannelChanged.bind(this);
@@ -49,20 +49,20 @@ export default class ControllerBar extends React.Component<ControllerBarProps, {
     this.handleStop = this.handleStop.bind(this);
   }
 
-  handleChannelChanged(channel) {
+  handleChannelChanged(channel: string) {
     this.props.onTuneDataChange({ channel });
   }
 
-  handleProfileChanged(profileName) {
+  handleProfileChanged(profileName: string) {
     this.props.onTuneDataChange({ profile: this.props.profiles[profileName] });
   }
 
-  handleSubmit(event) {
+  handleSubmit(event: React.SyntheticEvent<{}>) {
     event.preventDefault();
     this.props.onTune();
   }
 
-  handleStop(event) {
+  handleStop(event: React.SyntheticEvent<{}>) {
     event.preventDefault();
     this.props.onStop();
   }

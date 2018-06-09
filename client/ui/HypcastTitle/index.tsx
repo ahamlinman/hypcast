@@ -7,7 +7,7 @@ interface HypcastTitleProps {
 
 export default class HypcastTitle extends React.Component<HypcastTitleProps, {}> {
   getClassNames() {
-    return styles[this.props.state] || '';
+    return (styles as { [state: string]: string })[this.props.state] || '';
   }
 
   render() {

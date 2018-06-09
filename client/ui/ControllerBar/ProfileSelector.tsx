@@ -14,12 +14,12 @@ interface ProfileSelectorProps {
 }
 
 export default class ProfileSelector extends React.Component<ProfileSelectorProps, {}> {
-  constructor(props) {
+  constructor(props: ProfileSelectorProps) {
     super(props);
     this.handleChange = this.handleChange.bind(this);
   }
 
-  handleChange(event) {
+  handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
     this.props.onChange(event.target.value);
   }
 

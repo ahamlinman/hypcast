@@ -1,6 +1,8 @@
 import machina from 'machina';
 import * as socketio from 'socket.io-client';
 
+import { TuneData } from './ui';
+
 /**
  * This FSM actually used to control the entire Hypcast UI. But now that it's
  * been stripped down to this tiny core, its function may not be immediately
@@ -27,6 +29,11 @@ import * as socketio from 'socket.io-client';
  * sync us on initialization.
  */
 
+interface Transition {
+  toState: string;
+  tuneData: TuneData;
+}
+
 export default machina.Fsm.extend({
   initialState: 'connecting',
 
@@ -38,7 +45,7 @@ export default machina.Fsm.extend({
         }
 
         this.socket = socketio()
-          .on('transition', ({ toState, tuneData }) => {
+          .on('transition', ({ toState, tuneData }: Transition) => {
             if (tuneData) {
               this.emit('updateTuning', tuneData);
             }
@@ -60,7 +67,7 @@ export default machina.Fsm.extend({
     active: {},
   },
 
-  tune(tuneData) {
+  tune(tuneData: TuneData) {
     this.socket.emit('tune', tuneData);
   },
 

@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   controller.on('transition', render);
 
-  controller.on('updateTuning', (update) => {
+  controller.on('updateTuning', (update: TuneData) => {
     tuneData = update;
     render();
   });
