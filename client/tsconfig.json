@@ -9,6 +9,7 @@
     "moduleResolution": "node",
     "noEmit": true,
     "noImplicitAny": true,
+    "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "sourceMap": true,

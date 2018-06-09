@@ -39,7 +39,8 @@ export default machina.Fsm.extend({
 
   states: {
     connecting: {
-      _onEnter() {
+      // TODO: Better typings for machina
+      _onEnter(this: any) {
         if (this.socket) {
           return;
         }
