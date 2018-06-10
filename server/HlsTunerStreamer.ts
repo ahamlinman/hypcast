@@ -33,34 +33,7 @@ async function createNewFile(filePath: string) {
   await promisify(fs.close)(fd);
 }
 
-// Common error handlers for while the tuner / streamer are initializing or
-// active. In all cases, everything is stopped and errors are dumped where
-// possible.
-const ErrorHandlers = {
-  tunerError(err: Error) {
-    this.emit('error', err);
-    this.handle('stop');
-  },
-
-  tunerStop() {
-    this.emit('error', new Error('The tuner unexpectedly stopped'));
-    this.handle('stop');
-  },
-
-  ffmpegError(err: Error, stdout: any, stderr: any) {
-    console.error('Dumping FFmpeg output:', stdout, stderr);
-    this.emit('error', err);
-    this.handle('stop');
-  },
-
-  ffmpegEnd(stdout: any, stderr: any) {
-    console.error('Dumping FFmpeg output:', stdout, stderr);
-    this.emit('error', new Error('FFmpeg unexpectedly stopped'));
-    this.handle('stop');
-  },
-};
-
-interface Tuner {
+interface Tuner extends EventEmitter {
   device: string;
 
   tune(channel: string): void;
@@ -73,17 +46,51 @@ interface TuneData {
   profile: any;
 }
 
-
 interface TunerMachine extends EventEmitter {
+  _ffmpeg: typeof FfmpegCommand | null;
+  _ffmpegCleanup: () => void | null;
+  _tuneData: TuneData | null;
+  _tuner: Tuner;
+
   state: string;
   streamPath: string;
+  playlistPath: string | null;
 
   new(tuner: any): TunerMachine;
   handle: (action: string, ...args: any[]) => void;
+  transition: (state: string) => void;
+  deferUntilTransition: (state: string) => void;
 }
 
+// Common error handlers for while the tuner / streamer are initializing or
+// active. In all cases, everything is stopped and errors are dumped where
+// possible.
+const ErrorHandlers = {
+  tunerError(this: TunerMachine, err: Error) {
+    this.emit('error', err);
+    this.handle('stop');
+  },
+
+  tunerStop(this: TunerMachine) {
+    this.emit('error', new Error('The tuner unexpectedly stopped'));
+    this.handle('stop');
+  },
+
+  ffmpegError(this: TunerMachine, err: Error, stdout: any, stderr: any) {
+    console.error('Dumping FFmpeg output:', stdout, stderr);
+    this.emit('error', err);
+    this.handle('stop');
+  },
+
+  ffmpegEnd(this: TunerMachine, stdout: any, stderr: any) {
+    console.error('Dumping FFmpeg output:', stdout, stderr);
+    this.emit('error', new Error('FFmpeg unexpectedly stopped'));
+    this.handle('stop');
+  },
+};
+
 const TunerMachine: TunerMachine = Machina.Fsm.extend({
-  initialize(tuner: Tuner) {
+  initialize(this: TunerMachine, tuner: Tuner) {
     this._tuner = tuner;
 
     this._tuner.on('lock', () => this.handle('tunerLock'));
@@ -94,12 +101,12 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
   initialState: 'inactive',
   states: {
     inactive: {
-      _onEnter() {
+      _onEnter(this: TunerMachine) {
         delete this._tuneData;
       },
 
       // The user wants to stream a given channel
-      tune(data: TuneData) {
+      tune(this: TunerMachine, data: TuneData) {
         this._tuneData = data;
         this.transition('tuning');
       },
@@ -109,24 +116,25 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
       ...ErrorHandlers,
 
       // We begin by starting up the tuner...
-      _onEnter() {
+      _onEnter(this: TunerMachine) {
+        if (!this._tuneData) { throw new Error('no tuneData while tuning'); }
         this._tuner.tune(this._tuneData.channel);
       },
 
       // ...and we'll start FFmpeg when we have a signal lock
-      tunerLock() {
+      tunerLock(this: TunerMachine) {
         this.transition('buffering');
       },
 
       // If the user quickly tries to change the channel, just go back to the
       // inactive state and start tuning again from there. A clean start.
-      tune() {
+      tune(this: TunerMachine) {
         this.deferUntilTransition('inactive');
         this.handle('stop');
       },
 
       // If we stop from this state, make sure the tuner gets stopped
-      stop() {
+      stop(this: TunerMachine) {
         this.transition('detuning');
       },
     },
@@ -134,7 +142,7 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
     buffering: {
       ...ErrorHandlers,
 
-      async _onEnter() {
+      async _onEnter(this: TunerMachine) {
         try {
           // Start by making a temp directory for the encoded files. This will
           // be removed when the streamer is stopped.
@@ -153,6 +161,7 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
         } catch (err) {
           this.emit('error', err);
           this.transition('debuffering');
+          return;
         }
 
         // Now that our dummy playlist file is ready to go, we watch it for
@@ -162,11 +171,12 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
             watcher.close();
             this.handle('buffered');
           })
-          .on('error', (err) => {
+          .on('error', (err: Error) => {
             this.emit('error', err);
             this.transition('debuffering');
           });
 
+        if (!this._tuneData) { throw new Error('no tuneData while buffering'); }
         const { profile } = this._tuneData;
 
         // Let's go through everything that FFmpeg is doing...
@@ -230,16 +240,16 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
 
       // At this point, the first .ts file is ready and the client can download
       // the playlist
-      buffered() {
+      buffered(this: TunerMachine) {
         this.transition('active');
       },
 
-      tune() {
+      tune(this: TunerMachine) {
         this.deferUntilTransition('inactive');
         this.handle('stop');
       },
 
-      stop() {
+      stop(this: TunerMachine) {
         this.transition('debuffering');
       },
     },
@@ -248,18 +258,18 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
       ...ErrorHandlers,
 
       // If the user changes the channel, just start everything over
-      tune() {
+      tune(this: TunerMachine) {
         this.deferUntilTransition('inactive');
         this.handle('stop');
       },
 
-      stop() {
+      stop(this: TunerMachine) {
         this.transition('debuffering');
       },
     },
 
     debuffering: {
-      _onEnter() {
+      _onEnter(this: TunerMachine) {
         // Kill FFmpeg if it is running (note that it will emit an error on
         // SIGKILL that we need to absorb)
         if (this._ffmpeg) {
@@ -279,21 +289,21 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
         this.transition('detuning');
       },
 
-      tune() {
+      tune(this: TunerMachine) {
         this.deferUntilTransition('inactive');
       },
     },
 
     detuning: {
-      _onEnter() {
+      _onEnter(this: TunerMachine) {
         this._tuner.stop();
       },
 
-      tunerStop() {
+      tunerStop(this: TunerMachine) {
         this.transition('inactive');
       },
 
-      tune() {
+      tune(this: TunerMachine) {
         this.deferUntilTransition('inactive');
       },
     },
@@ -309,7 +319,7 @@ export default class HlsTunerStreamer extends TunerMachine {
     this.handle('stop');
   }
 
-  get tuneData(this: { _tuneData: any }) {
+  get tuneData() {
     return this._tuneData;
   }
 }
