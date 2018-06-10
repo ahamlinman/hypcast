@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "allowJs": true,
+    "alwaysStrict": true,
     "lib": [
       "DOM",
       "ES2018"
@@ -10,6 +10,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "outDir": "../dist/server/",
+    "strictFunctionTypes": true,
     "strictNullChecks": true,
     "target": "ES2018"
   }
