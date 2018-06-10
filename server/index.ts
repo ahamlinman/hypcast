@@ -69,7 +69,7 @@ socketio(server)
     socket.on('tune', (options) => streamer.tune(options));
     socket.on('stop', () => streamer.stop());
 
-    const transitionHandler = ({ toState }) => {
+    const transitionHandler = ({ toState }: { toState: string }) => {
       socket.emit('transition', {
         toState,
         tuneData: streamer.tuneData,
@@ -77,7 +77,7 @@ socketio(server)
     };
     streamer.on('transition', transitionHandler);
 
-    const errorHandler = (err) => { socket.emit('hypcastError', err); };
+    const errorHandler = (err: Error) => { socket.emit('hypcastError', err); };
     streamer.on('error', errorHandler);
 
     socket.on('disconnect', () => {

@@ -28,7 +28,7 @@ function createTmpDir(): Promise<{ dirPath: string, clean: () => void }> {
 // file before watching it. We require the path to be exclusive as a safety
 // measure. Hypcast shouldn't have a problem with this since a new temp dir is
 // created for every stream.
-async function createNewFile(filePath) {
+async function createNewFile(filePath: string) {
   const fd = await promisify(fs.open)(filePath, 'wx');
   await promisify(fs.close)(fd);
 }
@@ -37,7 +37,7 @@ async function createNewFile(filePath) {
 // active. In all cases, everything is stopped and errors are dumped where
 // possible.
 const ErrorHandlers = {
-  tunerError(err) {
+  tunerError(err: Error) {
     this.emit('error', err);
     this.handle('stop');
   },
@@ -47,18 +47,32 @@ const ErrorHandlers = {
     this.handle('stop');
   },
 
-  ffmpegError(err, stdout, stderr) {
+  ffmpegError(err: Error, stdout: any, stderr: any) {
     console.error('Dumping FFmpeg output:', stdout, stderr);
     this.emit('error', err);
     this.handle('stop');
   },
 
-  ffmpegEnd(stdout, stderr) {
+  ffmpegEnd(stdout: any, stderr: any) {
     console.error('Dumping FFmpeg output:', stdout, stderr);
     this.emit('error', new Error('FFmpeg unexpectedly stopped'));
     this.handle('stop');
   },
 };
+
+interface Tuner {
+  device: string;
+
+  tune(channel: string): void;
+  stop(): void;
+}
+
+// TODO: Merge with TuneData in client/ui/ControllerBar
+interface TuneData {
+  channel: string;
+  profile: any;
+}
+
 
 interface TunerMachine extends EventEmitter {
   state: string;
@@ -69,11 +83,11 @@ interface TunerMachine extends EventEmitter {
 }
 
 const TunerMachine: TunerMachine = Machina.Fsm.extend({
-  initialize(tuner) {
+  initialize(tuner: Tuner) {
     this._tuner = tuner;
 
     this._tuner.on('lock', () => this.handle('tunerLock'));
-    this._tuner.on('error', (err) => this.handle('tunerError', err));
+    this._tuner.on('error', (err: Error) => this.handle('tunerError', err));
     this._tuner.on('stop', () => this.handle('tunerStop'));
   },
 
@@ -85,7 +99,7 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
       },
 
       // The user wants to stream a given channel
-      tune(data) {
+      tune(data: TuneData) {
         this._tuneData = data;
         this.transition('tuning');
       },
@@ -208,9 +222,9 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
           // can typically pause for or rewind a few minutes. This is
           // considered okay, since Hypcast is designed for *live* streaming.
           .outputOptions(['-f hls', '-hls_list_size 20', '-hls_flags delete_segments'])
-          .on('start', (cmd) => console.log('ffmpeg started:', cmd))
-          .on('error', (err, stdout, stderr) => this.handle('ffmpegError', err, stdout, stderr))
-          .on('end', (stdout, stderr) => this.handle('ffmpegEnd', stdout, stderr))
+          .on('start', (cmd: any) => console.log('ffmpeg started:', cmd))
+          .on('error', (err: Error, stdout: any, stderr: any) => this.handle('ffmpegError', err, stdout, stderr))
+          .on('end', (stdout: any, stderr: any) => this.handle('ffmpegEnd', stdout, stderr))
           .save(this.playlistPath);
       },
 
@@ -287,7 +301,7 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
 });
 
 export default class HlsTunerStreamer extends TunerMachine {
-  tune(data) {
+  tune(data: TuneData) {
     this.handle('tune', data);
   }
 

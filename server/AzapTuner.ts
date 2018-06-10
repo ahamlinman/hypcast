@@ -34,7 +34,7 @@ export default class AzapTuner extends EventEmitter {
     this.device = device;
   }
 
-  tune(channel) {
+  tune(channel: string) {
     if (this._azap) {
       throw new Error('tuner is already tuned');
     }
@@ -59,7 +59,7 @@ export default class AzapTuner extends EventEmitter {
     }
   }
 
-  static async loadChannels(path) {
+  static async loadChannels(path: string) {
     const readFile = promisify(fs.readFile);
     const data = await readFile(path, 'ascii');
 
@@ -73,7 +73,7 @@ export default class AzapTuner extends EventEmitter {
     return AzapTuner.loadChannels(path);
   }
 
-  _spawnAzap(channel) {
+  _spawnAzap(channel: string) {
     let azapOpts = [
       'azap', '-r',
       '-a', this.adapter.toString(),
@@ -88,14 +88,14 @@ export default class AzapTuner extends EventEmitter {
     return spawn('stdbuf', ['-oL'].concat(azapOpts, channel));
   }
 
-  _azapData(line) {
+  _azapData(line: Buffer) {
     if (!this._locked && line.toString().match(/FE_HAS_LOCK/)) {
       this.emit('lock', this._channel);
       this._locked = true;
     }
   }
 
-  _azapClose(code) {
+  _azapClose(code: number) {
     delete this._azap;
     this._channel = null;
     this._locked = false;

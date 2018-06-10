@@ -15,6 +15,7 @@ function findKey(obj: object, value: object) {
   }
 }
 
+// TODO: Change to Partial<TuneData>
 export interface TuneDataChange {
   channel?: string;
   profile?: Profile;
