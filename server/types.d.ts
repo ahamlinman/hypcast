@@ -1,5 +1,3 @@
-declare module 'fluent-ffmpeg';
-
 // TODO: The documentation and type definitions for fluent-ffmpeg are
 // incorrect. Both claim that the "logger" property given to the constructor
 // must have a "warning" method. However, the relevant function of "console" is
@@ -10,3 +8,8 @@ declare module 'fluent-ffmpeg';
 // and/or my usage of the library. The real solution is to contribute back to
 // fluent-ffmpeg and DefinitelyTyped, but note that the full set of fixes may
 // be non-trivial.
+declare module 'fluent-ffmpeg';
+
+// TODO: Declare stricter types. (Ideally, contribute to DefinitelyTyped. See
+// https://github.com/DefinitelyTyped/DefinitelyTyped/issues/25075.)
+declare module 'machina';
