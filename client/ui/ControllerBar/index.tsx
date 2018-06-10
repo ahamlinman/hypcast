@@ -1,11 +1,13 @@
 import * as React from 'react';
 
 import ChannelSelector from './ChannelSelector';
-import ProfileSelector, { Profile, ProfileSet } from './ProfileSelector';
+import ProfileSelector, { ProfileSet } from './ProfileSelector';
+
+import { TuneData } from '../../../models/TuneData';
 
 export { ProfileSet };
 
-function findKey(obj: object, value: object) {
+function findKey(obj: object, value: object | null) {
   const target = JSON.stringify(value);
 
   for (const [k, v] of Object.entries(obj)) {
@@ -15,20 +17,9 @@ function findKey(obj: object, value: object) {
   }
 }
 
-// TODO: Change to Partial<TuneData>
-export interface TuneDataChange {
-  channel?: string;
-  profile?: Profile;
-}
-
-export interface TuneData {
-  channel: string;
-  profile: Profile;
-}
-
 export interface TuneDataProps {
   tuneData: TuneData;
-  onTuneDataChange: (evt: TuneDataChange) => void;
+  onTuneDataChange: (evt: Partial<TuneData>) => void;
   onTune: () => void;
   onStop: () => void;
 }

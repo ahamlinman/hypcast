@@ -1,8 +1,6 @@
 import * as React from 'react';
 
-export interface Profile {
-  description: string;
-}
+import { Profile } from '../../../models/TuneData';
 
 export type ProfileSet = { [name: string]: Profile };
 

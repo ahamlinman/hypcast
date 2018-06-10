@@ -7,7 +7,6 @@ import ControllerBar, { ProfileSet, TuneDataProps } from './ControllerBar';
 
 import * as videoTransitions from './videoTransitions.less';
 
-export { TuneData, TuneDataChange } from './ControllerBar';
 export { ProfileSet };
 
 interface HypcastUiProps extends TuneDataProps {

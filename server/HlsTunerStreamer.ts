@@ -8,6 +8,8 @@ import * as path from 'path';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
 
+import { TuneData } from '../models/TuneData';
+
 // Helper function to create a temporary directory using promises. This is
 // required because the function has a non-standard callback with multiple
 // "success" arguments, which we need both of. As a result, we construct a
@@ -38,12 +40,6 @@ interface Tuner extends EventEmitter {
 
   tune(channel: string): void;
   stop(): void;
-}
-
-// TODO: Merge with TuneData in client/ui/ControllerBar
-interface TuneData {
-  channel: string;
-  profile: any;
 }
 
 interface TunerMachine extends EventEmitter {
@@ -177,6 +173,8 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
           });
 
         if (!this._tuneData) { throw new Error('no tuneData while buffering'); }
+        if (!this._tuneData.profile) { throw new Error('tuneData has no profile'); }
+
         const { profile } = this._tuneData;
 
         // Let's go through everything that FFmpeg is doing...

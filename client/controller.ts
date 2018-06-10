@@ -1,7 +1,7 @@
 import machina from 'machina';
 import * as socketio from 'socket.io-client';
 
-import { TuneData } from './ui';
+import { TuneData } from '../models/TuneData';
 
 /**
  * This FSM actually used to control the entire Hypcast UI. But now that it's

@@ -6,7 +6,9 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
 import HypcastController from './controller';
-import HypcastUi, { ProfileSet, TuneData, TuneDataChange } from './ui';
+import HypcastUi, { ProfileSet } from './ui';
+
+import { TuneData } from '../models/TuneData';
 
 /**
  * This is the top level of the Hypcast client, which glues together its two
@@ -38,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let profiles: ProfileSet = {};
   let tuneData: TuneData = {
     channel: '',
-    profile: { description: '' },
+    profile: null,
   };
 
   render();
@@ -53,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     profiles = await response.json();
 
-    if (tuneData.profile.description === undefined) {
+    if (!tuneData.profile || tuneData.profile.description === undefined) {
       handleTuneDataChange({ profile: profiles[Object.keys(profiles)[0]] });
     } else {
       render();
@@ -77,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })();
 
-  function handleTuneDataChange(update: TuneDataChange) {
+  function handleTuneDataChange(update: Partial<TuneData>) {
     tuneData = Object.assign({}, tuneData, update);
     render();
   }
