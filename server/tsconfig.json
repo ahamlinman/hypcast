@@ -8,7 +8,7 @@
     "moduleResolution": "Node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "../dist/server/",
+    "outDir": "../dist",
     "strict": true,
     "target": "ES2018"
   }
