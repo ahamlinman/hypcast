@@ -16,7 +16,7 @@
     "docker:run": "sudo docker run --restart=always --device=/dev/dvb -d -p 9400:9400 -v /etc/hypcast:/hypcast/config:ro --tmpfs /tmp --name=hypcast docker.alexhamlin.co/ahamlinman/hypcast",
     "docker:stop": "sudo docker stop hypcast && sudo docker rm hypcast",
     "docker:restart": "yarn run docker:stop && yarn run docker:run",
-    "eslint:server": "eslint server",
+    "eslint:server": "eslint --ext .js,.ts server",
     "eslint:client": "eslint --ext .js,.jsx,.ts,.tsx client",
     "nsp": "nsp check",
     "start": "NODE_ENV=production node dist/server/index.js"
