@@ -83,9 +83,9 @@ running the Docker daemon!)
 Finally, **you should not expose the Hypcast UI directly to the Internet.**
 First, there is no access control, and all connected clients have an equal
 ability to control the stream. Second — keeping in mind the major caveat that
-_I am not a lawyer, and this is not legal advice_ — this would pretty much be a
-guaranteed [violation of copyright laws][1]. Hypcast is designed for your
-private use of your private tuner.
+_I am not a lawyer, and this is not legal advice_ — this may very well [violate
+copyright laws][1] in your country. Hypcast is designed for your private use of
+your private tuner.
 
 [1]: https://en.wikipedia.org/wiki/American_Broadcasting_Cos._v._Aereo,_Inc.
 
