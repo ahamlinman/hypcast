@@ -71,7 +71,7 @@
     "webpack-cli": "^3.0.3"
   },
   "optionalDependencies": {
-    "eslint": "^4.19.0",
+    "eslint": "^5.3.0",
     "eslint-plugin-react": "^7.0.1",
     "nsp": "^3.1.0",
     "typescript-eslint-parser": "^16.0.0"
