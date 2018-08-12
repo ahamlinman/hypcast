@@ -3,15 +3,18 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 function getStyleLoaders(mode, extOptions = {}) {
-  const options = Object.assign(
-    { importLoaders: 1 },
-    (mode === 'production') ? { minimize: true } : {},
-    extOptions,
-  );
+  if (mode === 'production') {
+    return [
+      { loader: MiniCssExtractPlugin.loader },
+      { loader: 'css-loader', options: Object.assign({ importLoaders: 2 }, extOptions) },
+      { loader: 'postcss-loader', options: { plugins: [ require('cssnano') ] } },
+      { loader: 'less-loader' },
+    ];
+  }
 
   return [
     { loader: MiniCssExtractPlugin.loader },
-    { loader: 'css-loader', options },
+    { loader: 'css-loader', options: Object.assign({ importLoaders: 1 }, extOptions) },
     { loader: 'less-loader' },
   ];
 }
