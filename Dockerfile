@@ -11,10 +11,8 @@ RUN apt-get update \
 		&& apt-get install -y --no-install-recommends libfdk-aac1 ffmpeg dvb-apps \
 		&& rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /hypcast
-WORKDIR /hypcast
-
 COPY . /hypcast
+WORKDIR /hypcast
 RUN ./build/docker-internal-build.sh
 
 # TODO: Hypcast runs in my Ubuntu installation, but not my Arch installation.
@@ -26,5 +24,5 @@ RUN ./build/docker-internal-build.sh
 # RUN useradd -r -G root,video -d /hypcast -s /sbin/nologin hypcast
 # USER hypcast
 
-ENTRYPOINT exec npm start
+ENTRYPOINT ["node", "./dist/server/index.js"]
 EXPOSE 9400
