@@ -3,7 +3,7 @@
 set -xeuo pipefail
 
 # Install all build-time dependencies using Yarn.
-yarn install --ignore-optional
+yarn install --frozen-lockfile --ignore-optional
 
 # Run the full build for server and client
 yarn run build:mini
