@@ -74,6 +74,6 @@
   "optionalDependencies": {
     "eslint": "^5.3.0",
     "eslint-plugin-react": "^7.0.1",
-    "typescript-eslint-parser": "^18.0.0"
+    "typescript-eslint-parser": "^19.0.1"
   }
 }
