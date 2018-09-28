@@ -1,3 +1,10 @@
+.dockerignore
+.git
+.gitignore
+Dockerfile
+LICENSE.txt
+README.md
+config
 dist
 doc
 node_modules

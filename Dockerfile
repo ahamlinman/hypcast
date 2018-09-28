@@ -1,5 +1,4 @@
-FROM node:10.11.0-slim
-MAINTAINER Alex Hamlin <alex@alexhamlin.co>
+FROM node:10.11.0-slim AS base
 
 RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> \
 		/etc/apt/sources.list.d/deb-multimedia.list
@@ -11,10 +10,6 @@ RUN apt-get update \
 		&& apt-get install -y --no-install-recommends libfdk-aac1 ffmpeg dvb-apps \
 		&& rm -rf /var/lib/apt/lists/*
 
-COPY . /hypcast
-WORKDIR /hypcast
-RUN ./build/docker-internal-build.sh
-
 # TODO: Hypcast runs in my Ubuntu installation, but not my Arch installation.
 # On the Arch system, the group setup and ownership of the dvb device is
 # different from what the Debian environment in the container expects. I'm
@@ -24,5 +19,19 @@ RUN ./build/docker-internal-build.sh
 # RUN useradd -r -G root,video -d /hypcast -s /sbin/nologin hypcast
 # USER hypcast
 
-ENTRYPOINT ["node", "./dist/server/index.js"]
+
+FROM base AS builder
+
+COPY . /hypcast
+RUN /hypcast/build/docker-internal-build.sh
+
+
+FROM base AS dist
+LABEL maintainer="Alex Hamlin <alex@alexhamlin.co>"
+
 EXPOSE 9400
+WORKDIR /hypcast
+ENTRYPOINT ["node", "./dist/server/index.js"]
+
+COPY --from=builder /hypcast/node_modules /hypcast/node_modules
+COPY --from=builder /hypcast/dist /hypcast/dist

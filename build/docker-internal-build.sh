@@ -2,6 +2,8 @@
 
 set -xeuo pipefail
 
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 # Install all build-time dependencies using Yarn.
 yarn install --frozen-lockfile --ignore-optional
 
