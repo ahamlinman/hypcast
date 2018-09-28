@@ -44,7 +44,7 @@ interface Tuner extends EventEmitter {
 
 interface TunerMachine extends EventEmitter {
   _ffmpeg: typeof FfmpegCommand | null;
-  _ffmpegCleanup: () => void | null;
+  _ffmpegCleanup: () => void;
   _tuneData: TuneData | null;
   _tuner: Tuner;
 
@@ -72,13 +72,13 @@ const ErrorHandlers = {
     this.handle('stop');
   },
 
-  ffmpegError(this: TunerMachine, err: Error, stdout: any, stderr: any) {
+  ffmpegError(this: TunerMachine, err: Error, stdout: unknown, stderr: unknown) {
     console.error('Dumping FFmpeg output:', stdout, stderr);
     this.emit('error', err);
     this.handle('stop');
   },
 
-  ffmpegEnd(this: TunerMachine, stdout: any, stderr: any) {
+  ffmpegEnd(this: TunerMachine, stdout: unknown, stderr: unknown) {
     console.error('Dumping FFmpeg output:', stdout, stderr);
     this.emit('error', new Error('FFmpeg unexpectedly stopped'));
     this.handle('stop');
@@ -230,9 +230,9 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
           // can typically pause for or rewind a few minutes. This is
           // considered okay, since Hypcast is designed for *live* streaming.
           .outputOptions(['-f hls', '-hls_list_size 20', '-hls_flags delete_segments'])
-          .on('start', (cmd: any) => console.log('ffmpeg started:', cmd))
-          .on('error', (err: Error, stdout: any, stderr: any) => this.handle('ffmpegError', err, stdout, stderr))
-          .on('end', (stdout: any, stderr: any) => this.handle('ffmpegEnd', stdout, stderr))
+          .on('start', (cmd: unknown) => console.log('ffmpeg started:', cmd))
+          .on('error', (err: Error, stdout: unknown, stderr: unknown) => this.handle('ffmpegError', err, stdout, stderr))
+          .on('end', (stdout: unknown, stderr: unknown) => this.handle('ffmpegEnd', stdout, stderr))
           .save(this.playlistPath);
       },
 
