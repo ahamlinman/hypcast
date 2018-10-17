@@ -30,7 +30,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.alexhamlin.co/ahamlinman/hypcast.git"
+    "url": "https://github.com/ahamlinman/hypcast.git"
   },
   "dependencies": {
     "byline": "^5.0.0",
