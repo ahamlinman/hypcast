@@ -27,7 +27,7 @@ your tablet, or control your desktop's stream from your phone!
     rather than `azap`).
 * A `channels.conf` file suitable for use with the `azap` utility. This can be
   generated with a utility like `scan` or `w_scan`. For more information, see
-  https://www.linuxtv.org/wiki/index.php/Frequency\_scan. An example file with
+  https://www.linuxtv.org/wiki/index.php/Frequency_scan. An example file with
   some over-the-air channels for Seattle, WA is in the `doc/` directory.
 * A `profiles.json` file defining the set of video qualities you want to make
   available, based on your server's real-time transcoding capability. Many
