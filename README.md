@@ -51,20 +51,22 @@ These instructions assume that you'll be running Hypcast in a Docker container.
 Helper scripts are defined in `package.json` to help facilitate this use. To
 use them, you should install the [Yarn] package manager.
 
-(Note that the `package.json` helpers invoke the `docker` CLI using `sudo`, so
-that your user is not required to be in the `docker` group. Remember, users in
-the `docker` group effectively have passwordless root access to the system
-running the Docker daemon!)
+Note that if your user does not have permission to connect to the Docker daemon
+on your system, you will need to invoke Yarn with `sudo` to run the helper
+scripts. See [Docker's documentation] for details.
 
-0. Place your `channels.conf` and `profiles.json` files under `/etc/hypcast` on
+1. Place your `channels.conf` and `profiles.json` files under `/etc/hypcast` on
    your server.
-0. Run `yarn run docker:build` to create the Hypcast image.
-0. Run `yarn run docker:run` to start a Hypcast container. The container will
+1. Run `yarn run docker:pull` to pull the Hypcast image from Docker Hub.
+   (Alternatively, run `yarn run docker:build` to create the image from scratch
+   on your own machine.)
+1. Run `yarn run docker:run` to start a Hypcast container. The container will
    have access to the tuner devices under `/dev/dvb` on your server, and will
    automatically restart if it terminates or if your system is rebooted.
-0. Go to http://localhost:9400.
+1. Go to http://localhost:9400.
 
 [Yarn]: https://yarnpkg.com/en/docs/install
+[Docker's documentation]: https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
 
 ## Caveats and Limitations
 
@@ -83,11 +85,11 @@ running the Docker daemon!)
 Finally, **you should not expose the Hypcast UI directly to the Internet.**
 First, there is no access control, and all connected clients have an equal
 ability to control the stream. Second — keeping in mind the major caveat that
-_I am not a lawyer, and this is not legal advice_ — this may very well [violate
-copyright laws][1] in your country. Hypcast is designed for your private use of
-your private tuner.
+_I am not a lawyer, and this is not legal advice_ — this could potentially
+[violate laws][Aereo] in your country. Hypcast is designed for your private use
+of your private tuner.
 
-[1]: https://en.wikipedia.org/wiki/American_Broadcasting_Cos._v._Aereo,_Inc.
+[Aereo]: https://en.wikipedia.org/wiki/American_Broadcasting_Cos._v._Aereo,_Inc.
 
 ## Additional Questions
 
