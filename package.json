@@ -67,7 +67,7 @@
     "react-dom": "^16.1.0",
     "react-transition-group": "^2.2.1",
     "socket.io-client": "^2.0.1",
-    "style-loader": "0.23.0",
+    "style-loader": "^0.23.1",
     "typescript": "^3.0.1",
     "webpack": "^4.1.1",
     "webpack-cli": "^3.0.3"
