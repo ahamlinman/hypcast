@@ -1,6 +1,6 @@
-FROM node:10-slim AS base
+FROM node:10-stretch-slim AS base
 
-RUN echo 'deb http://www.deb-multimedia.org jessie main non-free' >> \
+RUN echo 'deb http://www.deb-multimedia.org stretch main non-free' >> \
 		/etc/apt/sources.list.d/deb-multimedia.list
 
 COPY ./build/deb-multimedia-keyring_2016.8.1_all.deb /tmp
