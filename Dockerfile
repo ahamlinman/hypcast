@@ -1,5 +1,8 @@
 FROM node:10-stretch-slim AS base
 
+COPY ./build/tini /bin/tini
+ENTRYPOINT ["/bin/tini", "--"]
+
 RUN echo 'deb http://www.deb-multimedia.org stretch main non-free' >> \
 		/etc/apt/sources.list.d/deb-multimedia.list
 
@@ -31,7 +34,7 @@ LABEL maintainer="Alex Hamlin <alex@alexhamlin.co>"
 
 EXPOSE 9400
 WORKDIR /hypcast
-ENTRYPOINT ["node", "./dist/server/index.js"]
+CMD ["node", "./dist/server/index.js"]
 
 COPY --from=builder /hypcast/node_modules /hypcast/node_modules
 COPY --from=builder /hypcast/dist /hypcast/dist
