@@ -17,10 +17,22 @@ declare module 'machina' {
     [name: string]: State;
   }
 
+  export type EventListener = (...args: any[]) => void;
+
+  export interface EventListeners {
+    [event: string]: EventListener[] | undefined;
+  }
+
+  export interface EventOnResult {
+    eventName: string;
+    callback: EventListener;
+    off: () => void;
+  }
+
   export interface FsmOptions {
     initialState?: string;
     states?: States;
-    eventListeners?: any[];
+    eventListeners?: EventListeners;
     namespace?: string;
     initialize?: () => void;
   }
@@ -30,6 +42,7 @@ declare module 'machina' {
     static extend(options: FsmOptions): typeof Fsm;
 
     initialState: string;
+    eventListeners: EventListeners;
     states: States;
     initialize: () => void;
     state: string;
@@ -38,7 +51,7 @@ declare module 'machina' {
     handle(event: string, ...args: any[]): void;
     transition(state: string): void;
     deferUntilTransition(state?: string): void;
-    on(event: string, callback: any): any;
-    off(event?: string, callback?: any): void;
+    on(event: string, callback: EventListener): EventOnResult;
+    off(event?: string, callback?: EventListener): void;
   }
 }
