@@ -6,9 +6,17 @@
 declare module 'machina' {
   // export as namespace machina;
 
+  export interface FsmOptions {
+    initialState: string;
+    states: any;
+    eventListeners?: any[];
+    namespace?: string;
+    initialize?: () => void;
+  }
+
   export class Fsm {
-    new(...a: any[]): Fsm;
-    static extend(...a: any[]): typeof Fsm;
+    new(options: FsmOptions): Fsm;
+    static extend(options: FsmOptions): typeof Fsm;
 
     initialState: string;
     states: any;
