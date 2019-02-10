@@ -6,9 +6,17 @@
 declare module 'machina' {
   // export as namespace machina;
 
+  export interface State {
+    _onEnter?: () => void;
+    _onExit?: () => void;
+    '*'?: () => void;
+
+    [action: string]: ((...args: any[]) => void) | undefined;
+  }
+
   export interface FsmOptions {
     initialState: string;
-    states: any;
+    states: { [name: string]: State };
     eventListeners?: any[];
     namespace?: string;
     initialize?: () => void;
