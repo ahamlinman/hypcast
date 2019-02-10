@@ -18,8 +18,8 @@ declare module 'machina' {
   }
 
   export interface FsmOptions {
-    initialState: string;
-    states: States;
+    initialState?: string;
+    states?: States;
     eventListeners?: any[];
     namespace?: string;
     initialize?: () => void;
