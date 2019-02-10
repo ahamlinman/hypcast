@@ -15,8 +15,8 @@ const tuner = new AzapTuner({ channelsPath });
 tuner.on('error', (err) => console.log('[AzapTuner error]', err));
 
 const streamer = new HlsTunerStreamer(tuner);
-streamer.on('error', (err) => console.log('[HlsTunerStreamer error]', err));
-streamer.on('transition', ({ fromState, toState }) => {
+streamer.on('error', (err: Error) => console.log('[HlsTunerStreamer error]', err));
+streamer.on('transition', ({ fromState, toState }: { fromState: string, toState: string }) => {
   console.log(`streamer moving from ${fromState} to ${toState}`);
 });
 

@@ -42,22 +42,6 @@ interface Tuner extends EventEmitter {
   stop(): void;
 }
 
-interface TunerMachine extends EventEmitter {
-  _ffmpeg: typeof FfmpegCommand | null;
-  _ffmpegCleanup: () => void;
-  _tuneData: TuneData | null;
-  _tuner: Tuner;
-
-  state: string;
-  streamPath: string;
-  playlistPath: string | null;
-
-  new(tuner: any): TunerMachine;
-  handle: (action: string, ...args: any[]) => void;
-  transition: (state: string) => void;
-  deferUntilTransition: (state: string) => void;
-}
-
 // Common error handlers for while the tuner / streamer are initializing or
 // active. In all cases, everything is stopped and errors are dumped where
 // possible.
@@ -85,15 +69,7 @@ const ErrorHandlers = {
   },
 };
 
-const TunerMachine: TunerMachine = Machina.Fsm.extend({
-  initialize(this: TunerMachine, tuner: Tuner) {
-    this._tuner = tuner;
-
-    this._tuner.on('lock', () => this.handle('tunerLock'));
-    this._tuner.on('error', (err: Error) => this.handle('tunerError', err));
-    this._tuner.on('stop', () => this.handle('tunerStop'));
-  },
-
+const TunerMachineFsm = Machina.Fsm.extend({
   initialState: 'inactive',
   states: {
     inactive: {
@@ -307,6 +283,25 @@ const TunerMachine: TunerMachine = Machina.Fsm.extend({
     },
   },
 });
+
+class TunerMachine extends TunerMachineFsm {
+  _ffmpeg: typeof FfmpegCommand | null = null;
+  _ffmpegCleanup: (() => void) | null = null;
+  _tuneData: TuneData | null = null;
+  _tuner: Tuner;
+
+  streamPath: string | null = null;
+  playlistPath: string | null = null;
+
+  constructor(tuner: Tuner) {
+    super();
+
+    this._tuner = tuner;
+    this._tuner.on('lock', () => this.handle('tunerLock'));
+    this._tuner.on('error', (err: Error) => this.handle('tunerError', err));
+    this._tuner.on('stop', () => this.handle('tunerStop'));
+  }
+}
 
 export default class HlsTunerStreamer extends TunerMachine {
   tune(data: TuneData) {
