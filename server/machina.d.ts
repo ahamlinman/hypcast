@@ -10,13 +10,16 @@ declare module 'machina' {
     _onEnter?: () => void;
     _onExit?: () => void;
     '*'?: () => void;
+    [action: string]: string | ((...args: any[]) => void) | undefined;
+  }
 
-    [action: string]: ((...args: any[]) => void) | undefined;
+  export interface States {
+    [name: string]: State;
   }
 
   export interface FsmOptions {
     initialState: string;
-    states: { [name: string]: State };
+    states: States;
     eventListeners?: any[];
     namespace?: string;
     initialize?: () => void;
@@ -27,7 +30,7 @@ declare module 'machina' {
     static extend(options: FsmOptions): typeof Fsm;
 
     initialState: string;
-    states: any;
+    states: States;
     initialize: () => void;
     state: string;
 
