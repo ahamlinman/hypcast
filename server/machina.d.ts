@@ -108,11 +108,15 @@ declare module 'machina' {
   }
 
   export interface State {
+    _child?: StateChild;
     _onEnter?: () => void;
     _onExit?: () => void;
     '*'?: () => void;
-    [action: string]: string | ((...args: any[]) => void) | undefined;
+
+    [action: string]: StateChild | string | ((...args: any[]) => void) | undefined;
   }
+
+  export type StateChild = Fsm | (() => Fsm) | { factory(): Fsm };
 
   export interface EventListeners {
     [eventName: string]: EventListener[] | undefined;
