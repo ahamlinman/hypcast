@@ -6,6 +6,11 @@
 declare module 'machina' {
   // export as namespace machina;
 
+  export const eventListeners: EventListeners;
+  function on(eventName: string, callback: EventListener): EventOnResult;
+  function off(eventName: string, callback?: EventListener): void;
+  function emit(eventName: string, ...args: any[]): void;
+
   export class BehavioralFsm {
     new(options: FsmOptions): BehavioralFsm;
     static extend(options: FsmOptions): typeof BehavioralFsm;
