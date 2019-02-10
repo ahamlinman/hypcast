@@ -6,53 +6,6 @@
 declare module 'machina' {
   // export as namespace machina;
 
-  export interface State {
-    _onEnter?: () => void;
-    _onExit?: () => void;
-    '*'?: () => void;
-    [action: string]: string | ((...args: any[]) => void) | undefined;
-  }
-
-  export interface States {
-    [name: string]: State;
-  }
-
-  export type EventListener = (...args: any[]) => void;
-
-  export interface EventListeners {
-    [eventName: string]: EventListener[] | undefined;
-  }
-
-  export interface EventOnResult {
-    eventName: string;
-    callback: EventListener;
-    off: () => void;
-  }
-
-  export interface FsmOptions {
-    initialState?: string;
-    eventListeners?: EventListeners;
-    states?: States;
-    namespace?: string;
-    initialize?: () => void;
-  }
-
-  export interface ClientInstance {
-    targetReplayState: any;
-    state: string;
-    priorState: string;
-    priorAction: string;
-    currentAction: string;
-    currentActionArgs: any[];
-    initialize: () => void;
-    inputQueue: any[];
-    inExitHandler: boolean;
-  }
-
-  export interface Client {
-    __machina__: ClientInstance;
-  }
-
   export class BehavioralFsm {
     new(options: FsmOptions): BehavioralFsm;
     static extend(options: FsmOptions): typeof BehavioralFsm;
@@ -73,6 +26,22 @@ declare module 'machina' {
     compositeState(client: Client): string;
     on(eventName: string, callback: EventListener): EventOnResult;
     off(eventName?: string, callback?: EventListener): void;
+  }
+
+  export interface Client {
+    __machina__: ClientInstance;
+  }
+
+  export interface ClientInstance {
+    targetReplayState: any;
+    state: string;
+    priorState: string;
+    priorAction: string;
+    currentAction: string;
+    currentActionArgs: any[];
+    inputQueue: any[];
+    inExitHandler: boolean;
+    initialize: () => void;
   }
 
   export class Fsm implements ClientInstance {
@@ -104,5 +73,36 @@ declare module 'machina' {
     compositeState(): string;
     on(eventName: string, callback: EventListener): EventOnResult;
     off(eventName?: string, callback?: EventListener): void;
+  }
+
+  export interface FsmOptions {
+    initialState?: string;
+    eventListeners?: EventListeners;
+    states?: States;
+    namespace?: string;
+    initialize?: () => void;
+  }
+
+  export interface States {
+    [name: string]: State;
+  }
+
+  export interface State {
+    _onEnter?: () => void;
+    _onExit?: () => void;
+    '*'?: () => void;
+    [action: string]: string | ((...args: any[]) => void) | undefined;
+  }
+
+  export interface EventListeners {
+    [eventName: string]: EventListener[] | undefined;
+  }
+
+  export type EventListener = (...args: any[]) => void;
+
+  export interface EventOnResult {
+    eventName: string;
+    callback: EventListener;
+    off: () => void;
   }
 }
