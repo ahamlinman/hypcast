@@ -20,7 +20,7 @@ declare module 'machina' {
   export type EventListener = (...args: any[]) => void;
 
   export interface EventListeners {
-    [event: string]: EventListener[] | undefined;
+    [eventName: string]: EventListener[] | undefined;
   }
 
   export interface EventOnResult {
@@ -44,14 +44,25 @@ declare module 'machina' {
     initialState: string;
     eventListeners: EventListeners;
     states: States;
-    initialize: () => void;
+    inputQueue: any[];
+    namespace?: string;
+    targetReplayState: any;
     state: string;
+    priorState: string;
+    priorAction: string;
+    currentAction: string;
+    currentActionArgs: any[];
+    initialize: () => void;
 
-    emit(event: string, ...args: any[]): void;
-    handle(event: string, ...args: any[]): void;
-    transition(state: string): void;
-    deferUntilTransition(state?: string): void;
-    on(event: string, callback: EventListener): EventOnResult;
-    off(event?: string, callback?: EventListener): void;
+    emit(eventName: string, ...args: any[]): void;
+    handle(eventName: string, ...args: any[]): void;
+    transition(stateName: string): void;
+    processQueue(type: string): void;
+    clearQueue(type?: string, stateName?: string): void;
+    deferUntilTransition(stateName?: string): void;
+    deferAndTransition(stateName: string): void;
+    compositeState(): string;
+    on(eventName: string, callback: EventListener): EventOnResult;
+    off(eventName?: string, callback?: EventListener): void;
   }
 }
