@@ -43,7 +43,7 @@ declare module 'machina' {
   }
 
   export interface Client {
-    __machina__: ClientMeta;
+    __machina__?: ClientMeta;
   }
 
   export interface ClientMeta {
