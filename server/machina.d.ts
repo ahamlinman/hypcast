@@ -7,9 +7,18 @@ declare module 'machina' {
   // export as namespace machina;
 
   export const eventListeners: EventListeners;
-  function on(eventName: string, callback: EventListener): EventOnResult;
+  function on(eventName: string, callback: EventListener): EventSubscription;
   function off(eventName: string, callback?: EventListener): void;
   function emit(eventName: string, ...args: any[]): void;
+
+  export namespace utils {
+    function createUUID(): string;
+    function getDefaultClientMeta(): ClientMeta;
+    function getDefaultOptions(): DefaultOptions;
+    function getLeaklessArgs(): any;
+    function listenToChild(): EventSubscription;
+    function makeFsmNamespace(): string;
+  }
 
   export class BehavioralFsm {
     new(options: FsmOptions): BehavioralFsm;
@@ -29,15 +38,15 @@ declare module 'machina' {
     deferUntilTransition(client: Client, stateName?: string): void;
     deferAndTransition(client: Client, stateName: string): void;
     compositeState(client: Client): string;
-    on(eventName: string, callback: EventListener): EventOnResult;
+    on(eventName: string, callback: EventListener): EventSubscription;
     off(eventName?: string, callback?: EventListener): void;
   }
 
   export interface Client {
-    __machina__: ClientInstance;
+    __machina__: ClientMeta;
   }
 
-  export interface ClientInstance {
+  export interface ClientMeta {
     targetReplayState: any;
     state: string;
     priorState: string;
@@ -46,10 +55,10 @@ declare module 'machina' {
     currentActionArgs: any[];
     inputQueue: any[];
     inExitHandler: boolean;
-    initialize: () => void;
+    initialize?: () => void;
   }
 
-  export class Fsm implements ClientInstance {
+  export class Fsm implements ClientMeta {
     new(options: FsmOptions): Fsm;
     static extend(options: FsmOptions): typeof Fsm;
 
@@ -76,7 +85,7 @@ declare module 'machina' {
     deferUntilTransition(stateName?: string): void;
     deferAndTransition(stateName: string): void;
     compositeState(): string;
-    on(eventName: string, callback: EventListener): EventOnResult;
+    on(eventName: string, callback: EventListener): EventSubscription;
     off(eventName?: string, callback?: EventListener): void;
   }
 
@@ -86,6 +95,12 @@ declare module 'machina' {
     states?: States;
     namespace?: string;
     initialize?: () => void;
+  }
+
+  export interface DefaultOptions extends FsmOptions {
+    useSafeEmit: boolean;
+    hierarchy: any;
+    pendingDelegations: any;
   }
 
   export interface States {
@@ -105,7 +120,7 @@ declare module 'machina' {
 
   export type EventListener = (...args: any[]) => void;
 
-  export interface EventOnResult {
+  export interface EventSubscription {
     eventName: string;
     callback: EventListener;
     off: () => void;
