@@ -50,7 +50,7 @@
     "@types/react-transition-group": "^2.0.11",
     "@types/socket.io": "^2.1.2",
     "@types/socket.io-client": "^1.4.32",
-    "@types/tmp": "^0.0.33",
+    "@types/tmp": "^0.0.34",
     "awesome-typescript-loader": "^5.0.0",
     "bootstrap": "^3.3.7",
     "css-loader": "^2.1.0",
