@@ -1,40 +1,51 @@
+# NOTE: If using Docker v18.09+, it is highly recommended that you set
+# DOCKER_BUILDKIT=1 in your environment. BuildKit can take advantage of the
+# many stages in this file to parallelize the build, cutting the time roughly
+# in half.
+
 FROM node:10-stretch-slim AS base
-
-COPY ./build/tini /bin/tini
-ENTRYPOINT ["/bin/tini", "--"]
-
-RUN echo 'deb http://www.deb-multimedia.org stretch main non-free' >> \
-		/etc/apt/sources.list.d/deb-multimedia.list
-
-COPY ./build/deb-multimedia-keyring_2016.8.1_all.deb /tmp
-RUN dpkg -i /tmp/deb-multimedia-keyring_2016.8.1_all.deb
-
-RUN apt-get update \
-		&& apt-get install -y --no-install-recommends libfdk-aac1 ffmpeg dvb-apps \
-		&& rm -rf /var/lib/apt/lists/*
-
-# TODO: Hypcast runs in my Ubuntu installation, but not my Arch installation.
-# On the Arch system, the group setup and ownership of the dvb device is
-# different from what the Debian environment in the container expects. I'm
-# switching back to root in the short term, but want to find another long-term
-# way to fix this (dynamically creating the user when the container is run?).
-
-# RUN useradd -r -G root,video -d /hypcast -s /sbin/nologin hypcast
-# USER hypcast
+WORKDIR /hypcast
 
 
-FROM base AS builder
+FROM base AS build-base
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --ignore-optional
+COPY models/ models/
 
-COPY . /hypcast
-RUN /hypcast/build/docker-internal-build.sh
+
+FROM build-base AS build-client
+COPY webpack.config.js ./
+COPY client/ client/
+RUN yarn run build:client:mini
+
+
+FROM build-base AS build-server
+COPY server/ server/
+RUN yarn run build:server
+
+
+FROM build-base AS dist-modules
+RUN yarn install --production
 
 
 FROM base AS dist
 LABEL maintainer="Alex Hamlin <alex@alexhamlin.co>"
 
-EXPOSE 9400
-WORKDIR /hypcast
+COPY build/tini /bin/tini
+ENTRYPOINT ["/bin/tini", "--"]
 CMD ["node", "./dist/server/index.js"]
+EXPOSE 9400
 
-COPY --from=builder /hypcast/node_modules /hypcast/node_modules
-COPY --from=builder /hypcast/dist /hypcast/dist
+COPY ./build/deb-multimedia-keyring_2016.8.1_all.deb /tmp
+RUN echo 'deb http://www.deb-multimedia.org stretch main non-free' >> \
+    /etc/apt/sources.list.d/deb-multimedia.list \
+  && dpkg -i /tmp/deb-multimedia-keyring_2016.8.1_all.deb
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libfdk-aac1 ffmpeg dvb-apps \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=dist-modules /hypcast/node_modules /hypcast/node_modules
+COPY --from=build-server /hypcast/dist/models /hypcast/dist/models
+COPY --from=build-server /hypcast/dist/server /hypcast/dist/server
+COPY --from=build-client /hypcast/dist/client /hypcast/dist/client
