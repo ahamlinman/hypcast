@@ -39,7 +39,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "machina": "^4.0.2",
     "socket.io": "^2.0.1",
-    "tmp": "^0.0.33"
+    "tmp": "^0.1.0"
   },
   "devDependencies": {
     "@types/byline": "^4.2.31",
@@ -50,7 +50,7 @@
     "@types/react-transition-group": "^2.0.11",
     "@types/socket.io": "^2.1.2",
     "@types/socket.io-client": "^1.4.32",
-    "@types/tmp": "^0.0.34",
+    "@types/tmp": "^0.1.0",
     "awesome-typescript-loader": "^5.0.0",
     "bootstrap": "^3.3.7",
     "css-loader": "^2.1.0",
