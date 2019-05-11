@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as CSSTransition from 'react-transition-group/CSSTransition';
+import { CSSTransition } from 'react-transition-group';
 
 import HypcastTitle from './HypcastTitle';
 import HlsVideoPlayer from './HlsVideoPlayer';
