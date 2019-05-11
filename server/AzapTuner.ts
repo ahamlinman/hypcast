@@ -43,6 +43,10 @@ export default class AzapTuner extends EventEmitter {
     this._azap = this._spawnAzap(channel)
       .on('close', this._azapClose.bind(this));
 
+    if (!this._azap.stdout || !this._azap.stderr) {
+      throw new Error('cannot access azap output streams');
+    }
+
     byline(this._azap.stdout).on('data', this._azapData.bind(this));
 
     this._stderrBuf = null;
