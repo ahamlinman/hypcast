@@ -3,7 +3,7 @@
 # many stages in this file to parallelize the build, cutting the time roughly
 # in half.
 
-FROM node:10-stretch-slim AS base
+FROM node:12-stretch-slim AS base
 WORKDIR /hypcast
 
 
