@@ -43,6 +43,7 @@ module.exports = {
         "new-cap": [ "error" ],
         "new-parens": [ "error" ],
         "no-await-in-loop": [ "error" ],
+        "no-console": [ "error" ],
         "no-duplicate-imports": [ "error" ],
         "no-else-return": [ "error" ],
         "no-extra-bind": [ "error" ],
