@@ -1,4 +1,4 @@
-#include "gstuner.h"
+#include "gst.h"
 
 void hyp_gst_init(void) {
   gst_init(NULL, NULL);

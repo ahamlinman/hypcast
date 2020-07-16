@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	_ "github.com/ahamlinman/hypcast/internal/gstuner"
+	_ "github.com/ahamlinman/hypcast/internal/gst"
 )
 
 func main() {
