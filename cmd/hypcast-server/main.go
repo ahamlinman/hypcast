@@ -1,11 +1,20 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"time"
 
-	_ "github.com/ahamlinman/hypcast/internal/gst"
+	"github.com/ahamlinman/hypcast/internal/gst"
 )
 
 func main() {
-	fmt.Println("stay tuned...")
+	if err := gst.Init(); err != nil {
+		log.Fatal(err)
+	}
+
+	gst.SetReceiver(gst.BinVideo, func(buffer []byte, duration time.Duration) {
+		log.Printf("video: %v %v", duration, buffer[:10])
+	})
+
+	log.Print("stay tuned...")
 }
