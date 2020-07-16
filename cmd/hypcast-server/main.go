@@ -14,6 +14,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	gst.SetSink(gst.SinkTypeRaw, sampleSink("raw"))
 	gst.SetSink(gst.SinkTypeVideo, sampleSink("video"))
 	gst.SetSink(gst.SinkTypeAudio, sampleSink("audio"))
 

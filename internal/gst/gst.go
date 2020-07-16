@@ -18,8 +18,18 @@ func init() {
 	C.gst_init(nil, nil)
 }
 
+// https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
+// TODO: Without drop-allocation the pipeline stalls. I still don't *really*
+// understand why.
 const pipelineStr = `
 	dvbsrc delsys=atsc modulation=8vsb frequency=189028615
+	! tee name=dvbtee
+	! identity drop-allocation=true
+	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
+	! appsink name=raw
+
+	dvbtee.
+	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
 	! tsdemux name=demux program-number=3
 
 	demux.
@@ -46,6 +56,7 @@ type SinkType int
 const (
 	sinkTypeStart SinkType = iota - 1
 
+	SinkTypeRaw
 	SinkTypeVideo
 	SinkTypeAudio
 
@@ -65,6 +76,7 @@ func Init() error {
 		return fmt.Errorf("failed to initialize pipeline: %s", C.GoString(gerror.message))
 	}
 
+	defineSinkType(SinkTypeRaw, "raw")
 	defineSinkType(SinkTypeVideo, "video")
 	defineSinkType(SinkTypeAudio, "audio")
 
