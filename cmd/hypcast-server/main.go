@@ -12,7 +12,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gst.SetReceiver(gst.BinVideo, func(buffer []byte, duration time.Duration) {
+	gst.SetSink(gst.SinkTypeVideo, func(buffer []byte, duration time.Duration) {
 		log.Printf("video: %v %v", duration, buffer[:10])
 	})
 

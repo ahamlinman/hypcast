@@ -41,13 +41,15 @@ const pipelineStr = `
 	! appsink name=audio
 `
 
-type Bin int
+type SinkType int
 
 const (
-	binStart Bin = iota - 1
-	BinVideo
-	BinAudio
-	binEnd
+	sinkTypeStart SinkType = iota - 1
+
+	SinkTypeVideo
+	SinkTypeAudio
+
+	sinkTypeEnd
 )
 
 var activePipeline *C.GstElement
@@ -63,38 +65,38 @@ func Init() error {
 		return fmt.Errorf("failed to initialize pipeline: %s", C.GoString(gerror.message))
 	}
 
-	defineReceiver("video", BinVideo)
-	defineReceiver("audio", BinAudio)
+	defineSinkType(SinkTypeVideo, "video")
+	defineSinkType(SinkTypeAudio, "audio")
 
 	return nil
 }
 
-func defineReceiver(binName string, binID Bin) {
-	binNameUnsafe := C.CString(binName)
-	defer C.free(unsafe.Pointer(binNameUnsafe))
+func defineSinkType(sinkType SinkType, sinkName string) {
+	sinkNameUnsafe := C.CString(sinkName)
+	defer C.free(unsafe.Pointer(sinkNameUnsafe))
 
-	C.hyp_define_receiver(activePipeline, binNameUnsafe, C.int(binID))
+	C.hyp_define_sink(activePipeline, sinkNameUnsafe, C.int(sinkType))
 }
 
-type Receiver func([]byte, time.Duration)
+type Sink func([]byte, time.Duration)
 
-var receivers [binEnd]Receiver
+var sinks [sinkTypeEnd]Sink
 
-func SetReceiver(bin Bin, receiver Receiver) {
-	receivers[bin] = receiver
+func SetSink(sinkType SinkType, sink Sink) {
+	sinks[sinkType] = sink
 }
 
-//export hypGoReceiveSample
-func hypGoReceiveSample(cBin C.int, cBuffer unsafe.Pointer, cLen C.int, cDuration C.int) {
-	bin := Bin(cBin)
-	if bin <= binStart || bin >= binEnd {
-		panic("bin ID outside of range")
+//export hypGoSinkSample
+func hypGoSinkSample(cSinkType C.int, cBuffer unsafe.Pointer, cLen C.int, cDuration C.int) {
+	sinkType := SinkType(cSinkType)
+	if sinkType <= sinkTypeStart || sinkType >= sinkTypeEnd {
+		panic(fmt.Errorf("invalid sink type ID %d", sinkType))
 	}
 
 	buffer := C.GoBytes(cBuffer, cLen)
 	duration := time.Duration(cDuration)
 
-	if receiver := receivers[bin]; receiver != nil {
-		receiver(buffer, duration)
+	if sink := sinks[sinkType]; sink != nil {
+		sink(buffer, duration)
 	}
 }

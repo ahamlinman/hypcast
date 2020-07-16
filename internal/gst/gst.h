@@ -7,9 +7,9 @@
 #include <glib.h>
 #include <gst/gst.h>
 
-extern void hypGoReceiveSample(int, void *, int, int);
+extern void hypGoSinkSample(int, void *, int, int);
 
-GstFlowReturn hyp_receive_sample(GstElement *, gpointer);
-void hyp_define_receiver(GstElement *, char *, int);
+void hyp_define_sink(GstElement *, char *, int);
+GstFlowReturn hyp_sink_sample(GstElement *, gpointer);
 
 #endif
