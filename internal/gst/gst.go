@@ -100,3 +100,11 @@ func hypGoSinkSample(cSinkType C.int, cBuffer unsafe.Pointer, cLen C.int, cDurat
 		sink(buffer, duration)
 	}
 }
+
+func Play() {
+	if activePipeline == nil {
+		panic("pipeline not initialized")
+	}
+
+	C.gst_element_set_state(activePipeline, C.GST_STATE_PLAYING)
+}

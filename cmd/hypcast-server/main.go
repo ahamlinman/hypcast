@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/ahamlinman/hypcast/internal/gst"
@@ -12,9 +14,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gst.SetSink(gst.SinkTypeVideo, func(buffer []byte, duration time.Duration) {
-		log.Printf("video: %v %v", duration, buffer[:10])
-	})
+	gst.SetSink(gst.SinkTypeVideo, sampleSink("video"))
+	gst.SetSink(gst.SinkTypeAudio, sampleSink("audio"))
 
-	log.Print("stay tuned...")
+	gst.Play()
+
+	wait := make(chan os.Signal)
+	signal.Notify(wait, os.Interrupt)
+	<-wait
+}
+
+func sampleSink(name string) gst.Sink {
+	return func(buffer []byte, duration time.Duration) {
+		log.Printf("%s: %v %v{%d}", name, duration, buffer[:10], len(buffer))
+	}
 }
