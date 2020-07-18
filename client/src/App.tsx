@@ -41,7 +41,7 @@ function App() {
 }
 
 function toSeconds(ns: number) {
-  return (ns / 1_000_000_000).toFixed(3);
+  return (ns / 1e9).toFixed(3);
 }
 
 function initState(): State {
