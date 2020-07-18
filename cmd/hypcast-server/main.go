@@ -17,7 +17,8 @@ func main() {
 	}
 
 	var h socketHandler
-	gst.SetSink(gst.SinkTypeAudio, h.HandlePipelineData)
+	gst.SetSink(gst.SinkTypeVideo, h.HandleVideoData)
+	gst.SetSink(gst.SinkTypeAudio, h.HandleAudioData)
 
 	http.Handle("/hypcast/ws", &h)
 
@@ -39,35 +40,65 @@ type socketHandler struct {
 	ws     *websocket.Conn
 }
 
+func (h *socketHandler) tryObtainingLock() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.locked {
+		return false
+	}
+
+	h.locked = true
+	return true
+}
+
+func (h *socketHandler) unlock() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.locked = false
+	h.ws.Close()
+	h.ws = nil
+}
+
+func (h *socketHandler) HandleAudioData(buffer []byte, d time.Duration) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.ws == nil {
+		return
+	}
+
+	h.ws.WriteJSON(struct {
+		Kind     string
+		Duration time.Duration
+	}{"audio", d})
+}
+
+func (h *socketHandler) HandleVideoData(buffer []byte, d time.Duration) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.ws == nil {
+		return
+	}
+
+	h.ws.WriteJSON(struct {
+		Kind     string
+		Duration time.Duration
+	}{"video", d})
+}
+
 func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request(%p): Received", r)
 
-	tryLockingThisClient := func() bool {
-		h.mu.Lock()
-		defer h.mu.Unlock()
-
-		if h.locked {
-			return false
-		}
-
-		h.locked = true
-		return true
-	}
-
-	if !tryLockingThisClient() {
+	if !h.tryObtainingLock() {
 		log.Printf("Request(%p): Rejected due to existing client", r)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
-	defer func() {
-		h.mu.Lock()
-		defer h.mu.Unlock()
-
-		h.locked = false
-		h.ws.Close()
-		h.ws = nil
-	}()
+	defer h.unlock()
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -83,13 +114,4 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Request(%p): Connection finished", r)
-}
-
-func (h *socketHandler) HandlePipelineData(buffer []byte, _ time.Duration) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if h.ws != nil {
-		h.ws.WriteMessage(websocket.BinaryMessage, buffer)
-	}
 }
