@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export default App;
 
@@ -16,10 +16,10 @@ function App() {
   const [state, dispatch] = React.useReducer(reduceEvent, null, initState);
 
   React.useEffect(() => {
-    const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`)
+    const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`);
 
     ws.onopen = () => {
-      console.log('the websocket is open for business');
+      console.log("the websocket is open for business");
     };
 
     ws.onmessage = (evt) => {
