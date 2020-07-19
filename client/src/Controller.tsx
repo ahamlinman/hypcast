@@ -16,8 +16,7 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
     const pc = new RTCPeerConnection();
-    pc.addTransceiver("video", { direction: "recvonly" });
-    pc.addTransceiver("audio", { direction: "recvonly" });
+    const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`);
 
     pc.addEventListener("track", (evt) => {
       console.log("Received new track:", evt.track, evt.streams);
@@ -28,8 +27,6 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
 
       dispatch({ kind: "ReceivedStream", stream: evt.streams[0] });
     });
-
-    const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`);
 
     ws.addEventListener("open", () => {
       dispatch({ kind: "Connected" });
