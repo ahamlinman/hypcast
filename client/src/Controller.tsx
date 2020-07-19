@@ -16,8 +16,8 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
     const pc = new RTCPeerConnection();
-    pc.addTransceiver("video", { direction: "sendrecv" });
-    pc.addTransceiver("audio", { direction: "sendrecv" });
+    pc.addTransceiver("video", { direction: "recvonly" });
+    pc.addTransceiver("audio", { direction: "recvonly" });
 
     pc.addEventListener("track", (evt) => {
       console.log("Received new track:", evt.track, evt.streams);
