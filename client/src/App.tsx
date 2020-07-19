@@ -1,15 +1,15 @@
 import React from "react";
 
-import { Context as ControllerContext } from "./Controller";
+import { useController } from "./Controller";
 
 const App = () => {
-  const controller = React.useContext(ControllerContext);
+  const [state] = useController();
   return (
     <>
       <h1>It works!</h1>
-      <p>Status: {controller.status}</p>
-      <p>Video Duration: {formatDuration(controller.videoDuration)}s</p>
-      <p>Audio Duration: {formatDuration(controller.audioDuration)}s</p>
+      <p>Status: {state.socketStatus}</p>
+      <p>Video Duration: {formatDuration(state.videoDuration)}s</p>
+      <p>Audio Duration: {formatDuration(state.audioDuration)}s</p>
     </>
   );
 };
