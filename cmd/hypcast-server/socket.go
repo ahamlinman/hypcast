@@ -77,6 +77,7 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
+	log.Printf("Request(%p): Accepted client", r)
 	defer h.unlock()
 
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -84,17 +85,15 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Request(%p): Failed to upgrade connection: %v", r, err)
 		return
 	}
+	log.Printf("Request(%p): Upgraded connection", r)
 	defer ws.Close()
 
-	pc, err := webrtc.NewPeerConnection(webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{URLs: []string{"stun:stun.l.google.com:19302"}},
-		},
-	})
+	pc, err := webrtc.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		log.Printf("Request(%p): Failed to create PeerConnection: %v", r, err)
 		return
 	}
+	log.Printf("Request(%p): Created PeerConnection", r)
 	defer pc.Close()
 
 	if _, err = pc.AddTrack(h.videoTrack); err != nil {
@@ -107,39 +106,47 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Request(%p): Added tracks", r)
+
 	h.mu.Lock()
 	h.ws = ws
 	h.pc = pc
 	h.mu.Unlock()
 
-	if err := h.sendServerOffer(); err != nil {
+	_, err = h.sendServerOffer()
+	if err != nil {
 		log.Printf("Request(%p): Failed to send offer to client: %v", r, err)
 		return
 	}
+	log.Printf("Request(%p): Sent offer to client", r)
 
 	for {
 		_, msgData, err := ws.ReadMessage()
 		if err != nil {
-			log.Printf("Request(%p): Failed to read message: %v", r, err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				log.Printf("Request(%p): Client is disconnecting", r)
+			} else {
+				log.Printf("Request(%p): Error reading client message: %v", r, err)
+			}
+
 			return
 		}
 
 		var msg message
 		if err := json.Unmarshal(msgData, &msg); err != nil {
 			log.Printf("Request(%p): Received invalid message: %v", r, err)
-			continue
+			return
 		}
 
 		switch msg.Kind {
 		case clientAnswerMessageKind:
+			log.Printf("Request(%p): Received answer from client", r)
 			pc.SetRemoteDescription(*msg.ClientAnswer)
 
 		default:
-			log.Printf("Request(%p): Unknown message kind: %q", r, msg.Kind)
+			log.Printf("Request(%p): Ignoring unknown message kind %q", r, msg.Kind)
 		}
 	}
-
-	log.Printf("Request(%p): Connection finished", r)
 }
 
 func (h *socketHandler) tryObtainingLock() bool {
@@ -176,17 +183,17 @@ type message struct {
 	ClientAnswer *webrtc.SessionDescription `json:",omitempty"`
 }
 
-func (h *socketHandler) sendServerOffer() error {
+func (h *socketHandler) sendServerOffer() (webrtc.SessionDescription, error) {
 	sdp, err := h.pc.CreateOffer(nil)
 	if err != nil {
-		return err
+		return webrtc.SessionDescription{}, err
 	}
 
 	if err := h.pc.SetLocalDescription(sdp); err != nil {
-		return err
+		return webrtc.SessionDescription{}, err
 	}
 
-	return h.ws.WriteJSON(message{
+	return sdp, h.ws.WriteJSON(message{
 		Kind:        serverOfferMessageKind,
 		ServerOffer: &sdp,
 	})
