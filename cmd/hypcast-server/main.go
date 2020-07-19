@@ -21,7 +21,7 @@ func main() {
 	gst.SetSink(gst.SinkTypeVideo, h.HandleVideoData)
 	gst.SetSink(gst.SinkTypeAudio, h.HandleAudioData)
 
-	http.Handle("/hypcast/ws", h)
+	http.Handle("/control-socket", h)
 
 	log.Print("Starting pipeline")
 	gst.Play()

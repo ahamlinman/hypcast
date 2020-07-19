@@ -16,7 +16,7 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
     const pc = new RTCPeerConnection();
-    const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`);
+    const ws = new WebSocket(`ws://${window.location.host}/control-socket`);
 
     pc.addEventListener("track", (evt) => {
       console.log("Received new track:", evt.track, evt.streams);

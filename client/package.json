@@ -16,6 +16,7 @@
     "typescript": "~3.7.2"
   },
   "devDependencies": {
+    "http-proxy-middleware": "^1.0.5",
     "prettier": "^2.0.5"
   },
   "scripts": {
@@ -24,7 +25,6 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "proxy": "http://localhost:9200",
   "prettier": {
     "trailingComma": "all"
   },
