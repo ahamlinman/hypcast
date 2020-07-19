@@ -5,9 +5,9 @@ export interface State {
   stream: null | MediaStream;
 }
 
-export const Context = React.createContext<
-  null | [State, React.Dispatch<Action>]
->(null);
+const Context = React.createContext<null | [State, React.Dispatch<Action>]>(
+  null,
+);
 
 export const Controller = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = React.useReducer(reduce, null, () =>
@@ -26,18 +26,17 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      dispatch({ kind: "SetStream", value: evt.streams[0] });
+      dispatch({ kind: "ReceivedStream", stream: evt.streams[0] });
     });
 
     const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`);
 
     ws.addEventListener("open", () => {
-      dispatch({ kind: "SetConnected", value: true });
+      dispatch({ kind: "Connected" });
     });
 
     ws.addEventListener("close", () => {
-      dispatch({ kind: "SetConnected", value: false });
-      dispatch({ kind: "SetStream", value: null });
+      dispatch({ kind: "Disconnected" });
     });
 
     ws.addEventListener("message", (evt) => {
@@ -68,7 +67,7 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => {
-      dispatch({ kind: "SetStream", value: null });
+      dispatch({ kind: "Disconnected" });
       ws.close();
       pc.close();
     };
@@ -98,27 +97,36 @@ const defaultState = () => ({
 
 type Action = InternalAction | ExternalAction;
 
-type ExternalAction = never;
+export type ExternalAction = never;
 
-type InternalAction = ActionSetConnected | ActionSetStream;
+type InternalAction =
+  | ActionConnected
+  | ActionDisconnected
+  | ActionReceivedStream;
 
-interface ActionSetConnected {
-  kind: "SetConnected";
-  value: boolean;
+interface ActionConnected {
+  kind: "Connected";
 }
 
-interface ActionSetStream {
-  kind: "SetStream";
-  value: null | MediaStream;
+interface ActionDisconnected {
+  kind: "Disconnected";
+}
+
+interface ActionReceivedStream {
+  kind: "ReceivedStream";
+  stream: MediaStream;
 }
 
 const reduce = (state: State, action: Action) => {
   switch (action.kind) {
-    case "SetConnected":
-      return { ...state, connected: action.value };
+    case "Connected":
+      return { ...state, connected: true };
 
-    case "SetStream":
-      return { ...state, stream: action.value };
+    case "Disconnected":
+      return { ...state, connected: false, stream: null };
+
+    case "ReceivedStream":
+      return { ...state, stream: action.stream };
 
     default:
       return state;
