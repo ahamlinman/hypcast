@@ -7,13 +7,30 @@ const App = () => {
   return (
     <>
       <h1>It works!</h1>
-      <p>Status: {state.socketStatus}</p>
-      <p>Video Duration: {formatDuration(state.videoDuration)}s</p>
-      <p>Audio Duration: {formatDuration(state.audioDuration)}s</p>
+      <p>Status: {state.connected ? "Connected" : "Disconnected"}</p>
+      {state.stream !== null ? <VideoPlayer stream={state.stream} /> : null}
     </>
   );
 };
 
 export default App;
 
-const formatDuration = (ns: number) => (ns / 1e9).toFixed(3);
+const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
+  const videoElement = React.useRef<null | HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    if (videoElement.current === null) {
+      return;
+    }
+    videoElement.current.srcObject = stream;
+  }, [stream]);
+
+  return (
+    <video
+      style={{ border: "1px solid black" }}
+      ref={videoElement}
+      autoPlay
+      controls
+    />
+  );
+};

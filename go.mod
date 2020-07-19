@@ -2,4 +2,7 @@ module github.com/ahamlinman/hypcast
 
 go 1.14
 
-require github.com/gorilla/websocket v1.4.2
+require (
+	github.com/gorilla/websocket v1.4.2
+	github.com/pion/webrtc/v2 v2.2.21
+)

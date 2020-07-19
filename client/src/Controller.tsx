@@ -1,14 +1,8 @@
 import React from "react";
 
-export enum SocketStatus {
-  Closed = "Closed",
-  Connected = "Connected",
-}
-
 export interface State {
-  socketStatus: SocketStatus;
-  audioDuration: number;
-  videoDuration: number;
+  connected: boolean;
+  stream: null | MediaStream;
 }
 
 export const Context = React.createContext<
@@ -21,37 +15,63 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
   );
 
   React.useEffect(() => {
+    const pc = new RTCPeerConnection();
+    pc.addTransceiver("video", { direction: "sendrecv" });
+    pc.addTransceiver("audio", { direction: "sendrecv" });
+
+    pc.addEventListener("track", (evt) => {
+      console.log("Received new track:", evt.track, evt.streams);
+
+      if (evt.track.kind === "audio") {
+        return;
+      }
+
+      dispatch({ kind: "SetStream", value: evt.streams[0] });
+    });
+
     const ws = new WebSocket(`ws://${window.location.host}/hypcast/ws`);
 
     ws.addEventListener("open", () => {
-      dispatch({ kind: "UpdateSocketStatus", status: SocketStatus.Connected });
+      dispatch({ kind: "SetConnected", value: true });
     });
 
     ws.addEventListener("close", () => {
-      dispatch({ kind: "UpdateSocketStatus", status: SocketStatus.Closed });
+      dispatch({ kind: "SetConnected", value: false });
+      dispatch({ kind: "SetStream", value: null });
     });
 
     ws.addEventListener("message", (evt) => {
-      interface EventData {
-        Kind: string;
-        Duration: number;
-      }
+      const message = JSON.parse(evt.data);
+      switch (message.Kind) {
+        case "ServerOffer":
+          console.log("Received offer message", message);
+          (async () => {
+            pc.setRemoteDescription(message.ServerOffer);
 
-      const data: EventData = JSON.parse(evt.data);
-      switch (data.Kind) {
-        case "audio":
-          dispatch({ kind: "IncrementAudioDuration", duration: data.Duration });
-          break;
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
 
-        case "video":
-          dispatch({ kind: "IncrementVideoDuration", duration: data.Duration });
+            const response = {
+              Kind: "ClientAnswer",
+              ClientAnswer: answer,
+            };
+
+            console.log("Sending response message:", response);
+            ws.send(JSON.stringify(response));
+          })();
           break;
 
         default:
-          console.error("Unrecognized event:", data);
+          console.error("Unrecognized message", message);
           break;
       }
     });
+
+    return () => {
+      dispatch({ kind: "SetStream", value: null });
+      ws.close();
+      pc.close();
+    };
   }, []);
 
   return (
@@ -72,45 +92,33 @@ export const useController = (): [State, React.Dispatch<ExternalAction>] => {
 };
 
 const defaultState = () => ({
-  socketStatus: SocketStatus.Closed,
-  audioDuration: 0,
-  videoDuration: 0,
+  connected: false,
+  stream: null,
 });
 
 type Action = InternalAction | ExternalAction;
 
 type ExternalAction = never;
 
-type InternalAction =
-  | ActionUpdateSocketStatus
-  | ActionIncrementAudioDuration
-  | ActionIncrementVideoDuration;
+type InternalAction = ActionSetConnected | ActionSetStream;
 
-interface ActionUpdateSocketStatus {
-  kind: "UpdateSocketStatus";
-  status: SocketStatus;
+interface ActionSetConnected {
+  kind: "SetConnected";
+  value: boolean;
 }
 
-interface ActionIncrementAudioDuration {
-  kind: "IncrementAudioDuration";
-  duration: number;
-}
-
-interface ActionIncrementVideoDuration {
-  kind: "IncrementVideoDuration";
-  duration: number;
+interface ActionSetStream {
+  kind: "SetStream";
+  value: null | MediaStream;
 }
 
 const reduce = (state: State, action: Action) => {
   switch (action.kind) {
-    case "UpdateSocketStatus":
-      return { ...state, socketStatus: action.status };
+    case "SetConnected":
+      return { ...state, connected: action.value };
 
-    case "IncrementAudioDuration":
-      return { ...state, audioDuration: state.audioDuration + action.duration };
-
-    case "IncrementVideoDuration":
-      return { ...state, videoDuration: state.videoDuration + action.duration };
+    case "SetStream":
+      return { ...state, stream: action.value };
 
     default:
       return state;

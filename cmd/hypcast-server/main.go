@@ -13,11 +13,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var h socketHandler
+	h, err := newSocketHandler()
+	if err != nil {
+		log.Fatal("unable to create socket handler", err)
+	}
+
 	gst.SetSink(gst.SinkTypeVideo, h.HandleVideoData)
 	gst.SetSink(gst.SinkTypeAudio, h.HandleAudioData)
 
-	http.Handle("/hypcast/ws", &h)
+	http.Handle("/hypcast/ws", h)
 
 	log.Print("Starting pipeline")
 	gst.Play()
