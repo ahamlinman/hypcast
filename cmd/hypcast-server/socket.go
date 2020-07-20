@@ -19,13 +19,11 @@ var upgrader = websocket.Upgrader{
 const (
 	streamID = "hypcast"
 
-	videoSSRC       = 9200
-	videoTrackLabel = "tv video"
-	videoClockRate  = 90_000
+	videoSSRC      = 9200
+	videoClockRate = 90_000
 
-	audioSSRC       = videoSSRC + 1
-	audioTrackLabel = "tv audio"
-	audioClockRate  = 48_000
+	audioSSRC      = videoSSRC + 1
+	audioClockRate = 48_000
 )
 
 type socketHandler struct {
@@ -35,7 +33,7 @@ type socketHandler struct {
 
 func newSocketHandler() (*socketHandler, error) {
 	videoTrack, err := webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeVP8, videoSSRC, streamID, videoTrackLabel,
+		webrtc.DefaultPayloadTypeVP8, videoSSRC, streamID, streamID,
 		webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, videoClockRate),
 	)
 	if err != nil {
@@ -43,7 +41,7 @@ func newSocketHandler() (*socketHandler, error) {
 	}
 
 	audioTrack, err := webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeOpus, audioSSRC, streamID, audioTrackLabel,
+		webrtc.DefaultPayloadTypeOpus, audioSSRC, streamID, streamID,
 		webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, audioClockRate),
 	)
 	if err != nil {
