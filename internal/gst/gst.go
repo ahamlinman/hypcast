@@ -22,7 +22,7 @@ func init() {
 // TODO: Without drop-allocation the pipeline stalls. I still don't *really*
 // understand why.
 const pipelineStr = `
-	dvbsrc delsys=atsc modulation=8vsb frequency=189028615
+	dvbsrc delsys=atsc modulation=8vsb frequency=189000000
 	! tee name=dvbtee
 	! identity drop-allocation=true
 	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
