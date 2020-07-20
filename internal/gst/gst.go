@@ -36,9 +36,10 @@ const pipelineStr = `
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
 	! decodebin
 	! videoconvert
+	! deinterlace
 	! videoscale
-	! video/x-raw,width=720,height=480
-	! vp8enc deadline=1
+	! video/x-raw,width=1280,height=720
+	! vp8enc cpu-used=8 deadline=1 resize-allowed=true
 	! appsink name=video
 
 	demux.
