@@ -1,16 +1,48 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 
+	"github.com/ahamlinman/hypcast/internal/atsc"
 	"github.com/ahamlinman/hypcast/internal/gst"
 )
 
 func main() {
+	var channelsConf string
+	flag.StringVar(&channelsConf, "channels", "/etc/hypcast/channels.conf", "Path to channels.conf")
+	flag.Parse()
+
+	log.Print("Reading channels.conf")
+	f, err := os.Open(channelsConf)
+	if err != nil {
+		log.Fatalf("Unable to open channels.conf: %v", err)
+	}
+	channels, err := atsc.ParseChannelsConf(f)
+	f.Close()
+	if err != nil {
+		log.Fatalf("Unable to read channels.conf: %v", err)
+	}
+
+	var channel atsc.Channel
+	if flag.NArg() > 0 {
+		for _, ch := range channels {
+			if ch.Name == flag.Arg(0) {
+				channel = ch
+				break
+			}
+		}
+	}
+	if channel == (atsc.Channel{}) {
+		channel = channels[0]
+	}
+	log.Printf("Watching %v", channel)
+
 	log.Print("Initializing GStreamer")
-	if err := gst.Init(); err != nil {
+	if err := gst.Init(channel); err != nil {
 		log.Fatal(err)
 	}
 
