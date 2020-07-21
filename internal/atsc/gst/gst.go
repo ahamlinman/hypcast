@@ -82,7 +82,7 @@ func NewPipeline(channel atsc.Channel) (*Pipeline, error) {
 	gstPipeline := C.gst_parse_launch(pipelineUnsafe, &gerror)
 	if gerror != nil {
 		defer C.g_error_free(gerror)
-		return nil, fmt.Errorf("failed to initialize pipeline: %s", C.GoString(gerror.message))
+		return nil, fmt.Errorf("failed to create pipeline: %s", C.GoString(gerror.message))
 	}
 
 	// gst_parse_launch returns a "floating ref," see here for details:
