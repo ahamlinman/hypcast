@@ -4,6 +4,7 @@
 // For the purposes of this package, channels.conf files are those using the
 // azap-compatible format described at
 // https://www.mythtv.org/wiki/Adding_Digital_Cable_Channels_(For_ATSC/QAM_Tuner_Cards_--_USA/Canada)#channels.conf_Format.
+//
 // The https://github.com/stefantalpalaru/w_scan2 utility is useful for
 // generating a compatible file:
 //
@@ -21,11 +22,13 @@ import (
 // Modulation represents the modulation of an ATSC television channel.
 type Modulation string
 
-// Normalized Modulation values for a Channel.
+// The following are the normalized Modulation values for a Channel.
 const (
+	// Modulation8VSB may optionally be parsed as "VSB_8" in a channels.conf file,
+	// and will be normalized to this value.
 	Modulation8VSB   Modulation = "8VSB"
-	ModulationQAM64             = "QAM_64"
-	ModulationQAM256            = "QAM_256"
+	ModulationQAM64  Modulation = "QAM_64"
+	ModulationQAM256 Modulation = "QAM_256"
 )
 
 // numChannelFields is used to ensure that each channels.conf line is valid. It
@@ -79,9 +82,7 @@ func ParseChannelsConf(r io.Reader) ([]Channel, error) {
 
 		parseModulation := func(s string) Modulation {
 			switch s {
-			case "8VSB":
-				fallthrough
-			case "VSB_8":
+			case "8VSB", "VSB_8":
 				return Modulation8VSB
 
 			case "QAM_64":

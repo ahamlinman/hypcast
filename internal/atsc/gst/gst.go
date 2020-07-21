@@ -1,5 +1,5 @@
-// Package gst supports the management of GStreamer pipelines that process live
-// TV signals from DVB devices.
+// Package gst manages GStreamer pipelines that process live ATSC TV signals
+// from Linux DVB devices.
 //
 // The basic concepts behind this integration are heavily inspired by
 // https://github.com/pion/rtwatch.
@@ -22,8 +22,15 @@ func init() {
 	C.gst_init(nil, nil)
 }
 
+// pipelineTemplate is the template for the full GStreamer pipeline meeting our
+// requirements.
+//
+// appsink elements and their names must match up with sink definitions
+// elsewhere in this package.
+//
+// TODO:
 // https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
-// TODO: Without drop-allocation the pipeline stalls. I still don't *really*
+// Without drop-allocation the pipeline stalls. I still don't *really*
 // understand why.
 var pipelineTemplate = template.Must(template.New("").Parse(`
 	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.Frequency}}
@@ -119,15 +126,13 @@ func buildPipelineString(channel atsc.Channel) (string, error) {
 	return buf.String(), nil
 }
 
-// ErrPipelineClosed is returned when invoking methods on a pipeline for which
-// Close() has been called.
-var ErrPipelineClosed = errors.New("pipeline closed")
+var errPipelineNotInitialized = errors.New("pipeline not initialized")
 
 // Start sets the pipeline to the GStreamer PLAYING state, in which it will tune
 // to a channel and produce streams.
 func (p *Pipeline) Start() error {
 	if p.gstPipeline == nil {
-		return ErrPipelineClosed
+		return errPipelineNotInitialized
 	}
 
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_PLAYING)
@@ -141,7 +146,7 @@ func (p *Pipeline) Start() error {
 // running streams and release the TV tuner device.
 func (p *Pipeline) Stop() error {
 	if p.gstPipeline == nil {
-		return ErrPipelineClosed
+		return errPipelineNotInitialized
 	}
 
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_NULL)
@@ -151,10 +156,15 @@ func (p *Pipeline) Stop() error {
 	return nil
 }
 
-// Close stops this pipeline and releases all resources associated with it.
+// Close stops this pipeline if it is started and releases any resources
+// associated with it.
 func (p *Pipeline) Close() error {
 	p.Stop()
 	unregisterGlobalPipeline(p)
+
+	// The behavior of multiple calls to Close is undefined, however it definitely
+	// should not corrupt the C heap with double-free errors. To ensure this:
+	// check nil-ness before freeing, and nil after freeing.
 
 	for i, sinkRef := range p.sinkRefs {
 		if sinkRef != nil {

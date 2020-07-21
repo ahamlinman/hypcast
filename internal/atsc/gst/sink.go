@@ -9,13 +9,32 @@ import (
 	"unsafe"
 )
 
+// Signal Handling and the Global Pipeline Map
+//
+// The signal mechanism for new samples allows us to provide a C function
+// pointer to some handler, plus some arbitrary pointer to call the function
+// with. The data referenced by that pointer needs to link the global signal
+// handler to the correct Pipeline struct in Go so we can call the right Sink
+// function.
+//
+// Since cgo's pointer passing rules prohibit C code from directly holding a
+// pointer to the Pipeline struct (Go's garbage collector could, in theory,
+// relocate it), we use the classic "big old map" strategy:
+// https://medium.com/wallaroo-labs-engineering/adventures-with-cgo-part-1-the-pointering-19506aedf6b.
+//
+// Pipeline methods take care of managing the Pipeline's presence in the global
+// map, as well as any C memory management for the custom data, as necessary.
+//
+// (Note that we do not have the performance concern mentioned in the blog post.
+// Writes to the map are extremely rare compared to reads. Profiling proves the
+// impact of the read lock to be negligible.)
+
 // Sink is a type for functions that receive stream data from a Pipeline.
 type Sink func([]byte, time.Duration)
 
 // SinkType represents the data streams available to a Sink.
 type SinkType int
 
-// SinkType values for consumers.
 const (
 	sinkTypeStart SinkType = iota - 1
 
@@ -23,12 +42,13 @@ const (
 	SinkTypeRaw
 	// SinkTypeVideo represents the VP8-encoded video stream.
 	SinkTypeVideo
-	// SinkTypeAudio represents an Opus-encoded audio stream.
+	// SinkTypeAudio represents the Opus-encoded audio stream.
 	SinkTypeAudio
 
 	sinkTypeEnd
 )
 
+// sinkNames matches the appsink element names defined in the pipeline template.
 var sinkNames = map[SinkType]*C.char{
 	SinkTypeRaw:   C.HYP_SINK_NAME_RAW,
 	SinkTypeVideo: C.HYP_SINK_NAME_VIDEO,
@@ -92,6 +112,10 @@ var (
 )
 
 func registerGlobalPipeline(p *Pipeline) {
+	if p.globalID != 0 {
+		panic("attempted to reregister global pipeline")
+	}
+
 	globalPipelineLock.Lock()
 	defer globalPipelineLock.Unlock()
 
