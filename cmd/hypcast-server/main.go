@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/gst"
+	"github.com/ahamlinman/hypcast/internal/atsc/gst"
 )
 
 func main() {
