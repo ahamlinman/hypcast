@@ -30,7 +30,7 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! tee name=dvbtee
 	! identity drop-allocation=true
 	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
-	! appsink name=raw
+	! appsink name=raw max-buffers=32 drop=true
 
 	dvbtee.
 	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
@@ -44,7 +44,7 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! videoscale add-borders=true
 	! video/x-raw,width=1280,height=720
 	! vp8enc cpu-used=8 deadline=1 resize-allowed=true
-	! appsink name=video
+	! appsink name=video max-buffers=32 drop=true
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
@@ -53,7 +53,7 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! audioresample
 	! audio/x-raw,rate=48000
 	! opusenc bitrate=128000
-	! appsink name=audio
+	! appsink name=audio max-buffers=32 drop=true
 `))
 
 // Pipeline represents a GStreamer pipeline that tunes an ATSC tuner card and
