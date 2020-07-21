@@ -122,6 +122,10 @@ func buildPipelineString(channel atsc.Channel) (string, error) {
 // Start sets the pipeline to the GStreamer PLAYING state, in which it will tune
 // to a channel and produce streams.
 func (p *Pipeline) Start() error {
+	if p.gstPipeline == nil {
+		return errors.New("cannot start closed pipeline")
+	}
+
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_PLAYING)
 	if result == C.GST_STATE_CHANGE_FAILURE {
 		return errors.New("failed to change GStreamer pipeline state")
@@ -132,6 +136,10 @@ func (p *Pipeline) Start() error {
 // Stop sets the pipeline to the GStreamer NULL state, in which it will stop any
 // running streams and release the TV tuner device.
 func (p *Pipeline) Stop() error {
+	if p.gstPipeline == nil {
+		return errors.New("cannot stop closed pipeline")
+	}
+
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_NULL)
 	if result == C.GST_STATE_CHANGE_FAILURE {
 		return errors.New("failed to change GStreamer pipeline state")
@@ -144,12 +152,17 @@ func (p *Pipeline) Close() error {
 	p.Stop()
 	unregisterGlobalPipeline(p)
 
-	for _, sinkRef := range p.sinkRefs {
+	for i, sinkRef := range p.sinkRefs {
 		if sinkRef != nil {
 			C.free(unsafe.Pointer(sinkRef))
+			p.sinkRefs[i] = nil
 		}
 	}
-	C.gst_object_unref(C.gpointer(p.gstPipeline))
+
+	if p.gstPipeline != nil {
+		C.gst_object_unref(C.gpointer(p.gstPipeline))
+		p.gstPipeline = nil
+	}
 
 	return nil
 }

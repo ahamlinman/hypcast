@@ -112,6 +112,7 @@ func unregisterGlobalPipeline(p *Pipeline) {
 	defer globalPipelineLock.Unlock()
 
 	delete(globalPipelineMap, p.globalID)
+	p.globalID = 0
 }
 
 func getGlobalPipeline(id globalPipelineID) *Pipeline {
