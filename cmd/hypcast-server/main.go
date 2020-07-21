@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
 	"github.com/ahamlinman/hypcast/internal/atsc/gst"
@@ -59,8 +63,19 @@ func main() {
 
 	log.Print("Starting pipeline")
 	pipeline.Start()
-	defer pipeline.Close()
+	defer func() {
+		log.Printf("Result of closing pipeline: %v", pipeline.Close())
+	}()
 
 	log.Print("Starting web server")
-	http.ListenAndServe(":9200", nil)
+	server := http.Server{Addr: ":9200"}
+	go server.ListenAndServe()
+
+	signalCh := make(chan os.Signal)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+	<-signalCh
+
+	log.Print("Stopping web server")
+	stopCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	server.Shutdown(stopCtx)
 }
