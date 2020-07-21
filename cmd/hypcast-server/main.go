@@ -41,8 +41,9 @@ func main() {
 	}
 	log.Printf("Watching %v", channel)
 
-	log.Print("Initializing GStreamer")
-	if err := gst.Init(channel); err != nil {
+	log.Print("Initializing GStreamer pipeline")
+	pipeline, err := gst.NewPipeline(channel)
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -51,13 +52,14 @@ func main() {
 		log.Fatal("unable to create socket handler", err)
 	}
 
-	gst.SetSink(gst.SinkTypeVideo, h.HandleVideoData)
-	gst.SetSink(gst.SinkTypeAudio, h.HandleAudioData)
+	pipeline.SetSink(gst.SinkTypeVideo, h.HandleVideoData)
+	pipeline.SetSink(gst.SinkTypeAudio, h.HandleAudioData)
 
 	http.Handle("/control-socket", h)
 
 	log.Print("Starting pipeline")
-	gst.Play()
+	pipeline.Start()
+	defer pipeline.Close()
 
 	log.Print("Starting web server")
 	http.ListenAndServe(":9200", nil)

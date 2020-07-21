@@ -10,9 +10,9 @@ package gst
 import "C"
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"text/template"
-	"time"
 	"unsafe"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
@@ -56,17 +56,43 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! appsink name=audio
 `))
 
-type SinkType int
+// Pipeline represents a GStreamer pipeline that tunes an ATSC tuner card and
+// produces streams of data for downstream consumption.
+type Pipeline struct {
+	gstPipeline *C.GstElement
 
-const (
-	sinkTypeStart SinkType = iota - 1
+	globalID globalPipelineID
 
-	SinkTypeRaw
-	SinkTypeVideo
-	SinkTypeAudio
+	sinks    [sinkTypeEnd]Sink
+	sinkRefs [sinkTypeEnd]*C.HypSinkRef
+}
 
-	sinkTypeEnd
-)
+// NewPipeline creates a new Pipeline that will produce streams for the provided
+// Channel when started.
+func NewPipeline(channel atsc.Channel) (*Pipeline, error) {
+	pipelineString, err := buildPipelineString(channel)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineUnsafe := C.CString(pipelineString)
+	defer C.free(unsafe.Pointer(pipelineUnsafe))
+
+	var gerror *C.GError
+	gstPipeline := C.gst_parse_launch(pipelineUnsafe, &gerror)
+	if gerror != nil {
+		defer C.g_error_free(gerror)
+		return nil, fmt.Errorf("failed to initialize pipeline: %s", C.GoString(gerror.message))
+	}
+
+	// gst_parse_launch returns a "floating ref," see here for details:
+	// https://developer.gnome.org/gobject/stable/gobject-The-Base-Object-Type.html#floating-ref
+	C.gst_object_ref_sink(C.gpointer(gstPipeline))
+
+	pipeline := &Pipeline{gstPipeline: gstPipeline}
+	registerGlobalPipeline(pipeline)
+	return pipeline, nil
+}
 
 var modulationMap = map[atsc.Modulation]string{
 	atsc.Modulation8VSB:   "8vsb",
@@ -74,10 +100,9 @@ var modulationMap = map[atsc.Modulation]string{
 	atsc.ModulationQAM256: "qam-256",
 }
 
-var activePipeline *C.GstElement
-
-func Init(channel atsc.Channel) error {
+func buildPipelineString(channel atsc.Channel) (string, error) {
 	var buf bytes.Buffer
+
 	err := pipelineTemplate.Execute(&buf, struct {
 		Modulation string
 		Frequency  uint
@@ -88,60 +113,43 @@ func Init(channel atsc.Channel) error {
 		PID:        channel.ProgramID,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to build pipeline template: %w", err)
+		return "", fmt.Errorf("failed to build pipeline template: %w", err)
 	}
 
-	pipelineUnsafe := C.CString(buf.String())
-	defer C.free(unsafe.Pointer(pipelineUnsafe))
+	return buf.String(), nil
+}
 
-	var gerror *C.GError
-	activePipeline = C.gst_parse_launch(pipelineUnsafe, &gerror)
-	if gerror != nil {
-		defer C.g_error_free(gerror)
-		return fmt.Errorf("failed to initialize pipeline: %s", C.GoString(gerror.message))
+// Start sets the pipeline to the GStreamer PLAYING state, in which it will tune
+// to a channel and produce streams.
+func (p *Pipeline) Start() error {
+	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_PLAYING)
+	if result == C.GST_STATE_CHANGE_FAILURE {
+		return errors.New("failed to change GStreamer pipeline state")
 	}
-
-	defineSinkType(SinkTypeRaw, "raw")
-	defineSinkType(SinkTypeVideo, "video")
-	defineSinkType(SinkTypeAudio, "audio")
-
 	return nil
 }
 
-func defineSinkType(sinkType SinkType, sinkName string) {
-	sinkNameUnsafe := C.CString(sinkName)
-	defer C.free(unsafe.Pointer(sinkNameUnsafe))
-
-	C.hyp_define_sink(activePipeline, sinkNameUnsafe, C.int(sinkType))
+// Stop sets the pipeline to the GStreamer NULL state, in which it will stop any
+// running streams and release the TV tuner device.
+func (p *Pipeline) Stop() error {
+	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_NULL)
+	if result == C.GST_STATE_CHANGE_FAILURE {
+		return errors.New("failed to change GStreamer pipeline state")
+	}
+	return nil
 }
 
-type Sink func([]byte, time.Duration)
+// Close stops this pipeline and releases all resources associated with it.
+func (p *Pipeline) Close() error {
+	p.Stop()
+	unregisterGlobalPipeline(p)
 
-var sinks [sinkTypeEnd]Sink
-
-func SetSink(sinkType SinkType, sink Sink) {
-	sinks[sinkType] = sink
-}
-
-//export hypGoSinkSample
-func hypGoSinkSample(cSinkType C.int, cBuffer unsafe.Pointer, cLen C.int, cDuration C.int) {
-	sinkType := SinkType(cSinkType)
-	if sinkType <= sinkTypeStart || sinkType >= sinkTypeEnd {
-		panic(fmt.Errorf("invalid sink type ID %d", sinkType))
+	for _, sinkRef := range p.sinkRefs {
+		if sinkRef != nil {
+			C.free(unsafe.Pointer(sinkRef))
+		}
 	}
+	C.gst_object_unref(C.gpointer(p.gstPipeline))
 
-	buffer := C.GoBytes(cBuffer, cLen)
-	duration := time.Duration(cDuration)
-
-	if sink := sinks[sinkType]; sink != nil {
-		sink(buffer, duration)
-	}
-}
-
-func Play() {
-	if activePipeline == nil {
-		panic("pipeline not initialized")
-	}
-
-	C.gst_element_set_state(activePipeline, C.GST_STATE_PLAYING)
+	return nil
 }
