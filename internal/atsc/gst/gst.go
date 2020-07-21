@@ -119,11 +119,15 @@ func buildPipelineString(channel atsc.Channel) (string, error) {
 	return buf.String(), nil
 }
 
+// ErrPipelineClosed is returned when invoking methods on a pipeline for which
+// Close() has been called.
+var ErrPipelineClosed = errors.New("pipeline closed")
+
 // Start sets the pipeline to the GStreamer PLAYING state, in which it will tune
 // to a channel and produce streams.
 func (p *Pipeline) Start() error {
 	if p.gstPipeline == nil {
-		return errors.New("cannot start closed pipeline")
+		return ErrPipelineClosed
 	}
 
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_PLAYING)
@@ -137,7 +141,7 @@ func (p *Pipeline) Start() error {
 // running streams and release the TV tuner device.
 func (p *Pipeline) Stop() error {
 	if p.gstPipeline == nil {
-		return errors.New("cannot stop closed pipeline")
+		return ErrPipelineClosed
 	}
 
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_NULL)
