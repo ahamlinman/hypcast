@@ -1,5 +1,5 @@
-#ifndef HYP_GST_H
-#define HYP_GST_H
+#ifndef HYPCAST_GST_H
+#define HYPCAST_GST_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,18 +7,18 @@
 #include <glib.h>
 #include <gst/gst.h>
 
-extern const char* const HYP_SINK_NAME_RAW;
-extern const char* const HYP_SINK_NAME_VIDEO;
-extern const char* const HYP_SINK_NAME_AUDIO;
+extern const char* const HYPCAST_SINK_NAME_RAW;
+extern const char* const HYPCAST_SINK_NAME_VIDEO;
+extern const char* const HYPCAST_SINK_NAME_AUDIO;
 
-typedef struct HypSinkRef {
+typedef struct HypcastSinkRef {
   unsigned int global_pipeline_id;
   unsigned int sink_type;
-} HypSinkRef;
+} HypcastSinkRef;
 
-extern void hypGlobalSink(HypSinkRef *, void *, int, int);
+extern void hypcastGlobalSink(HypcastSinkRef*, void*, int, int);
 
-void hyp_define_sink(GstElement *, char *, HypSinkRef *);
-GstFlowReturn hyp_sink_sample(GstElement *, gpointer);
+void hypcast_define_sink(GstElement*, char*, HypcastSinkRef*);
+GstFlowReturn hypcast_sink_sample(GstElement*, gpointer);
 
 #endif

@@ -22,47 +22,6 @@ func init() {
 	C.gst_init(nil, nil)
 }
 
-// pipelineTemplate is the template for the full GStreamer pipeline meeting our
-// requirements.
-//
-// appsink elements and their names must match up with sink definitions
-// elsewhere in this package.
-//
-// TODO:
-// https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
-// Without drop-allocation the pipeline stalls. I still don't *really*
-// understand why.
-var pipelineTemplate = template.Must(template.New("").Parse(`
-	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.Frequency}}
-	! tee name=dvbtee
-	! identity drop-allocation=true
-	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
-	! appsink name=raw max-buffers=32 drop=true
-
-	dvbtee.
-	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
-	! tsdemux name=demux program-number={{.PID}}
-
-	demux.
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
-	! decodebin
-	! videoconvert
-	! deinterlace
-	! videoscale add-borders=true
-	! video/x-raw,width=1280,height=720
-	! vp8enc cpu-used=8 deadline=1 resize-allowed=true
-	! appsink name=video max-buffers=32 drop=true
-
-	demux.
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
-	! decodebin
-	! audioconvert
-	! audioresample
-	! audio/x-raw,rate=48000
-	! opusenc bitrate=128000
-	! appsink name=audio max-buffers=32 drop=true
-`))
-
 // Pipeline represents a GStreamer pipeline that tunes an ATSC tuner card and
 // produces streams of data for downstream consumption.
 type Pipeline struct {
@@ -71,7 +30,7 @@ type Pipeline struct {
 	globalID globalPipelineID
 
 	sinks    [sinkTypeEnd]Sink
-	sinkRefs [sinkTypeEnd]*C.HypSinkRef
+	sinkRefs [sinkTypeEnd]*C.HypcastSinkRef
 }
 
 // NewPipeline creates a new Pipeline that will produce streams for the provided
@@ -125,6 +84,47 @@ func buildPipelineString(channel atsc.Channel) (string, error) {
 
 	return buf.String(), nil
 }
+
+// pipelineTemplate is the template for the full GStreamer pipeline meeting our
+// requirements.
+//
+// appsink elements and their names must match up with sink definitions
+// elsewhere in this package.
+//
+// TODO:
+// https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
+// Without drop-allocation the pipeline stalls. I still don't *really*
+// understand why.
+var pipelineTemplate = template.Must(template.New("").Parse(`
+	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.Frequency}}
+	! tee name=dvbtee
+	! identity drop-allocation=true
+	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
+	! appsink name=raw max-buffers=32 drop=true
+
+	dvbtee.
+	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
+	! tsdemux name=demux program-number={{.PID}}
+
+	demux.
+	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! decodebin
+	! videoconvert
+	! deinterlace
+	! videoscale add-borders=true
+	! video/x-raw,width=1280,height=720
+	! vp8enc cpu-used=8 deadline=1 resize-allowed=true
+	! appsink name=video max-buffers=32 drop=true
+
+	demux.
+	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! decodebin
+	! audioconvert
+	! audioresample
+	! audio/x-raw,rate=48000
+	! opusenc bitrate=128000
+	! appsink name=audio max-buffers=32 drop=true
+`))
 
 var errPipelineNotInitialized = errors.New("pipeline not initialized")
 

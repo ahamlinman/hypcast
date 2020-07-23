@@ -50,9 +50,9 @@ const (
 
 // sinkNames matches the appsink element names defined in the pipeline template.
 var sinkNames = map[SinkType]*C.char{
-	SinkTypeRaw:   C.HYP_SINK_NAME_RAW,
-	SinkTypeVideo: C.HYP_SINK_NAME_VIDEO,
-	SinkTypeAudio: C.HYP_SINK_NAME_AUDIO,
+	SinkTypeRaw:   C.HYPCAST_SINK_NAME_RAW,
+	SinkTypeVideo: C.HYPCAST_SINK_NAME_VIDEO,
+	SinkTypeAudio: C.HYPCAST_SINK_NAME_AUDIO,
 }
 
 // SetSink sets the Sink function for a particular data stream, as determined by
@@ -68,19 +68,19 @@ func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
 	}
 
 	if p.sinkRefs[sinkType] == nil {
-		sinkRef := (*C.HypSinkRef)(C.malloc(C.sizeof_HypSinkRef))
+		sinkRef := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
 		sinkRef.global_pipeline_id = C.uint(p.globalID)
 		sinkRef.sink_type = C.uint(sinkType)
 		p.sinkRefs[sinkType] = sinkRef
 
-		C.hyp_define_sink(p.gstPipeline, sinkNames[sinkType], sinkRef)
+		C.hypcast_define_sink(p.gstPipeline, sinkNames[sinkType], sinkRef)
 	}
 
 	p.sinks[sinkType] = sink
 }
 
-//export hypGlobalSink
-func hypGlobalSink(sinkRef *C.HypSinkRef, buf unsafe.Pointer, bufLen C.int, durNs C.int) {
+//export hypcastGlobalSink
+func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buf unsafe.Pointer, bufLen C.int, durNs C.int) {
 	sinkType := SinkType(sinkRef.sink_type)
 	if sinkType <= sinkTypeStart || sinkType >= sinkTypeEnd {
 		panic(fmt.Errorf("invalid sink type ID %d", sinkType))
