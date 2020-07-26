@@ -76,6 +76,7 @@ func main() {
 	<-signalCh
 
 	log.Print("Stopping web server")
-	stopCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	server.Shutdown(stopCtx)
 }
