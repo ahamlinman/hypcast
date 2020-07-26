@@ -112,8 +112,8 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request(%p): Set local session description", r)
 
 	msg := message{
-		Kind:        serverOfferMessageKind,
-		ServerOffer: &sdp,
+		Kind:  messageKindRTCServerOffer,
+		Offer: &sdp,
 	}
 	if err := ws.WriteJSON(msg); err != nil {
 		log.Printf("Request(%p): Failed to send offer to client: %v", r, err)
@@ -139,9 +139,9 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		switch msg.Kind {
-		case clientAnswerMessageKind:
+		case messageKindRTCClientAnswer:
 			log.Printf("Request(%p): Received session description from client", r)
-			pc.SetRemoteDescription(*msg.ClientAnswer)
+			pc.SetRemoteDescription(*msg.Answer)
 
 		default:
 			log.Printf("Request(%p): Ignoring unknown message kind %q", r, msg.Kind)
@@ -152,12 +152,12 @@ func (h *socketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type messageKind string
 
 const (
-	serverOfferMessageKind  messageKind = "ServerOffer"
-	clientAnswerMessageKind             = "ClientAnswer"
+	messageKindRTCServerOffer  messageKind = "RTC.Offer"
+	messageKindRTCClientAnswer messageKind = "RTC.Answer"
 )
 
 type message struct {
-	Kind         messageKind
-	ServerOffer  *webrtc.SessionDescription `json:",omitempty"`
-	ClientAnswer *webrtc.SessionDescription `json:",omitempty"`
+	Kind   messageKind
+	Offer  *webrtc.SessionDescription `json:",omitempty"`
+	Answer *webrtc.SessionDescription `json:",omitempty"`
 }
