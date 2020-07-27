@@ -24,8 +24,6 @@ type Client interface {
 // Status represents the current status of a tuner, which any Client may read as
 // necessary.
 type Status struct {
-	AvailableChannels []atsc.Channel
-
 	Active  bool
 	Channel atsc.Channel
 
@@ -41,6 +39,7 @@ type Status struct {
 // to update their local status. Clients may register with the Tuner to be
 // notified when they should reread the current state.
 type Tuner struct {
+	channels   []atsc.Channel
 	channelMap map[string]atsc.Channel
 
 	mu       sync.Mutex
@@ -52,8 +51,8 @@ type Tuner struct {
 // NewTuner creates a new Tuner that can tune to any of the provided channels.
 func NewTuner(channels []atsc.Channel) *Tuner {
 	return &Tuner{
-		status:     Status{AvailableChannels: channels},
 		clients:    make(map[Client]struct{}),
+		channels:   channels,
 		channelMap: makeChannelMap(channels),
 	}
 }
@@ -64,6 +63,11 @@ func makeChannelMap(channels []atsc.Channel) map[string]atsc.Channel {
 		m[c.Name] = c
 	}
 	return m
+}
+
+// Channels returns the set of channels known to this Tuner.
+func (t *Tuner) Channels() []atsc.Channel {
+	return t.channels
 }
 
 // Status returns the current status of this tuner.
@@ -154,7 +158,7 @@ func (t *Tuner) notifyClients() {
 
 func (t *Tuner) stop() error {
 	defer func() {
-		t.status = Status{AvailableChannels: t.status.AvailableChannels}
+		t.status = Status{}
 		t.pipeline = nil
 	}()
 
