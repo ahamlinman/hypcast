@@ -39,17 +39,17 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
     ws.addEventListener("message", (evt) => {
       const message = JSON.parse(evt.data);
       switch (message.Kind) {
-        case "RTC.Offer":
+        case "RTCOffer":
           console.log("Received offer message", message);
           (async () => {
-            pc.setRemoteDescription(message.Offer);
+            pc.setRemoteDescription(message.SDP);
 
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
             const response = {
-              Kind: "RTC.Answer",
-              Answer: answer,
+              Kind: "RTCAnswer",
+              SDP: answer,
             };
 
             console.log("Sending response message:", response);

@@ -162,7 +162,7 @@ func (t *Tuner) stop() error {
 		t.pipeline = nil
 	}()
 
-	if t.pipeline != nil {
+	if t.pipeline == nil {
 		return nil
 	}
 
@@ -221,5 +221,5 @@ func generateSSRCBase() uint32 {
 	ssrcMu.Lock()
 	defer ssrcMu.Unlock()
 
-	return ssrcRand.Uint32() % 2
+	return ssrcRand.Uint32() &^ 1
 }

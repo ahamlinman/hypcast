@@ -1,6 +1,9 @@
 package client
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -27,7 +30,10 @@ func Handler(tuner *tuner.Tuner) http.Handler {
 			tuner: tuner,
 			ws:    ws,
 		}
-		client.start()
+
+		log.Printf("Client(%p): Starting", client)
+		err = client.start()
+		log.Printf("Client(%p): Finished with error: %v", client, err)
 	})
 }
 
@@ -37,14 +43,11 @@ type client struct {
 	ws *websocket.Conn
 	pc *webrtc.PeerConnection
 
-	videoTrack  *webrtc.Track
-	videoSender *webrtc.RTPSender
-	audioTrack  *webrtc.Track
-	audioSender *webrtc.RTPSender
+	videoTrack *webrtc.Track
+	audioTrack *webrtc.Track
 
 	receiverDone       chan error
 	rtcOfferAvailable  chan webrtc.SessionDescription
-	rtcAnswerAvailable chan webrtc.SessionDescription
 	tunerSyncRequested chan struct{}
 }
 
@@ -72,7 +75,7 @@ func (c *client) start() error {
 		}
 	}()
 
-	return c.runHandler()
+	return c.runSender()
 }
 
 func (c *client) init() error {
@@ -84,15 +87,7 @@ func (c *client) init() error {
 		return err
 	}
 
-	sdp, err := c.pc.CreateOffer(nil)
-	if err != nil {
-		return err
-	}
-	c.pc.SetLocalDescription(sdp)
 	c.rtcOfferAvailable = make(chan webrtc.SessionDescription, 1)
-	c.rtcOfferAvailable <- sdp
-
-	c.rtcAnswerAvailable = make(chan webrtc.SessionDescription, 1)
 
 	c.tunerSyncRequested = make(chan struct{}, 1)
 	c.tunerSyncRequested <- struct{}{}
@@ -115,28 +110,43 @@ func (c *client) writeChannelListMessage() error {
 
 func (c *client) runReceiver() error {
 	for {
-		_, _, err := c.ws.ReadMessage()
+		_, rawMsg, err := c.ws.ReadMessage()
 		if err != nil {
 			return err
+		}
+
+		var msg message
+		if err := json.Unmarshal(rawMsg, &msg); err != nil {
+			return err
+		}
+
+		switch msg.Kind {
+		case messageKindRTCAnswer:
+			if err := c.pc.SetRemoteDescription(*msg.SDP); err != nil {
+				return err
+			}
+
+		case messageKindChangeChannel:
+			if err := c.tuner.Tune(msg.ChannelName); err != nil {
+				return err
+			}
+
+		case messageKindTurnOff:
+			if err := c.tuner.Stop(); err != nil {
+				return err
+			}
+
+		default:
+			return fmt.Errorf("received unknown message kind %q", msg.Kind)
 		}
 	}
 }
 
-func (c *client) runHandler() error {
+func (c *client) runSender() error {
 	for {
 		select {
 		case err := <-c.receiverDone:
 			return err
-
-		case sdp := <-c.rtcOfferAvailable:
-			if err := c.writeOfferMessage(sdp); err != nil {
-				return err
-			}
-
-		case sdp := <-c.rtcAnswerAvailable:
-			if err := c.pc.SetRemoteDescription(sdp); err != nil {
-				return err
-			}
 
 		case <-c.tunerSyncRequested:
 			if err := c.syncTunerStatus(); err != nil {
@@ -144,13 +154,6 @@ func (c *client) runHandler() error {
 			}
 		}
 	}
-}
-
-func (c *client) writeOfferMessage(sdp webrtc.SessionDescription) error {
-	return c.ws.WriteJSON(message{
-		Kind: messageKindRTCOffer,
-		SDP:  &sdp,
-	})
 }
 
 func (c *client) syncTunerStatus() error {
@@ -170,45 +173,48 @@ func (c *client) syncTunerStatus() error {
 		}
 	}
 
+	sdp, err := c.pc.CreateOffer(nil)
+	if err != nil {
+		return err
+	}
+	if err := c.writeOfferMessage(sdp); err != nil {
+		return err
+	}
+
 	return c.writeTunerStatusMessage(s)
 }
 
 func (c *client) removeExistingTracks() error {
-	if c.videoSender != nil {
-		if err := c.pc.RemoveTrack(c.videoSender); err != nil {
+	for _, sender := range c.pc.GetSenders() {
+		if err := c.pc.RemoveTrack(sender); err != nil {
 			return err
 		}
-		c.videoSender = nil
-		c.videoTrack = nil
 	}
 
-	if c.audioSender != nil {
-		if err := c.pc.RemoveTrack(c.audioSender); err != nil {
-			return err
-		}
-		c.audioSender = nil
-		c.audioTrack = nil
-	}
-
+	c.videoTrack = nil
+	c.audioTrack = nil
 	return nil
 }
 
 func (c *client) addNewTracks(video, audio *webrtc.Track) error {
-	var err error
+	if _, err := c.pc.AddTrack(video); err != nil {
+		return err
+	}
+
+	if _, err := c.pc.AddTrack(audio); err != nil {
+		return err
+	}
 
 	c.videoTrack = video
-	c.videoSender, err = c.pc.AddTrack(video)
-	if err != nil {
-		return err
-	}
-
 	c.audioTrack = audio
-	c.audioSender, err = c.pc.AddTrack(audio)
-	if err != nil {
-		return err
-	}
-
 	return nil
+}
+
+func (c *client) writeOfferMessage(sdp webrtc.SessionDescription) error {
+	return c.ws.WriteJSON(message{
+		Kind: messageKindRTCOffer,
+		SDP:  &sdp,
+	})
 }
 
 func (c *client) writeTunerStatusMessage(s tuner.Status) error {

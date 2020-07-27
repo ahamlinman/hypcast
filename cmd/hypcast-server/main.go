@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/atsc/gst"
+	"github.com/ahamlinman/hypcast/internal/client"
+	"github.com/ahamlinman/hypcast/internal/tuner"
 )
 
 func main() {
@@ -31,6 +32,10 @@ func main() {
 		log.Fatalf("Unable to read channels.conf: %v", err)
 	}
 
+	tuner := tuner.NewTuner(channels)
+	http.Handle("/control-socket", client.Handler(tuner))
+
+	// TODO: Remove this and let client change channels
 	var channel atsc.Channel
 	if flag.NArg() > 0 {
 		for _, ch := range channels {
@@ -44,28 +49,9 @@ func main() {
 		channel = channels[0]
 	}
 	log.Printf("Watching %v", channel)
-
-	log.Print("Initializing GStreamer pipeline")
-	pipeline, err := gst.NewPipeline(channel)
-	if err != nil {
-		log.Fatal(err)
+	if err := tuner.Tune(channel.Name); err != nil {
+		log.Fatalf("Unable to tune to channel: %v", err)
 	}
-
-	h, err := newSocketHandler()
-	if err != nil {
-		log.Fatal("unable to create socket handler", err)
-	}
-
-	pipeline.SetSink(gst.SinkTypeVideo, h.HandleVideoData)
-	pipeline.SetSink(gst.SinkTypeAudio, h.HandleAudioData)
-
-	http.Handle("/control-socket", h)
-
-	log.Print("Starting pipeline")
-	pipeline.Start()
-	defer func() {
-		log.Printf("Result of closing pipeline: %v", pipeline.Close())
-	}()
 
 	log.Print("Starting web server")
 	server := http.Server{Addr: ":9200"}
