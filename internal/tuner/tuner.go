@@ -18,7 +18,10 @@ import (
 
 // Client receives notifications when the status of a Tuner is updated.
 type Client interface {
-	CheckTunerStatus()
+	// RequestStatusCheck is called to indicate that the Status of the Tuner has
+	// changed, and that the Client should re-request the status as soon as
+	// possible and update its associated state. This call must not block.
+	RequestStatusCheck()
 }
 
 // Status represents the current status of a tuner, which any Client may read as
@@ -152,7 +155,7 @@ func (t *Tuner) Tune(channelName string) (err error) {
 
 func (t *Tuner) notifyClients() {
 	for c := range t.clients {
-		c.CheckTunerStatus()
+		c.RequestStatusCheck()
 	}
 }
 

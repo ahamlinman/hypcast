@@ -47,7 +47,6 @@ type client struct {
 	audioTrack *webrtc.Track
 
 	receiverDone       chan error
-	rtcOfferAvailable  chan webrtc.SessionDescription
 	tunerSyncRequested chan struct{}
 }
 
@@ -86,8 +85,6 @@ func (c *client) init() error {
 	if err != nil {
 		return err
 	}
-
-	c.rtcOfferAvailable = make(chan webrtc.SessionDescription, 1)
 
 	c.tunerSyncRequested = make(chan struct{}, 1)
 	c.tunerSyncRequested <- struct{}{}
@@ -227,7 +224,11 @@ func (c *client) writeTunerStatusMessage(s tuner.Status) error {
 	})
 }
 
-func (c *client) CheckTunerStatus() {
+func (c *client) RequestStatusCheck() {
+	// Tuner requires that this call never block. We satisfy that requirement with
+	// a 1-element buffered channel acting as a "flag" to the sender routine. If
+	// the "flag" is already set, we're good to go; the sender will pick up the
+	// latest status if / when it gets around to it.
 	select {
 	case c.tunerSyncRequested <- struct{}{}:
 	default:
