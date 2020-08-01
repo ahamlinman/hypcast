@@ -1,14 +1,9 @@
 import React from "react";
 
-import { useController } from "./Controller";
-
 const App = () => {
-  const [state] = useController();
   return (
     <>
       <h1>It works!</h1>
-      <p>Status: {state.connected ? "Connected" : "Disconnected"}</p>
-      {state.stream !== null ? <VideoPlayer stream={state.stream} /> : null}
     </>
   );
 };
