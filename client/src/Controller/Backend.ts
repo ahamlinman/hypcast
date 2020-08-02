@@ -106,6 +106,7 @@ class Backend extends EventEmitter {
   }
 
   changeChannel(channelName: string) {
+    console.log("Requested channel change", channelName);
     this.ws.send(
       JSON.stringify({
         Kind: "ChangeChannel",
@@ -115,6 +116,7 @@ class Backend extends EventEmitter {
   }
 
   turnOff() {
+    console.log("Requested to turn off");
     this.ws.send(
       JSON.stringify({
         Kind: "TurnOff",
@@ -124,6 +126,7 @@ class Backend extends EventEmitter {
 
   private handleSocketMessage(evt: MessageEvent) {
     const message: Message = JSON.parse(evt.data);
+    console.log("Received message", message);
     switch (message.Kind) {
       case "RTCOffer":
         this.handleRTCOffer(message.SDP);
@@ -143,9 +146,11 @@ class Backend extends EventEmitter {
   }
 
   private async handleRTCOffer(sdp: any) {
+    console.log("Received remote description", sdp);
     this.pc.setRemoteDescription(sdp);
 
     const answer = await this.pc.createAnswer();
+    console.log("Created local description", answer);
     await this.pc.setLocalDescription(answer);
 
     this.ws.send(
@@ -175,16 +180,19 @@ class Backend extends EventEmitter {
   }
 
   private handleSocketOpen() {
+    console.log("WebSocket opened");
     this._connectionState = { status: ConnectionStatus.Connected };
     this.emit("connectionchange", this._connectionState);
   }
 
   private handleSocketClose() {
+    console.log("WebSocket closed");
     this._connectionState = { status: ConnectionStatus.Disconnected };
     this.emit("connectionchange", this._connectionState);
   }
 
   private handleSocketError(evt: Event) {
+    console.log("WebSocket error", evt);
     this._connectionState = {
       status: ConnectionStatus.Error,
       error: new Error(evt.toString()),
@@ -193,6 +201,8 @@ class Backend extends EventEmitter {
   }
 
   private handlePeerConnectionTrack(evt: RTCTrackEvent) {
+    console.log("RTC track", evt);
+
     if (evt.streams.length < 1) {
       return;
     }
@@ -211,6 +221,8 @@ class Backend extends EventEmitter {
   }
 
   private handleMediaStreamRemoveTrack(stream: MediaStream) {
+    console.log("Track removed from stream", stream);
+
     if (!this._mediaStream || this._mediaStream.id !== stream.id) {
       return;
     }

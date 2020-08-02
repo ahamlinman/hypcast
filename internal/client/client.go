@@ -31,9 +31,9 @@ func Handler(tuner *tuner.Tuner) http.Handler {
 			ws:    ws,
 		}
 
-		log.Printf("Client(%p): Starting", client)
+		client.logf("Starting")
 		err = client.start()
-		log.Printf("Client(%p): Finished with error: %v", client, err)
+		client.logf("Finished with error: %v", err)
 	})
 }
 
@@ -117,6 +117,8 @@ func (c *client) runReceiver() error {
 			return err
 		}
 
+		c.logf("Received message: %#v", msg)
+
 		switch msg.Kind {
 		case messageKindRTCAnswer:
 			if err := c.pc.SetRemoteDescription(*msg.SDP); err != nil {
@@ -155,16 +157,19 @@ func (c *client) runSender() error {
 
 func (c *client) syncTunerStatus() error {
 	s := c.tuner.Status()
+	c.logf("Processing tuner status: %#v", s)
 
 	tracksChanged := s.VideoTrack != c.videoTrack || s.AudioTrack != c.audioTrack
 
 	if !s.Active || tracksChanged {
+		c.logf("Removed existing tracks")
 		if err := c.removeExistingTracks(); err != nil {
 			return err
 		}
 	}
 
 	if s.Active && tracksChanged {
+		c.logf("Adding new tracks")
 		if err := c.addNewTracks(s.VideoTrack, s.AudioTrack); err != nil {
 			return err
 		}
@@ -225,6 +230,7 @@ func (c *client) writeTunerStatusMessage(s tuner.Status) error {
 }
 
 func (c *client) RequestStatusCheck() {
+	c.logf("Tuner status sync requested")
 	// Tuner requires that this call never block. We satisfy that requirement with
 	// a 1-element buffered channel acting as a "flag" to the sender routine. If
 	// the "flag" is already set, we're good to go; the sender will pick up the
@@ -233,4 +239,14 @@ func (c *client) RequestStatusCheck() {
 	case c.tunerSyncRequested <- struct{}{}:
 	default:
 	}
+}
+
+func (c *client) logf(format string, v ...interface{}) {
+	joinFmt := "Client(%p): " + format
+
+	joinArgs := make([]interface{}, len(v)+1)
+	joinArgs[0] = c
+	copy(joinArgs[1:], v)
+
+	log.Printf(joinFmt, joinArgs...)
 }
