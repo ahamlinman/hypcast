@@ -1,10 +1,10 @@
 import { EventEmitter } from "events";
 
 export enum ConnectionStatus {
-  Disconnected,
-  Connecting,
-  Connected,
-  Error,
+  Disconnected = "Disconnected",
+  Connecting = "Connecting",
+  Connected = "Connected",
+  Error = "Error",
 }
 
 export type ConnectionState =
@@ -20,9 +20,9 @@ export type ConnectionState =
     };
 
 export enum TunerStatus {
-  Started,
-  Stopped,
-  Error,
+  Started = "Started",
+  Stopped = "Stopped",
+  Error = "Error",
 }
 
 export type TunerState =

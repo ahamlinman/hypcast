@@ -1,9 +1,26 @@
 import React from "react";
 
+import { useController } from "./Controller";
+
 const App = () => {
+  const controller = useController();
+
   return (
     <>
       <h1>It works!</h1>
+      <p>Connection Status: {controller.connectionState.status}</p>
+      <p>Tuner Status: {controller.tunerState?.status}</p>
+      {controller.mediaStream ? (
+        <VideoPlayer stream={controller.mediaStream} />
+      ) : null}
+      <br />
+      {controller.channelList && controller.requestedChannelName ? (
+        <Selector
+          options={controller.channelList}
+          value={controller.requestedChannelName}
+          onChange={controller.changeChannel}
+        />
+      ) : null}
     </>
   );
 };
@@ -29,3 +46,21 @@ const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
     />
   );
 };
+
+const Selector = ({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) => (
+  <select value={value} onChange={(evt) => onChange(evt.currentTarget.value)}>
+    {options.map((opt) => (
+      <option key={opt} value={opt}>
+        {opt}
+      </option>
+    ))}
+  </select>
+);
