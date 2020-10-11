@@ -63,10 +63,6 @@ func (c *client) start() error {
 		return err
 	}
 
-	if err := c.writeChannelListMessage(); err != nil {
-		return err
-	}
-
 	go func() {
 		defer close(c.receiverDone)
 		if err := c.runReceiver(); err != nil {
@@ -91,18 +87,6 @@ func (c *client) init() error {
 
 	c.tuner.AddClient(c)
 	return nil
-}
-
-func (c *client) writeChannelListMessage() error {
-	var channelNames []string
-	for _, ch := range c.tuner.Channels() {
-		channelNames = append(channelNames, ch.Name)
-	}
-
-	return c.ws.WriteJSON(message{
-		Kind:         messageKindChannelList,
-		ChannelNames: channelNames,
-	})
 }
 
 func (c *client) runReceiver() error {

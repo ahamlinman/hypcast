@@ -7,7 +7,6 @@ type messageKind string
 const (
 	// Server-sent messages
 	messageKindRTCOffer    messageKind = "RTCOffer"
-	messageKindChannelList messageKind = "ChannelList"
 	messageKindTunerStatus messageKind = "TunerStatus"
 
 	// Client-sent messages
@@ -21,8 +20,6 @@ type message struct {
 
 	// RTCOffer, RTCAnswer
 	SDP *webrtc.SessionDescription `json:",omitempty"`
-	// ChannelList
-	ChannelNames []string `json:",omitempty"`
 	// TunerStatus
 	TunerStatus *tunerStatus `json:",omitempty"`
 	// ChangeChannel
