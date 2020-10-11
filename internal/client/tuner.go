@@ -17,9 +17,9 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(_ *http.Request) bool { return true },
 }
 
-// Handler returns a http.Handler that spawns a new tuner client for each new
-// WebSocket connection.
-func Handler(tuner *tuner.Tuner) http.Handler {
+// TunerControlHandler returns a http.Handler that spawns a new tuner client for
+// each new WebSocket connection.
+func TunerControlHandler(tuner *tuner.Tuner) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {

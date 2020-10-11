@@ -33,7 +33,9 @@ func main() {
 	}
 
 	tuner := tuner.NewTuner(channels)
-	http.Handle("/control-socket", client.Handler(tuner))
+
+	http.Handle("/config/channels", client.ChannelListHandler(channels))
+	http.Handle("/control-socket", client.TunerControlHandler(tuner))
 
 	// TODO: Remove this and let client change channels
 	var channel atsc.Channel
