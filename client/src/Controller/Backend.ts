@@ -53,12 +53,6 @@ declare interface Backend {
     listener: (state: ConnectionState) => void,
   ): this;
 
-  emit(event: "channellistreceived", channelList: string[]): boolean;
-  on(
-    event: "channellistreceived",
-    listener: (channelList: string[]) => void,
-  ): this;
-
   emit(event: "tunerchange", state: TunerState): boolean;
   on(event: "tunerchange", listener: (state: TunerState) => void): this;
 
@@ -136,10 +130,6 @@ class Backend extends EventEmitter {
     switch (message.Kind) {
       case "RTCOffer":
         this.handleRTCOffer(message.SDP);
-        break;
-
-      case "ChannelList":
-        this.emit("channellistreceived", message.ChannelNames);
         break;
 
       case "TunerStatus":

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { FormEvent } from "react";
 
 import { useController } from "./Controller";
 
@@ -10,16 +10,17 @@ const App = () => {
       <h1>It works!</h1>
       <p>Connection Status: {controller.connectionState.status}</p>
       <p>Tuner Status: {controller.tunerState?.status}</p>
+      <p>Current Channel: {controller.requestedChannelName || "(unknown)"}</p>
+      <p>
+        Change Channel:{" "}
+        <ChannelSelector
+          onTune={async (name: string) => {
+            controller.changeChannel(name);
+          }}
+        />
+      </p>
       {controller.mediaStream ? (
         <VideoPlayer stream={controller.mediaStream} />
-      ) : null}
-      <br />
-      {controller.channelList && controller.requestedChannelName ? (
-        <Selector
-          options={controller.channelList}
-          value={controller.requestedChannelName}
-          onChange={controller.changeChannel}
-        />
       ) : null}
     </>
   );
@@ -47,20 +48,82 @@ const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
   );
 };
 
-const Selector = ({
-  options,
-  value,
-  onChange,
+const ChannelSelector = ({
+  onTune,
 }: {
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) => (
-  <select value={value} onChange={(evt) => onChange(evt.currentTarget.value)}>
-    {options.map((opt) => (
-      <option key={opt} value={opt}>
-        {opt}
-      </option>
-    ))}
-  </select>
-);
+  onTune: (ch: string) => Promise<void>;
+}) => {
+  const channelNames = useChannelNames();
+  const [selected, setSelected] = React.useState<undefined | string>();
+  const [forceDisabled, setForceDisabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (channelNames instanceof Array) {
+      setSelected((s) => (s === undefined ? channelNames[0] : s));
+    }
+  }, [channelNames]);
+
+  const disabled =
+    forceDisabled ||
+    channelNames === undefined ||
+    channelNames instanceof Error;
+
+  const handleTune = async (evt: FormEvent) => {
+    evt.preventDefault();
+
+    if (selected === undefined) {
+      throw new Error("tried to tune before channels loaded");
+    }
+
+    setForceDisabled(true);
+    try {
+      await onTune(selected);
+    } catch (e) {
+      console.error("Tune request failed", e);
+    } finally {
+      setForceDisabled(false);
+    }
+  };
+
+  return (
+    <form style={{ display: "inline" }} onSubmit={handleTune}>
+      <select
+        name="channel"
+        disabled={disabled}
+        value={selected}
+        onChange={(evt) => setSelected(evt.currentTarget.value)}
+      >
+        {channelNames instanceof Array
+          ? channelNames.map((ch) => (
+              <option key={ch} value={ch}>
+                {ch}
+              </option>
+            ))
+          : null}
+      </select>
+      <button type="submit" disabled={disabled}>
+        Tune
+      </button>
+    </form>
+  );
+};
+
+const useChannelNames = (): undefined | string[] | Error => {
+  const [result, setResult] = React.useState<undefined | string[] | Error>();
+
+  React.useEffect(() => {
+    const startFetch = async () => {
+      try {
+        const result = await fetch("/config/channels");
+        const channels: string[] = await result.json();
+        setResult(channels);
+      } catch (e) {
+        setResult(e);
+      }
+    };
+
+    startFetch();
+  }, []);
+
+  return result;
+};
