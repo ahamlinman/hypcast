@@ -179,6 +179,7 @@ func (c *client) syncTunerStatus() error {
 	if err != nil {
 		return err
 	}
+	c.pc.SetLocalDescription(sdp)
 	if err := c.writeOfferMessage(sdp); err != nil {
 		return err
 	}
