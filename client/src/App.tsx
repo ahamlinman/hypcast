@@ -17,7 +17,6 @@ const App = () => {
         <>
           Change Channel:{" "}
           <ChannelSelector
-            channelNames={controller.channelList}
             onTune={async (name: string) => {
               controller.changeChannel(name);
             }}
@@ -55,23 +54,37 @@ const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
 };
 
 const ChannelSelector = ({
-  channelNames,
   onTune,
 }: {
-  channelNames: string[];
   onTune: (ch: string) => Promise<void>;
 }) => {
-  const [selected, setSelected] = React.useState(channelNames[0]);
-  const [disabled, setDisabled] = React.useState(false);
+  const channelNames = useChannelNames();
+  const [selected, setSelected] = React.useState<undefined | string>();
+  const [forceDisabled, setForceDisabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (channelNames instanceof Array) {
+      setSelected((s) => (s === undefined ? channelNames[0] : s));
+    }
+  }, [channelNames]);
+
+  const disabled =
+    forceDisabled ||
+    channelNames === undefined ||
+    channelNames instanceof Error;
 
   const handleTune = async () => {
-    setDisabled(true);
+    if (selected === undefined) {
+      throw new Error("tried to tune before channels loaded");
+    }
+
+    setForceDisabled(true);
     try {
       await onTune(selected);
     } catch (e) {
       console.error("Tune request failed", e);
     } finally {
-      setDisabled(false);
+      setForceDisabled(false);
     }
   };
 
@@ -82,15 +95,37 @@ const ChannelSelector = ({
         value={selected}
         onChange={(evt) => setSelected(evt.currentTarget.value)}
       >
-        {channelNames.map((ch) => (
-          <option key={ch} value={ch}>
-            {ch}
-          </option>
-        ))}
+        {channelNames instanceof Array
+          ? channelNames.map((ch) => (
+              <option key={ch} value={ch}>
+                {ch}
+              </option>
+            ))
+          : null}
       </select>
       <button disabled={disabled} onClick={handleTune}>
         Tune
       </button>
     </>
   );
+};
+
+const useChannelNames = (): undefined | string[] | Error => {
+  const [result, setResult] = React.useState<undefined | string[] | Error>();
+
+  React.useEffect(() => {
+    const startFetch = async () => {
+      try {
+        const result = await fetch("/config/channels");
+        const channels: string[] = await result.json();
+        setResult(channels);
+      } catch (e) {
+        setResult(e);
+      }
+    };
+
+    startFetch();
+  }, []);
+
+  return result;
 };
