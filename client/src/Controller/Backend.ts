@@ -94,6 +94,12 @@ class Backend extends EventEmitter {
     this.pc.addEventListener("track", (evt) =>
       this.handlePeerConnectionTrack(evt),
     );
+    this.pc.addEventListener("connectionstatechange", (evt) =>
+      console.log("Connection state", this.pc.connectionState, evt),
+    );
+    this.pc.addEventListener("signalingstatechange", (evt) =>
+      console.log("Signaling state", this.pc.signalingState, evt),
+    );
   }
 
   get connectionState() {
