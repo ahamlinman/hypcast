@@ -10,16 +10,23 @@ const App = () => {
       <h1>It works!</h1>
       <p>Connection Status: {controller.connectionState.status}</p>
       <p>Tuner Status: {controller.tunerState?.status}</p>
+      {controller.requestedChannelName ? (
+        <p>Current Channel: {controller.requestedChannelName}</p>
+      ) : null}
+      {controller.channelList ? (
+        <>
+          Change Channel:{" "}
+          <ChannelSelector
+            channelNames={controller.channelList}
+            onTune={async (name: string) => {
+              controller.changeChannel(name);
+            }}
+          />
+          <br />
+        </>
+      ) : null}
       {controller.mediaStream ? (
         <VideoPlayer stream={controller.mediaStream} />
-      ) : null}
-      <br />
-      {controller.channelList && controller.requestedChannelName ? (
-        <Selector
-          options={controller.channelList}
-          value={controller.requestedChannelName}
-          onChange={controller.changeChannel}
-        />
       ) : null}
     </>
   );
@@ -47,20 +54,43 @@ const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
   );
 };
 
-const Selector = ({
-  options,
-  value,
-  onChange,
+const ChannelSelector = ({
+  channelNames,
+  onTune,
 }: {
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) => (
-  <select value={value} onChange={(evt) => onChange(evt.currentTarget.value)}>
-    {options.map((opt) => (
-      <option key={opt} value={opt}>
-        {opt}
-      </option>
-    ))}
-  </select>
-);
+  channelNames: string[];
+  onTune: (ch: string) => Promise<void>;
+}) => {
+  const [selected, setSelected] = React.useState(channelNames[0]);
+  const [disabled, setDisabled] = React.useState(false);
+
+  const handleTune = async () => {
+    setDisabled(true);
+    try {
+      await onTune(selected);
+    } catch (e) {
+      console.error("Tune request failed", e);
+    } finally {
+      setDisabled(false);
+    }
+  };
+
+  return (
+    <>
+      <select
+        disabled={disabled}
+        value={selected}
+        onChange={(evt) => setSelected(evt.currentTarget.value)}
+      >
+        {channelNames.map((ch) => (
+          <option key={ch} value={ch}>
+            {ch}
+          </option>
+        ))}
+      </select>
+      <button disabled={disabled} onClick={handleTune}>
+        Tune
+      </button>
+    </>
+  );
+};
