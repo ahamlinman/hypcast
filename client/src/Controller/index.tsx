@@ -13,7 +13,6 @@ export { ConnectionStatus, TunerStatus };
 export interface State {
   connectionState: ConnectionState;
 
-  channelList: undefined | string[];
   tunerState: undefined | TunerState;
   mediaStream: undefined | MediaStream;
 
@@ -36,12 +35,6 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
       dispatch({
         kind: "connectionchange",
         state,
-      }),
-    );
-    backend.on("channellistreceived", (channelList: string[]) =>
-      dispatch({
-        kind: "channellistreceived",
-        channelList,
       }),
     );
     backend.on("tunerchange", (state: TunerState) =>
@@ -76,7 +69,6 @@ export const useController = (): State => {
 
 const defaultState = (): State => ({
   connectionState: { status: ConnectionStatus.Connecting },
-  channelList: undefined,
   tunerState: undefined,
   mediaStream: undefined,
   changeChannel: () => {},
@@ -86,7 +78,6 @@ const defaultState = (): State => ({
 type Action =
   | { kind: "backend"; backend: Backend }
   | { kind: "connectionchange"; state: ConnectionState }
-  | { kind: "channellistreceived"; channelList: string[] }
   | { kind: "tunerchange"; state: TunerState }
   | { kind: "streamreceived"; stream: MediaStream }
   | { kind: "streamremoved" }
@@ -103,13 +94,6 @@ const reduce = (state: State, action: Action): State => {
 
     case "connectionchange":
       return { ...state, connectionState: action.state };
-
-    case "channellistreceived":
-      return {
-        ...state,
-        channelList: action.channelList,
-        requestedChannelName: action.channelList[0],
-      };
 
     case "tunerchange":
       return {

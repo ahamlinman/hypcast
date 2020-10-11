@@ -1,4 +1,4 @@
-import React from "react";
+import React, { FormEvent } from "react";
 
 import { useController } from "./Controller";
 
@@ -10,20 +10,15 @@ const App = () => {
       <h1>It works!</h1>
       <p>Connection Status: {controller.connectionState.status}</p>
       <p>Tuner Status: {controller.tunerState?.status}</p>
-      {controller.requestedChannelName ? (
-        <p>Current Channel: {controller.requestedChannelName}</p>
-      ) : null}
-      {controller.channelList ? (
-        <>
-          Change Channel:{" "}
-          <ChannelSelector
-            onTune={async (name: string) => {
-              controller.changeChannel(name);
-            }}
-          />
-          <br />
-        </>
-      ) : null}
+      <p>Current Channel: {controller.requestedChannelName || "(unknown)"}</p>
+      <p>
+        Change Channel:{" "}
+        <ChannelSelector
+          onTune={async (name: string) => {
+            controller.changeChannel(name);
+          }}
+        />
+      </p>
       {controller.mediaStream ? (
         <VideoPlayer stream={controller.mediaStream} />
       ) : null}
@@ -73,7 +68,9 @@ const ChannelSelector = ({
     channelNames === undefined ||
     channelNames instanceof Error;
 
-  const handleTune = async () => {
+  const handleTune = async (evt: FormEvent) => {
+    evt.preventDefault();
+
     if (selected === undefined) {
       throw new Error("tried to tune before channels loaded");
     }
@@ -89,8 +86,9 @@ const ChannelSelector = ({
   };
 
   return (
-    <>
+    <form style={{ display: "inline" }} onSubmit={handleTune}>
       <select
+        name="channel"
         disabled={disabled}
         value={selected}
         onChange={(evt) => setSelected(evt.currentTarget.value)}
@@ -103,10 +101,10 @@ const ChannelSelector = ({
             ))
           : null}
       </select>
-      <button disabled={disabled} onClick={handleTune}>
+      <button type="submit" disabled={disabled}>
         Tune
       </button>
-    </>
+    </form>
   );
 };
 
