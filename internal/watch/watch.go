@@ -98,7 +98,7 @@ type Subscription struct {
 	value   *Value
 	handler func(interface{})
 	flag    chan struct{} // Buffered with size 1
-	done    chan struct{} // Unbuffered
+	done    chan struct{} // Unbuffered; for testing only
 }
 
 func (s *Subscription) setFlag() {
@@ -115,10 +115,10 @@ func (s *Subscription) run() {
 	}
 }
 
-// Cancel ends a subscription created with Value.Subscribe and releases
-// resources associated with it. After Cancel returns, no new calls will be made
-// to the subscription's handler function. An existing call may still be
-// running; use Done to know when any such call has finished.
+// Cancel ends a subscription created with Value.Subscribe and enables its
+// resources to be released. After Cancel returns, no new calls will be made to
+// the subscription's handler function, though an existing call may still be
+// running.
 func (s *Subscription) Cancel() {
 	s.value.unsetSubscription(s)
 	close(s.flag)
@@ -130,10 +130,4 @@ func (s *Subscription) clearFlag() {
 	case <-s.flag:
 	default:
 	}
-}
-
-// Done returns a channel that will be closed after this subscription has been
-// canceled and any call to the handler has finished.
-func (s *Subscription) Done() <-chan struct{} {
-	return s.done
 }

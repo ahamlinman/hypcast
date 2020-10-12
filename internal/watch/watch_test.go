@@ -1,12 +1,9 @@
-package watch_test
+package watch
 
 import (
-	"runtime"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
 const timeout = 2 * time.Second
@@ -22,7 +19,7 @@ func TestValue(t *testing.T) {
 		nSubscribers   = 50
 	)
 
-	var v watch.Value
+	var v Value
 	v.Set(int(0))
 
 	// Because each handler maintains internal state, the race detector should
@@ -52,7 +49,7 @@ func TestValue(t *testing.T) {
 		}
 	}
 
-	var subscriptions [nSubscribers]*watch.Subscription
+	var subscriptions [nSubscribers]*Subscription
 	for i := 0; i < nSubscribers; i++ {
 		subscriptions[i] = v.Subscribe(makeTestHandler())
 	}
@@ -95,7 +92,7 @@ func TestBlockedSubscriber(t *testing.T) {
 	// to receive notifications, and that the blocked subscriber will see an
 	// additional notification for any state that was set while it was blocked.
 
-	var v watch.Value
+	var v Value
 	v.Set("alice")
 
 	var (
@@ -155,7 +152,7 @@ func TestSetFromHandler(t *testing.T) {
 	// entering a loop of writes and notifications.
 
 	const stopValue = 10
-	var v watch.Value
+	var v Value
 	v.Set(int(0))
 
 	done := make(chan struct{})
@@ -189,7 +186,7 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	// handler was running.
 
 	var (
-		v      watch.Value
+		v      Value
 		block  = make(chan struct{})
 		notify = make(chan string)
 	)
@@ -214,10 +211,8 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	s.Cancel()
 
 	// Set another value, to ensure that it doesn't schedule a new handler call
-	// either. We use runtime.Gosched to help along any background work that's
-	// incorrectly started by the call to Set.
+	// either.
 	v.Set("dave")
-	runtime.Gosched()
 
 	// Allow the original notification for "alice" to finish, and ensure that no
 	// other calls will be made to the handler.
@@ -229,12 +224,12 @@ func TestCancelFromHandler(t *testing.T) {
 	// This is a special case of Cancel being called while a handler is blocked,
 	// as the caller of Cancel is the handler itself.
 
-	var v watch.Value
+	var v Value
 	v.Set("alice")
 
 	var (
 		subscriberCanceled bool
-		subCh              = make(chan *watch.Subscription)
+		subCh              = make(chan *Subscription)
 	)
 
 	s := v.Subscribe(func(x interface{}) {
@@ -271,11 +266,11 @@ func assertNextReceive(t *testing.T, ch chan string, want string) {
 	}
 }
 
-func assertSubscriptionDone(t *testing.T, s *watch.Subscription) {
+func assertSubscriptionDone(t *testing.T, s *Subscription) {
 	t.Helper()
 
 	select {
-	case <-s.Done():
+	case <-s.done:
 	case <-time.After(timeout):
 		t.Fatalf("subscription routine still running after %v", timeout)
 	}
