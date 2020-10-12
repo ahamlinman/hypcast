@@ -46,14 +46,14 @@ func (v *Value) pingSubscribers() {
 // Each Subscription executes up to one instance of the handler function at a
 // time, asynchronously from any calls to Set. If Set is called while the
 // handler is running (including from the handler itself), an additional call to
-// the handler will be scheduled to ensure that it has a chance to read the
+// the handler will be scheduled to ensure that it has a chance to receive the
 // latest value. The handler is not guaranteed to be called for every individual
-// call to Set, and may read a given value more than once across subsequent
+// call to Set, and may see a given value more than once across subsequent
 // calls.
 //
 // Subscriptions are not recovered by the garbage collector until they are
 // canceled by a call to Subscription.Cancel.
-func (v *Value) Subscribe(handle func()) *Subscription {
+func (v *Value) Subscribe(handle func(interface{})) *Subscription {
 	s := &Subscription{
 		value:   v,
 		handler: handle,
@@ -87,7 +87,7 @@ func (v *Value) unsetSubscription(s *Subscription) {
 // Value.Subscribe for details.
 type Subscription struct {
 	value   *Value
-	handler func()
+	handler func(interface{})
 	flag    chan struct{} // Must be buffered with size 1
 	done    chan struct{} // Unbuffered
 }
@@ -95,7 +95,7 @@ type Subscription struct {
 func (s *Subscription) run() {
 	defer close(s.done)
 	for range s.flag {
-		s.handler()
+		s.handler(s.value.Get())
 	}
 }
 

@@ -30,14 +30,14 @@ func TestValue(t *testing.T) {
 	// once, and panic if it sees any other state after that.
 	var handlerGroup sync.WaitGroup
 	handlerGroup.Add(nSubscribers)
-	makeTestHandler := func() func() {
+	makeTestHandler := func() func(interface{}) {
 		var (
 			max           int
 			sawFinalState bool
 		)
 
-		return func() {
-			current := v.Get().(int)
+		return func(value interface{}) {
+			current := value.(int)
 			if current > max {
 				max = current
 			}
@@ -104,14 +104,13 @@ func TestBlockedSubscriber(t *testing.T) {
 		notifyBlocked = make(chan string)
 	)
 
-	blockedSub := v.Subscribe(func() {
-		saw := v.Get().(string)
+	blockedSub := v.Subscribe(func(value interface{}) {
 		<-block
-		notifyBlocked <- saw
+		notifyBlocked <- value.(string)
 	})
 
-	unblockedSub := v.Subscribe(func() {
-		notifyUnblocked <- v.Get().(string)
+	unblockedSub := v.Subscribe(func(value interface{}) {
+		notifyUnblocked <- value.(string)
 	})
 
 	// Ensure both subscribers are getting values.
@@ -157,8 +156,8 @@ func TestSetFromHandler(t *testing.T) {
 	var v watch.Value
 
 	done := make(chan struct{})
-	s := v.Subscribe(func() {
-		if i := v.Get().(int); i < nSetOperations {
+	s := v.Subscribe(func(value interface{}) {
+		if i := value.(int); i < nSetOperations {
 			v.Set(i + 1)
 			v.Set(i + 1)
 		} else {
@@ -195,10 +194,9 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 
 	v.Set("alice")
 
-	s := v.Subscribe(func() {
-		saw := v.Get().(string)
+	s := v.Subscribe(func(value interface{}) {
 		<-block
-		notify <- saw
+		notify <- value.(string)
 	})
 
 	// Set a value, and force our subscriber to block before continuing.
