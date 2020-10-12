@@ -125,6 +125,19 @@ func (s *Subscription) Cancel() {
 	s.clearFlag()
 }
 
+// BUG: The following interleaving breaks the invariant that no new calls will
+// be made to the subscription handler after Cancel returns. While extensive
+// testing has not yet revealed this case in practice, it is hypothetically
+// possible as far as I understand.
+//
+// SET:    setFlag()
+// CANCEL: unsetSubscription()
+// CANCEL: close(s.flag)
+// RUN:    receive from s.flag; able to enter loop body
+// CANCEL: s.clearFlag(); reaches default case
+// CANCEL: returns; new handler not supposed to run
+// RUN:    executes loop body and calls handler
+
 func (s *Subscription) clearFlag() {
 	select {
 	case <-s.flag:
