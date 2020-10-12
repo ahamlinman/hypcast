@@ -15,50 +15,52 @@ func TestValue(t *testing.T) {
 	// recent state.
 
 	const (
-		nSetOperations = 1000
-		nSubscribers   = 50
+		nWrites      = 1000
+		nSubscribers = 50
 	)
 
-	var v Value
+	var (
+		v Value
+
+		handlerGroup sync.WaitGroup
+		setGroup     sync.WaitGroup
+
+		subscriptions [nSubscribers]*Subscription
+
+		done = make(chan struct{})
+	)
+
 	v.Set(int(0))
 
-	// Because each handler maintains internal state, the race detector should
-	// complain if we run more than one instance of a given handler at a time.
-	// Each handler will also let us know once it has seen our final Set at least
-	// once, and panic if it sees any other state after that.
-	var handlerGroup sync.WaitGroup
 	handlerGroup.Add(nSubscribers)
-	makeTestHandler := func() func(interface{}) {
+	for i := 0; i < nSubscribers; i++ {
 		var (
-			max           int
-			sawFinalState bool
+			sum      int
+			sawFinal bool
 		)
 
-		return func(x interface{}) {
+		subscriptions[i] = v.Subscribe(func(x interface{}) {
 			current := x.(int)
-			if current > max {
-				max = current
-			}
 
-			if max == nSetOperations && !sawFinalState {
-				handlerGroup.Done()
-				sawFinalState = true
-			} else if sawFinalState && current < nSetOperations {
+			// This will quickly make the race detector complain if more than one
+			// instance of a handler runs at once.
+			sum += current
+
+			if sawFinal && current < nWrites {
 				t.Fatal("read a previous state after the expected final state")
 			}
-		}
+
+			if !sawFinal && current == nWrites {
+				handlerGroup.Done()
+				sawFinal = true
+			}
+		})
 	}
 
-	var subscriptions [nSubscribers]*Subscription
-	for i := 0; i < nSubscribers; i++ {
-		subscriptions[i] = v.Subscribe(makeTestHandler())
-	}
-
-	// Because we make so many Set calls concurrently, the race detector should
-	// complain if access to the Value is not properly synchronized.
-	var setGroup sync.WaitGroup
-	setGroup.Add(nSetOperations - 1)
-	for i := 1; i <= nSetOperations-1; i++ {
+	setGroup.Add(nWrites - 1)
+	for i := 1; i <= nWrites-1; i++ {
+		// This will quickly make the race detector complain if Set is not properly
+		// synchronized.
 		go func(i int) {
 			defer setGroup.Done()
 			v.Set(i)
@@ -67,9 +69,8 @@ func TestValue(t *testing.T) {
 	setGroup.Wait()
 
 	// Our final Set, which every handler must see at least once.
-	v.Set(nSetOperations)
+	v.Set(nWrites)
 
-	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		handlerGroup.Wait()
@@ -92,15 +93,15 @@ func TestBlockedSubscriber(t *testing.T) {
 	// to receive notifications, and that the blocked subscriber will see an
 	// additional notification for any state that was set while it was blocked.
 
-	var v Value
-	v.Set("alice")
-
 	var (
-		notifyUnblocked = make(chan string)
+		v Value
 
-		block         = make(chan struct{})
-		notifyBlocked = make(chan string)
+		block           = make(chan struct{})
+		notifyBlocked   = make(chan string)
+		notifyUnblocked = make(chan string)
 	)
+
+	v.Set("alice")
 
 	blockedSub := v.Subscribe(func(x interface{}) {
 		<-block
@@ -152,10 +153,13 @@ func TestSetFromHandler(t *testing.T) {
 	// entering a loop of writes and notifications.
 
 	const stopValue = 10
-	var v Value
-	v.Set(int(0))
+	var (
+		v Value
 
-	done := make(chan struct{})
+		done = make(chan struct{})
+	)
+
+	v.Set(int(0))
 	s := v.Subscribe(func(x interface{}) {
 		if i := x.(int); i < stopValue {
 			v.Set(i + 1)
@@ -186,13 +190,13 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	// handler was running.
 
 	var (
-		v      Value
+		v Value
+
 		block  = make(chan struct{})
 		notify = make(chan string)
 	)
 
 	v.Set("alice")
-
 	s := v.Subscribe(func(x interface{}) {
 		<-block
 		notify <- x.(string)
@@ -224,16 +228,16 @@ func TestCancelFromHandler(t *testing.T) {
 	// This is a special case of Cancel being called while a handler is blocked,
 	// as the caller of Cancel is the handler itself.
 
-	var v Value
-	v.Set("alice")
-
 	var (
-		subscriberCanceled bool
-		subCh              = make(chan *Subscription)
+		v Value
+
+		canceled bool
+		subCh    = make(chan *Subscription)
 	)
 
+	v.Set("alice")
 	s := v.Subscribe(func(x interface{}) {
-		if subscriberCanceled {
+		if canceled {
 			t.Fatal("handler called after cancellation")
 		}
 
@@ -241,7 +245,7 @@ func TestCancelFromHandler(t *testing.T) {
 
 		s := <-subCh
 		s.Cancel()
-		subscriberCanceled = true
+		canceled = true
 	})
 
 	subCh <- s
