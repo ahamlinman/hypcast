@@ -14,15 +14,8 @@ import (
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
 	"github.com/ahamlinman/hypcast/internal/atsc/gst"
+	"github.com/ahamlinman/hypcast/internal/watch"
 )
-
-// Client receives notifications when the status of a Tuner is updated.
-type Client interface {
-	// RequestStatusCheck is called to indicate that the Status of the Tuner has
-	// changed, and that the Client should re-request the status as soon as
-	// possible and update its associated state. This call must not block.
-	RequestStatusCheck()
-}
 
 // Status represents the current status of a tuner, which any Client may read as
 // necessary.
@@ -45,18 +38,19 @@ type Tuner struct {
 	channels   []atsc.Channel
 	channelMap map[string]atsc.Channel
 
-	mu       sync.Mutex
-	clients  map[Client]struct{}
 	pipeline *gst.Pipeline
-	status   Status
+	status   *watch.Value
 }
 
 // NewTuner creates a new Tuner that can tune to any of the provided channels.
 func NewTuner(channels []atsc.Channel) *Tuner {
+	var status watch.Value
+	status.Set(Status{})
+
 	return &Tuner{
-		clients:    make(map[Client]struct{}),
 		channels:   channels,
 		channelMap: makeChannelMap(channels),
+		status:     &status,
 	}
 }
 
@@ -75,93 +69,74 @@ func (t *Tuner) Channels() []atsc.Channel {
 
 // Status returns the current status of this tuner.
 func (t *Tuner) Status() Status {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	return t.status
+	return t.status.Get().(Status)
 }
 
-// AddClient registers a Client to be notified when the state of the Tuner has
-// been updated.
-func (t *Tuner) AddClient(client Client) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	t.clients[client] = struct{}{}
+// Subscribe sets up a handler function to continuously receive the status of
+// the tuner as it is updated, until the associated subscription is canceled.
+//
+// See the documentation for the watch package for details of how the
+// subscription works.
+func (t *Tuner) Subscribe(handler func(Status)) *watch.Subscription {
+	return t.status.Subscribe(func(x interface{}) {
+		handler(x.(Status))
+	})
 }
 
-// RemoveClient removes this Client from further state update notifications.
-func (t *Tuner) RemoveClient(client Client) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	delete(t.clients, client)
-}
-
-// Stop closes any active pipeline for this Tuner, releasing the DVB device, and
-// notifies all clients of the change.
+// Stop closes any active pipeline for this Tuner, releasing the DVB device.
 func (t *Tuner) Stop() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	defer t.notifyClients()
-
-	err := t.stop()
-	t.status.Error = err
+	err := t.destroyAnyRunningPipeline()
+	t.status.Set(Status{Error: err})
 	return err
 }
 
-// Tune closes any active pipeline for this Tuner, starts a new pipeline to
-// stream the channel with the provided name, and notifies all clients of the
-// change.
+// Tune closes any active pipeline for this Tuner, and starts a new pipeline to
+// stream the channel with the provided name.
 func (t *Tuner) Tune(channelName string) (err error) {
 	channel, ok := t.channelMap[channelName]
 	if !ok {
 		return fmt.Errorf("channel %q not available in this tuner", channelName)
 	}
 
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	defer t.notifyClients()
-
-	t.stop()
-
 	defer func() {
 		if err != nil {
-			t.stop()
-			t.status.Error = err
+			t.destroyAnyRunningPipeline()
+			t.status.Set(Status{Error: err})
 		}
 	}()
+
+	t.destroyAnyRunningPipeline()
 
 	t.pipeline, err = gst.NewPipeline(channel)
 	if err != nil {
 		return
 	}
 
-	streamID := fmt.Sprintf("Track(%p)", t)
-	t.status.VideoTrack, t.status.AudioTrack, err = createTrackPair(streamID)
+	status := Status{
+		Active:  true,
+		Channel: channel,
+	}
+
+	streamID := fmt.Sprintf("Tuner(%p)", t)
+	status.VideoTrack, status.AudioTrack, err = createTrackPair(streamID)
 	if err != nil {
 		return
 	}
 
-	t.pipeline.SetSink(gst.SinkTypeVideo, sinkTrack(t.status.VideoTrack, videoClockRate))
-	t.pipeline.SetSink(gst.SinkTypeAudio, sinkTrack(t.status.AudioTrack, audioClockRate))
-
-	t.status.Active = true
-	t.status.Channel = channel
+	t.pipeline.SetSink(gst.SinkTypeVideo, sinkTrack(status.VideoTrack, videoClockRate))
+	t.pipeline.SetSink(gst.SinkTypeAudio, sinkTrack(status.AudioTrack, audioClockRate))
 
 	err = t.pipeline.Start()
-	return
-}
-
-func (t *Tuner) notifyClients() {
-	for c := range t.clients {
-		c.RequestStatusCheck()
+	if err != nil {
+		return
 	}
+
+	t.status.Set(status)
+	return nil
 }
 
-func (t *Tuner) stop() error {
+func (t *Tuner) destroyAnyRunningPipeline() error {
 	defer func() {
-		t.status = Status{}
 		t.pipeline = nil
 	}()
 

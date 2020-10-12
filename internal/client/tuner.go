@@ -10,6 +10,7 @@ import (
 	"github.com/pion/webrtc/v2"
 
 	"github.com/ahamlinman/hypcast/internal/tuner"
+	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
 var upgrader = websocket.Upgrader{
@@ -32,13 +33,15 @@ func TunerControlHandler(tuner *tuner.Tuner) http.Handler {
 		}
 
 		client.logf("Starting")
-		err = client.start()
+		err = client.run()
 		client.logf("Finished with error: %v", err)
 	})
 }
 
 type client struct {
-	tuner *tuner.Tuner
+	tuner              *tuner.Tuner
+	tunerSubscription  *watch.Subscription
+	tunerStatusUpdates chan tuner.Status
 
 	ws *websocket.Conn
 	pc *webrtc.PeerConnection
@@ -46,16 +49,19 @@ type client struct {
 	videoTrack *webrtc.Track
 	audioTrack *webrtc.Track
 
-	receiverDone       chan error
-	tunerSyncRequested chan struct{}
+	receiverDone chan error
 }
 
-func (c *client) start() error {
+func (c *client) run() error {
 	defer func() {
-		c.tuner.RemoveClient(c)
+		if c.tunerSubscription != nil {
+			c.closeTunerSubscription()
+		}
+
 		if c.pc != nil {
 			c.pc.Close()
 		}
+
 		c.ws.Close()
 	}()
 
@@ -82,11 +88,24 @@ func (c *client) init() error {
 		return err
 	}
 
-	c.tunerSyncRequested = make(chan struct{}, 1)
-	c.tunerSyncRequested <- struct{}{}
-
-	c.tuner.AddClient(c)
+	c.tunerStatusUpdates = make(chan tuner.Status)
+	c.tunerSubscription = c.tuner.Subscribe(c.receiveNewTunerStatus)
 	return nil
+}
+
+func (c *client) receiveNewTunerStatus(s tuner.Status) {
+	c.logf("Received new tuner status")
+	c.tunerStatusUpdates <- s
+}
+
+func (c *client) closeTunerSubscription() {
+	c.tunerSubscription.Cancel()
+
+	// Clean up any in-flight receiveNewTunerStatus calls.
+	select {
+	case <-c.tunerStatusUpdates:
+	default:
+	}
 }
 
 func (c *client) runReceiver() error {
@@ -131,16 +150,15 @@ func (c *client) runSender() error {
 		case err := <-c.receiverDone:
 			return err
 
-		case <-c.tunerSyncRequested:
-			if err := c.syncTunerStatus(); err != nil {
+		case s := <-c.tunerStatusUpdates:
+			if err := c.processTunerStatus(s); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (c *client) syncTunerStatus() error {
-	s := c.tuner.Status()
+func (c *client) processTunerStatus(s tuner.Status) error {
 	c.logf("Processing tuner status: %#v", s)
 
 	tracksChanged := s.VideoTrack != c.videoTrack || s.AudioTrack != c.audioTrack
@@ -212,18 +230,6 @@ func (c *client) writeTunerStatusMessage(s tuner.Status) error {
 			Error:       s.Error,
 		},
 	})
-}
-
-func (c *client) RequestStatusCheck() {
-	c.logf("Tuner status sync requested")
-	// Tuner requires that this call never block. We satisfy that requirement with
-	// a 1-element buffered channel acting as a "flag" to the sender routine. If
-	// the "flag" is already set, we're good to go; the sender will pick up the
-	// latest status if / when it gets around to it.
-	select {
-	case c.tunerSyncRequested <- struct{}{}:
-	default:
-	}
 }
 
 func (c *client) logf(format string, v ...interface{}) {
