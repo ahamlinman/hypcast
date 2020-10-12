@@ -1,3 +1,5 @@
+// Package watch provides primitives to enable monitoring of live state by
+// multiple parties.
 package watch
 
 import "sync"
@@ -48,15 +50,17 @@ func (v *Value) pingSubscribers() {
 // associated with their subscription, to avoid losing updates between calls to
 // Get and Subscribe.
 //
-// Each subscription executes up to one instance of handle at a time,
-// asynchronously from calls to Set or Subscribe. Any calls to Set while handle
-// is running (including from handle itself) will result in handle being called
-// once more with the latest value following completion of the current call.
-// handle may not receive every value that Set is called with, and may see the
-// value from a single call to Set more than once across consecutive calls.
+// Each subscription executes up to one instance of handle at a time in a new
+// goroutine. Any calls to Set while handle is running will result in handle
+// being called once more with the latest value following completion of the
+// current call. handle may not receive every value that Set is called with, and
+// may see the value from a single call to Set more than once across consecutive
+// calls.
 //
 // Subscriptions are not recovered by the garbage collector until they are
-// canceled by a call to Subscription.Cancel.
+// canceled by a call to Subscription.Cancel and any running handler has
+// finished executing. Values are not recovered by the garbage collector until
+// all subscriptions have been recovered.
 func (v *Value) Subscribe(handle func(x interface{})) *Subscription {
 	s := &Subscription{
 		value:   v,
@@ -93,8 +97,15 @@ func (v *Value) unsetSubscription(s *Subscription) {
 type Subscription struct {
 	value   *Value
 	handler func(interface{})
-	flag    chan struct{} // Must be buffered with size 1
+	flag    chan struct{} // Buffered with size 1
 	done    chan struct{} // Unbuffered
+}
+
+func (s *Subscription) setFlag() {
+	select {
+	case s.flag <- struct{}{}:
+	default:
+	}
 }
 
 func (s *Subscription) run() {
@@ -114,22 +125,15 @@ func (s *Subscription) Cancel() {
 	s.clearFlag()
 }
 
-// Done returns a channel that will be closed after this subscription has been
-// canceled and any call to the handler has finished.
-func (s *Subscription) Done() <-chan struct{} {
-	return s.done
-}
-
-func (s *Subscription) setFlag() {
-	select {
-	case s.flag <- struct{}{}:
-	default:
-	}
-}
-
 func (s *Subscription) clearFlag() {
 	select {
 	case <-s.flag:
 	default:
 	}
+}
+
+// Done returns a channel that will be closed after this subscription has been
+// canceled and any call to the handler has finished.
+func (s *Subscription) Done() <-chan struct{} {
+	return s.done
 }

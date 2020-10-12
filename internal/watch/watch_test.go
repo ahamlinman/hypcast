@@ -37,8 +37,8 @@ func TestValue(t *testing.T) {
 			sawFinalState bool
 		)
 
-		return func(value interface{}) {
-			current := value.(int)
+		return func(x interface{}) {
+			current := x.(int)
 			if current > max {
 				max = current
 			}
@@ -105,22 +105,22 @@ func TestBlockedSubscriber(t *testing.T) {
 		notifyBlocked = make(chan string)
 	)
 
-	blockedSub := v.Subscribe(func(value interface{}) {
+	blockedSub := v.Subscribe(func(x interface{}) {
 		<-block
-		notifyBlocked <- value.(string)
+		notifyBlocked <- x.(string)
 	})
 
-	unblockedSub := v.Subscribe(func(value interface{}) {
-		notifyUnblocked <- value.(string)
+	unblockedSub := v.Subscribe(func(x interface{}) {
+		notifyUnblocked <- x.(string)
 	})
 
-	// Ensure both subscribers are getting values.
+	// Handle the initial notification to both subscribers.
 	block <- struct{}{}
 	assertNextReceive(t, notifyBlocked, "alice")
 	assertNextReceive(t, notifyUnblocked, "alice")
 
-	// Notify both subscribers. Ensure that the blocked subscriber sees the value
-	// "bob" before continuing.
+	// Notify both subscribers. Ensure that the blocked subscriber has a running
+	// handler for the value "bob" before continuing.
 	v.Set("bob")
 	block <- struct{}{}
 
@@ -137,8 +137,8 @@ func TestBlockedSubscriber(t *testing.T) {
 	// "bob".
 	assertNextReceive(t, notifyBlocked, "bob")
 
-	// Ensure that the blocked subscriber receives a separate notification to
-	// handle "eve", which was set while it was blocked.
+	// Ensure that the blocked subscriber receives a notification for "eve", which
+	// was set while it was blocked.
 	close(block)
 	assertNextReceive(t, notifyBlocked, "eve")
 
@@ -154,13 +154,13 @@ func TestSetFromHandler(t *testing.T) {
 	// the caller of Set is the handler itself. We don't prevent users from
 	// entering a loop of writes and notifications.
 
-	const nSetOperations = 10
+	const stopValue = 10
 	var v watch.Value
-	v.Set(int(1))
+	v.Set(int(0))
 
 	done := make(chan struct{})
-	s := v.Subscribe(func(value interface{}) {
-		if i := value.(int); i < nSetOperations {
+	s := v.Subscribe(func(x interface{}) {
+		if i := x.(int); i < stopValue {
 			v.Set(i + 1)
 			v.Set(i + 1)
 		} else {
@@ -174,8 +174,8 @@ func TestSetFromHandler(t *testing.T) {
 		t.Fatalf("set loop did not complete after %v", timeout)
 	}
 
-	if got := v.Get().(int); got != nSetOperations {
-		t.Errorf("unexpected value; got %d, want %d", got, nSetOperations)
+	if got, want := v.Get().(int), stopValue; got != want {
+		t.Errorf("unexpected value; got %d, want %d", got, want)
 	}
 
 	s.Cancel()
@@ -196,22 +196,20 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 
 	v.Set("alice")
 
-	s := v.Subscribe(func(value interface{}) {
+	s := v.Subscribe(func(x interface{}) {
 		<-block
-		notify <- value.(string)
+		notify <- x.(string)
 	})
 
-	// Force our subscriber to block before continuing.
+	// Ensure that we have a handler in flight.
 	block <- struct{}{}
 
 	// Set some new values. We must schedule another call to the subscriber
-	// following the current blocked execution, since it has already seen the
-	// value "alice" and will not see the subsequent values in the current
-	// execution.
+	// following the current execution for the value "alice".
 	v.Set("bob")
 	v.Set("carol")
 
-	// Cancel the subscription while the handler is still running for "alice". The
+	// Cancel the subscription while the handler for "alice" is still running. The
 	// additional call that we forced to be scheduled above must be canceled.
 	s.Cancel()
 
@@ -222,9 +220,41 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	runtime.Gosched()
 
 	// Allow the original notification for "alice" to finish, and ensure that no
-	// other calls can be made to the handler.
+	// other calls will be made to the handler.
 	assertNextReceive(t, notify, "alice")
 	assertSubscriptionDone(t, s)
+}
+
+func TestCancelFromHandler(t *testing.T) {
+	// This is a special case of Cancel being called while a handler is blocked,
+	// as the caller of Cancel is the handler itself.
+
+	var v watch.Value
+	v.Set("alice")
+
+	var (
+		subscriberCanceled bool
+		subCh              = make(chan *watch.Subscription)
+	)
+
+	s := v.Subscribe(func(x interface{}) {
+		if subscriberCanceled {
+			t.Fatal("handler called after cancellation")
+		}
+
+		v.Set("bob")
+
+		s := <-subCh
+		s.Cancel()
+		subscriberCanceled = true
+	})
+
+	subCh <- s
+	assertSubscriptionDone(t, s)
+
+	if got, want := v.Get().(string), "bob"; got != want {
+		t.Errorf("unexpected value: got %q, want %q", got, want)
+	}
 }
 
 func assertNextReceive(t *testing.T, ch chan string, want string) {
