@@ -23,6 +23,7 @@ func TestValue(t *testing.T) {
 	)
 
 	var v watch.Value
+	v.Set(int(0))
 
 	// Because each handler maintains internal state, the race detector should
 	// complain if we run more than one instance of a given handler at a time.
@@ -114,17 +115,18 @@ func TestBlockedSubscriber(t *testing.T) {
 	})
 
 	// Ensure both subscribers are getting values.
-	v.Set("bob")
 	block <- struct{}{}
-	assertNextReceive(t, notifyBlocked, "bob")
-	assertNextReceive(t, notifyUnblocked, "bob")
+	assertNextReceive(t, notifyBlocked, "alice")
+	assertNextReceive(t, notifyUnblocked, "alice")
 
 	// Notify both subscribers. Ensure that the blocked subscriber sees the value
-	// "carol" before continuing.
-	v.Set("carol")
+	// "bob" before continuing.
+	v.Set("bob")
 	block <- struct{}{}
 
 	// Blockage of one subscriber should not block the other.
+	assertNextReceive(t, notifyUnblocked, "bob")
+	v.Set("carol")
 	assertNextReceive(t, notifyUnblocked, "carol")
 	v.Set("dave")
 	assertNextReceive(t, notifyUnblocked, "dave")
@@ -132,8 +134,8 @@ func TestBlockedSubscriber(t *testing.T) {
 	assertNextReceive(t, notifyUnblocked, "eve")
 
 	// Finish handling the notification that the blocked subscriber received for
-	// "carol".
-	assertNextReceive(t, notifyBlocked, "carol")
+	// "bob".
+	assertNextReceive(t, notifyBlocked, "bob")
 
 	// Ensure that the blocked subscriber receives a separate notification to
 	// handle "eve", which was set while it was blocked.
@@ -154,6 +156,7 @@ func TestSetFromHandler(t *testing.T) {
 
 	const nSetOperations = 10
 	var v watch.Value
+	v.Set(int(1))
 
 	done := make(chan struct{})
 	s := v.Subscribe(func(value interface{}) {
@@ -165,7 +168,6 @@ func TestSetFromHandler(t *testing.T) {
 		}
 	})
 
-	v.Set(int(1))
 	select {
 	case <-done:
 	case <-time.After(timeout):
@@ -199,16 +201,17 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 		notify <- value.(string)
 	})
 
-	// Set a value, and force our subscriber to block before continuing.
-	v.Set("bob")
+	// Force our subscriber to block before continuing.
 	block <- struct{}{}
 
-	// Set another value. We must schedule another call to the subscriber
+	// Set some new values. We must schedule another call to the subscriber
 	// following the current blocked execution, since it has already seen the
-	// value "bob" and will not see the value "carol" in the current execution.
+	// value "alice" and will not see the subsequent values in the current
+	// execution.
+	v.Set("bob")
 	v.Set("carol")
 
-	// Cancel the subscription while the handler is still running for "bob". The
+	// Cancel the subscription while the handler is still running for "alice". The
 	// additional call that we forced to be scheduled above must be canceled.
 	s.Cancel()
 
@@ -218,9 +221,9 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	v.Set("dave")
 	runtime.Gosched()
 
-	// Allow the original notification for "bob" to finish, and ensure that no
+	// Allow the original notification for "alice" to finish, and ensure that no
 	// other calls can be made to the handler.
-	assertNextReceive(t, notify, "bob")
+	assertNextReceive(t, notify, "alice")
 	assertSubscriptionDone(t, s)
 }
 

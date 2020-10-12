@@ -2,8 +2,8 @@ package watch
 
 import "sync"
 
-// Value provides synchronized reads and writes of some arbitrary value, and
-// notifies subscribers when an updated value is available for them to read.
+// Value provides synchronized reads and writes of an arbitrary value, and
+// continuously provides updates to subscribers as writes are made.
 type Value struct {
 	valueMu sync.RWMutex
 	value   interface{}
@@ -19,17 +19,17 @@ func (v *Value) Get() interface{} {
 	return v.value
 }
 
-// Set sets the value that will be returned by subsequent Get calls, and
-// schedules notifications to all subscribers.
-func (v *Value) Set(value interface{}) {
-	v.setValue(value)
+// Set sets the value of the Value to x, and schedules notifications to
+// subscribers to ensure that they eventually receive the new value.
+func (v *Value) Set(x interface{}) {
+	v.setValue(x)
 	v.pingSubscribers()
 }
 
-func (v *Value) setValue(value interface{}) {
+func (v *Value) setValue(x interface{}) {
 	v.valueMu.Lock()
 	defer v.valueMu.Unlock()
-	v.value = value
+	v.value = x
 }
 
 func (v *Value) pingSubscribers() {
@@ -40,20 +40,24 @@ func (v *Value) pingSubscribers() {
 	}
 }
 
-// Subscribe sets up a handler to be called whenever the Value may have a new
-// value that the subscriber should be aware of.
+// Subscribe sets up a handler function to continuously receive the value of v
+// as it is updated, until the associated subscription is canceled.
 //
-// Each Subscription executes up to one instance of the handler function at a
-// time, asynchronously from any calls to Set. If Set is called while the
-// handler is running (including from the handler itself), an additional call to
-// the handler will be scheduled to ensure that it has a chance to receive the
-// latest value. The handler is not guaranteed to be called for every individual
-// call to Set, and may see a given value more than once across subsequent
-// calls.
+// An initial call to handle will be scheduled when the subscription is first
+// created. Subscribers should rely on this call to initialize any state
+// associated with their subscription, to avoid losing updates between calls to
+// Get and Subscribe.
+//
+// Each subscription executes up to one instance of handle at a time,
+// asynchronously from calls to Set or Subscribe. Any calls to Set while handle
+// is running (including from handle itself) will result in handle being called
+// once more with the latest value following completion of the current call.
+// handle may not receive every value that Set is called with, and may see the
+// value from a single call to Set more than once across consecutive calls.
 //
 // Subscriptions are not recovered by the garbage collector until they are
 // canceled by a call to Subscription.Cancel.
-func (v *Value) Subscribe(handle func(interface{})) *Subscription {
+func (v *Value) Subscribe(handle func(x interface{})) *Subscription {
 	s := &Subscription{
 		value:   v,
 		handler: handle,
@@ -61,6 +65,7 @@ func (v *Value) Subscribe(handle func(interface{})) *Subscription {
 		done:    make(chan struct{}),
 	}
 
+	s.setFlag()
 	v.setSubscription(s)
 	go s.run()
 
@@ -99,11 +104,10 @@ func (s *Subscription) run() {
 	}
 }
 
-// Cancel ends a subscription created with Value.Subscribe and cleans up
+// Cancel ends a subscription created with Value.Subscribe and releases
 // resources associated with it. After Cancel returns, no new calls will be made
-// to the subscription's handler function. However, an existing asynchronous
-// call may still be in progress. Use Done to be notified when all handler calls
-// have finished.
+// to the subscription's handler function. An existing call may still be
+// running; use Done to know when any such call has finished.
 func (s *Subscription) Cancel() {
 	s.value.unsetSubscription(s)
 	close(s.flag)
@@ -111,7 +115,7 @@ func (s *Subscription) Cancel() {
 }
 
 // Done returns a channel that will be closed after this subscription has been
-// canceled and any running handler has finished.
+// canceled and any call to the handler has finished.
 func (s *Subscription) Done() <-chan struct{} {
 	return s.done
 }
