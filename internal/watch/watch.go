@@ -115,36 +115,27 @@ func (s *Subscription) run() {
 	}
 }
 
-// Cancel ends a subscription created with Value.Subscribe and enables its
-// resources to be released once all calls to the handler have finished. Cancel
-// does not wait for a handler call in flight to terminate, and does not
-// guarantee that a new call to the handler will not be started after returning.
+// Cancel requests that the subscription be canceled, enabling its resources to
+// be released once any outstanding notification has been processed. Cancel does
+// not wait for a handler call in flight to finish, and does not guarantee that
+// no new call will be made to the handler after it returns. Use Wait to
+// guarantee these conditions.
 func (s *Subscription) Cancel() {
 	s.value.unsetSubscription(s)
 	close(s.flag)
 	s.clearFlag()
 }
 
-// NOTE: The following interleaving breaks the original invariant (assumed by
-// the current code) that no new calls will be made to the subscription handler
-// after Cancel returns. While extensive testing has not yet revealed this case
-// in practice, it is hypothetically possible as far as I understand.
-//
-// SET:    setFlag()
-// CANCEL: unsetSubscription()
-// CANCEL: close(s.flag)
-// RUN:    receive from s.flag; able to enter loop body
-// CANCEL: s.clearFlag(); reaches default case
-// CANCEL: returns; new handler not supposed to run
-// RUN:    executes loop body and calls handler
-//
-// I don't think it's possible to guarantee the invariant I've specified.
-// Rather, we must know that run() has completed to guarantee that the handler
-// will not be called again.
-
 func (s *Subscription) clearFlag() {
 	select {
 	case <-s.flag:
 	default:
 	}
+}
+
+// Wait blocks until the subscription is fully canceled, and any outstanding
+// call to the handler function has finished. After Wait returns, no new calls
+// will be made to the handler.
+func (s *Subscription) Wait() {
+	<-s.done
 }

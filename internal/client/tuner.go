@@ -101,10 +101,20 @@ func (c *client) receiveNewTunerStatus(s tuner.Status) {
 func (c *client) closeTunerSubscription() {
 	c.tunerSubscription.Cancel()
 
-	// Clean up any in-flight receiveNewTunerStatus calls.
-	select {
-	case <-c.tunerStatusUpdates:
-	default:
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.tunerSubscription.Wait()
+	}()
+
+	// Clean up any in-flight receiveNewTunerStatus calls, and wait for the
+	// subscription to finish.
+	for {
+		select {
+		case <-c.tunerStatusUpdates:
+		case <-done:
+			return
+		}
 	}
 }
 

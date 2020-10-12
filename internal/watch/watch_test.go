@@ -273,8 +273,14 @@ func assertNextReceive(t *testing.T, ch chan string, want string) {
 func assertSubscriptionDone(t *testing.T, s *Subscription) {
 	t.Helper()
 
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		s.Wait()
+	}()
+
 	select {
-	case <-s.done:
+	case <-done:
 	case <-time.After(timeout):
 		t.Fatalf("subscription routine still running after %v", timeout)
 	}
