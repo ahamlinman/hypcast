@@ -116,19 +116,19 @@ func (s *Subscription) run() {
 }
 
 // Cancel ends a subscription created with Value.Subscribe and enables its
-// resources to be released. After Cancel returns, no new calls will be made to
-// the subscription's handler function, though an existing call may still be
-// running.
+// resources to be released once all calls to the handler have finished. Cancel
+// does not wait for a handler call in flight to terminate, and does not
+// guarantee that a new call to the handler will not be started after returning.
 func (s *Subscription) Cancel() {
 	s.value.unsetSubscription(s)
 	close(s.flag)
 	s.clearFlag()
 }
 
-// BUG: The following interleaving breaks the invariant that no new calls will
-// be made to the subscription handler after Cancel returns. While extensive
-// testing has not yet revealed this case in practice, it is hypothetically
-// possible as far as I understand.
+// NOTE: The following interleaving breaks the original invariant (assumed by
+// the current code) that no new calls will be made to the subscription handler
+// after Cancel returns. While extensive testing has not yet revealed this case
+// in practice, it is hypothetically possible as far as I understand.
 //
 // SET:    setFlag()
 // CANCEL: unsetSubscription()
@@ -137,6 +137,10 @@ func (s *Subscription) Cancel() {
 // CANCEL: s.clearFlag(); reaches default case
 // CANCEL: returns; new handler not supposed to run
 // RUN:    executes loop body and calls handler
+//
+// I don't think it's possible to guarantee the invariant I've specified.
+// Rather, we must know that run() has completed to guarantee that the handler
+// will not be called again.
 
 func (s *Subscription) clearFlag() {
 	select {
