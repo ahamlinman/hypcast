@@ -173,14 +173,14 @@ func (c *client) processTunerStatus(s tuner.Status) error {
 
 	tracksChanged := s.VideoTrack != c.videoTrack || s.AudioTrack != c.audioTrack
 
-	if !s.Active || tracksChanged {
+	if tracksChanged {
 		c.logf("Removed existing tracks")
 		if err := c.removeExistingTracks(); err != nil {
 			return err
 		}
 	}
 
-	if s.Active && tracksChanged {
+	if tracksChanged && s.VideoTrack != nil && s.AudioTrack != nil {
 		c.logf("Adding new tracks")
 		if err := c.addNewTracks(s.VideoTrack, s.AudioTrack); err != nil {
 			return err
@@ -232,10 +232,17 @@ func (c *client) writeOfferMessage(sdp webrtc.SessionDescription) error {
 	})
 }
 
+var tunerStateMap = map[tuner.State]string{
+	tuner.StateStopped:  "Stopped",
+	tuner.StateStarting: "Starting",
+	tuner.StatePlaying:  "Playing",
+}
+
 func (c *client) writeTunerStatusMessage(s tuner.Status) error {
 	return c.ws.WriteJSON(message{
 		Kind: messageKindTunerStatus,
 		TunerStatus: &tunerStatus{
+			State:       tunerStateMap[s.State],
 			ChannelName: s.Channel.Name,
 			Error:       s.Error,
 		},

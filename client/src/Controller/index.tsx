@@ -104,7 +104,8 @@ const reduce = (state: State, action: Action): State => {
         ...state,
         tunerState: action.state,
         currentChannelName:
-          action.state.status === TunerStatus.Started
+          action.state.status === TunerStatus.Starting ||
+          action.state.status === TunerStatus.Playing
             ? action.state.channelName
             : undefined,
       };

@@ -27,6 +27,7 @@ type message struct {
 }
 
 type tunerStatus struct {
+	State       string `json:",omitempty"`
 	ChannelName string `json:",omitempty"`
 	Error       error  `json:",omitempty"`
 }

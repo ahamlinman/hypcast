@@ -20,23 +20,29 @@ export type ConnectionState =
     };
 
 export enum TunerStatus {
-  Started = "Started",
   Stopped = "Stopped",
+  Starting = "Starting",
+  Playing = "Playing",
   Error = "Error",
 }
 
 export type TunerState =
   | {
-      status: TunerStatus.Started;
+      status: TunerStatus.Starting | TunerStatus.Playing;
       channelName: string;
     }
   | { status: TunerStatus.Stopped }
   | { status: TunerStatus.Error; error: Error };
 
-type TunerStatusMessage = {
-  ChannelName: undefined | string;
-  Error: undefined | string;
-};
+type TunerStatusMessage =
+  | {
+      State: "Stopped";
+      Error: undefined | string;
+    }
+  | {
+      State: "Starting" | "Playing";
+      ChannelName: string;
+    };
 
 type Message =
   | { Kind: "RTCOffer"; SDP: any }
@@ -158,20 +164,33 @@ class Backend extends EventEmitter {
   }
 
   private handleTunerStatus(status: TunerStatusMessage) {
-    if (status.Error) {
-      this.emit("tunerchange", {
-        status: TunerStatus.Error,
-        error: new Error(status.Error),
-      });
-    } else if (status.ChannelName) {
-      this.emit("tunerchange", {
-        status: TunerStatus.Started,
-        channelName: status.ChannelName,
-      });
-    } else {
-      this.emit("tunerchange", {
-        status: TunerStatus.Stopped,
-      });
+    switch (status.State) {
+      case "Stopped":
+        if (status.Error) {
+          this.emit("tunerchange", {
+            status: TunerStatus.Error,
+            error: new Error(status.Error),
+          });
+        } else {
+          this.emit("tunerchange", {
+            status: TunerStatus.Stopped,
+          });
+        }
+        break;
+
+      case "Starting":
+        this.emit("tunerchange", {
+          status: TunerStatus.Starting,
+          channelName: status.ChannelName,
+        });
+        break;
+
+      case "Playing":
+        this.emit("tunerchange", {
+          status: TunerStatus.Playing,
+          channelName: status.ChannelName,
+        });
+        break;
     }
   }
 

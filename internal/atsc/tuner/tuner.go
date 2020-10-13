@@ -2,6 +2,7 @@ package tuner
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -14,10 +15,23 @@ import (
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
-// Status represents the current status of a tuner, which any Client may read as
-// necessary.
+// State represents the current state of the tuner.
+type State int
+
+const (
+	// StateStopped means the tuner is switched off.
+	StateStopped State = iota
+	// StateStarting means that the tuner is trying to lock onto a signal and
+	// start streaming.
+	StateStarting
+	// StatePlaying means that the tuner is locked onto a singal and is actively
+	// streaming video.
+	StatePlaying
+)
+
+// Status represents the public state of the tuner for reading by clients.
 type Status struct {
-	Active  bool
+	State   State
 	Channel atsc.Channel
 
 	VideoTrack *webrtc.Track
@@ -102,6 +116,14 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return fmt.Errorf("channel %q not available in this tuner", channelName)
 	}
 
+	currentStatus := t.Status()
+	t.status.Set(Status{
+		State:      StateStarting,
+		Channel:    channel,
+		VideoTrack: currentStatus.VideoTrack,
+		AudioTrack: currentStatus.AudioTrack,
+	})
+
 	defer func() {
 		if err != nil {
 			t.destroyAnyRunningPipeline()
@@ -117,7 +139,7 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	}
 
 	status := Status{
-		Active:  true,
+		State:   StatePlaying,
 		Channel: channel,
 	}
 
@@ -130,10 +152,12 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(status.VideoTrack, videoClockRate))
 	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(status.AudioTrack, audioClockRate))
 
+	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
 	if err != nil {
 		return
 	}
+	log.Printf("Tuner(%p): Started pipeline", t)
 
 	t.status.Set(status)
 	return nil
