@@ -37,14 +37,11 @@ func main() {
 
 	tuner := tuner.NewTuner(channels)
 
+	// TODO: /old-control-socket is a legacy API; use api.Handler directly once it
+	// is fully implemented
 	mux := http.NewServeMux()
-
-	// TODO: Legacy APIs, remove once new API is fully implemented.
-	mux.Handle("/config/channels", oldclient.ChannelListHandler(tuner.Channels()))
+	mux.Handle("/api/", api.NewHandler(tuner))
 	mux.Handle("/old-control-socket", oldclient.TunerControlHandler(tuner))
-
-	// New API
-	mux.Handle("/api", api.NewHandler(tuner))
 
 	log.Printf("Starting Hypcast server on %s", *flagAddr)
 	server := http.Server{

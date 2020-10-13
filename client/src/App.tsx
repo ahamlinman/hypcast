@@ -87,7 +87,7 @@ const ChannelSelector = ({
   };
 
   return (
-    <form style={{ display: "inline" }} onSubmit={handleTune}>
+    <>
       <select
         name="channel"
         disabled={disabled}
@@ -102,10 +102,10 @@ const ChannelSelector = ({
             ))
           : null}
       </select>
-      <button type="submit" disabled={disabled}>
+      <button disabled={disabled} onClick={handleTune}>
         Tune
       </button>
-    </form>
+    </>
   );
 };
 
@@ -115,7 +115,7 @@ const useChannelNames = (): undefined | string[] | Error => {
   React.useEffect(() => {
     const startFetch = async () => {
       try {
-        const result = await fetch("/config/channels");
+        const result = await fetch("/api/config/channels");
         const channels: string[] = await result.json();
         setResult(channels);
       } catch (e) {
