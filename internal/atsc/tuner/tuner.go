@@ -34,10 +34,14 @@ type Status struct {
 	State   State
 	Channel atsc.Channel
 
+	Error error
+}
+
+// Tracks represents the current set of video and audio tracks for use by WebRTC
+// clients.
+type Tracks struct {
 	VideoTrack *webrtc.Track
 	AudioTrack *webrtc.Track
-
-	Error error
 }
 
 // Tuner represents an ATSC tuner made available to WebRTC clients.
@@ -53,6 +57,7 @@ type Tuner struct {
 
 	pipeline *gst.Pipeline
 	status   *watch.Value
+	tracks   *watch.Value
 }
 
 // NewTuner creates a new Tuner that can tune to any of the provided channels.
@@ -61,6 +66,7 @@ func NewTuner(channels []atsc.Channel) *Tuner {
 		channels:   channels,
 		channelMap: makeChannelMap(channels),
 		status:     watch.NewValue(Status{}),
+		tracks:     watch.NewValue(Tracks{}),
 	}
 }
 
@@ -79,19 +85,26 @@ func (t *Tuner) Channels() []atsc.Channel {
 	return channels
 }
 
-// Status returns the current status of this tuner.
-func (t *Tuner) Status() Status {
-	return t.status.Get().(Status)
-}
-
-// Subscribe sets up a handler function to continuously receive the status of
-// the tuner as it is updated, until the associated subscription is canceled.
+// SubscribeStatus sets up a handler function to continuously receive the status
+// of the tuner as it is updated, until the associated subscription is canceled.
 //
 // See the documentation for the watch package for details of how the
 // subscription works.
-func (t *Tuner) Subscribe(handler func(Status)) *watch.Subscription {
+func (t *Tuner) SubscribeStatus(handler func(Status)) *watch.Subscription {
 	return t.status.Subscribe(func(x interface{}) {
 		handler(x.(Status))
+	})
+}
+
+// SubscribeTracks sets up a handler function to continuously receive the
+// tuner's WebRTC tracks as they are updated, until the associated subscription
+// is canceled.
+//
+// See the documentation for the watch package for details of how the
+// subscription works.
+func (t *Tuner) SubscribeTracks(handler func(Tracks)) *watch.Subscription {
+	return t.tracks.Subscribe(func(x interface{}) {
+		handler(x.(Tracks))
 	})
 }
 
@@ -102,6 +115,7 @@ func (t *Tuner) Stop() error {
 
 	err := t.destroyAnyRunningPipeline()
 	t.status.Set(Status{Error: err})
+	t.tracks.Set(Tracks{})
 	return err
 }
 
@@ -116,12 +130,9 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return fmt.Errorf("channel %q not available in this tuner", channelName)
 	}
 
-	currentStatus := t.Status()
 	t.status.Set(Status{
-		State:      StateStarting,
-		Channel:    channel,
-		VideoTrack: currentStatus.VideoTrack,
-		AudioTrack: currentStatus.AudioTrack,
+		State:   StateStarting,
+		Channel: channel,
 	})
 
 	defer func() {
@@ -138,19 +149,14 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return
 	}
 
-	status := Status{
-		State:   StatePlaying,
-		Channel: channel,
-	}
-
 	streamID := fmt.Sprintf("Tuner(%p)", t)
-	status.VideoTrack, status.AudioTrack, err = createTrackPair(streamID)
+	vt, at, err := createTrackPair(streamID)
 	if err != nil {
 		return
 	}
 
-	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(status.VideoTrack, videoClockRate))
-	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(status.AudioTrack, audioClockRate))
+	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(vt, videoClockRate))
+	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(at, audioClockRate))
 
 	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
@@ -159,7 +165,14 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	}
 	log.Printf("Tuner(%p): Started pipeline", t)
 
-	t.status.Set(status)
+	t.status.Set(Status{
+		State:   StatePlaying,
+		Channel: channel,
+	})
+	t.tracks.Set(Tracks{
+		VideoTrack: vt,
+		AudioTrack: at,
+	})
 	return nil
 }
 

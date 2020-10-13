@@ -39,9 +39,11 @@ func TunerControlHandler(tuner *tuner.Tuner) http.Handler {
 }
 
 type client struct {
-	tuner              *tuner.Tuner
-	tunerSubscription  *watch.Subscription
-	tunerStatusUpdates chan tuner.Status
+	tuner                   *tuner.Tuner
+	tunerStatusSubscription *watch.Subscription
+	tunerStatusUpdates      chan tuner.Status
+	tunerTrackSubscription  *watch.Subscription
+	tunerTrackUpdates       chan tuner.Tracks
 
 	ws *websocket.Conn
 	pc *webrtc.PeerConnection
@@ -54,8 +56,12 @@ type client struct {
 
 func (c *client) run() error {
 	defer func() {
-		if c.tunerSubscription != nil {
-			c.closeTunerSubscription()
+		if c.tunerStatusSubscription != nil {
+			c.closeStatusSubscription()
+		}
+
+		if c.tunerTrackSubscription != nil {
+			c.closeTrackSubscription()
 		}
 
 		if c.pc != nil {
@@ -89,22 +95,24 @@ func (c *client) init() error {
 	}
 
 	c.tunerStatusUpdates = make(chan tuner.Status)
-	c.tunerSubscription = c.tuner.Subscribe(c.receiveNewTunerStatus)
+	c.tunerStatusSubscription = c.tuner.SubscribeStatus(c.receiveNewTunerStatus)
+	c.tunerTrackUpdates = make(chan tuner.Tracks)
+	c.tunerTrackSubscription = c.tuner.SubscribeTracks(c.receiveNewTunerTracks)
 	return nil
 }
 
 func (c *client) receiveNewTunerStatus(s tuner.Status) {
-	c.logf("Received new tuner status")
+	c.logf("Received new tuner status: %#v", s)
 	c.tunerStatusUpdates <- s
 }
 
-func (c *client) closeTunerSubscription() {
-	c.tunerSubscription.Cancel()
+func (c *client) closeStatusSubscription() {
+	c.tunerStatusSubscription.Cancel()
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		c.tunerSubscription.Wait()
+		c.tunerStatusSubscription.Wait()
 	}()
 
 	// Clean up any in-flight receiveNewTunerStatus calls, and wait for the
@@ -112,6 +120,31 @@ func (c *client) closeTunerSubscription() {
 	for {
 		select {
 		case <-c.tunerStatusUpdates:
+		case <-done:
+			return
+		}
+	}
+}
+
+func (c *client) receiveNewTunerTracks(ts tuner.Tracks) {
+	c.logf("Received new tracks: %#v", ts)
+	c.tunerTrackUpdates <- ts
+}
+
+func (c *client) closeTrackSubscription() {
+	c.tunerTrackSubscription.Cancel()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.tunerTrackSubscription.Wait()
+	}()
+
+	// Clean up any in-flight receiveNewTunerTracks calls, and wait for the
+	// subscription to finish.
+	for {
+		select {
+		case <-c.tunerTrackUpdates:
 		case <-done:
 			return
 		}
@@ -161,17 +194,22 @@ func (c *client) runSender() error {
 			return err
 
 		case s := <-c.tunerStatusUpdates:
-			if err := c.processTunerStatus(s); err != nil {
+			if err := c.writeTunerStatusMessage(s); err != nil {
+				return err
+			}
+
+		case ts := <-c.tunerTrackUpdates:
+			if err := c.processTunerTracks(ts); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (c *client) processTunerStatus(s tuner.Status) error {
-	c.logf("Processing tuner status: %#v", s)
+func (c *client) processTunerTracks(ts tuner.Tracks) error {
+	c.logf("Processing tracks: %#v", ts)
 
-	tracksChanged := s.VideoTrack != c.videoTrack || s.AudioTrack != c.audioTrack
+	tracksChanged := ts.VideoTrack != c.videoTrack || ts.AudioTrack != c.audioTrack
 
 	if tracksChanged {
 		c.logf("Removed existing tracks")
@@ -180,9 +218,9 @@ func (c *client) processTunerStatus(s tuner.Status) error {
 		}
 	}
 
-	if tracksChanged && s.VideoTrack != nil && s.AudioTrack != nil {
+	if tracksChanged && ts.VideoTrack != nil && ts.AudioTrack != nil {
 		c.logf("Adding new tracks")
-		if err := c.addNewTracks(s.VideoTrack, s.AudioTrack); err != nil {
+		if err := c.addNewTracks(ts.VideoTrack, ts.AudioTrack); err != nil {
 			return err
 		}
 	}
@@ -192,11 +230,7 @@ func (c *client) processTunerStatus(s tuner.Status) error {
 		return err
 	}
 	c.pc.SetLocalDescription(sdp)
-	if err := c.writeOfferMessage(sdp); err != nil {
-		return err
-	}
-
-	return c.writeTunerStatusMessage(s)
+	return c.writeOfferMessage(sdp)
 }
 
 func (c *client) removeExistingTracks() error {
