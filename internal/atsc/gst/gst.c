@@ -28,7 +28,6 @@ GstFlowReturn hypcast_sink_sample(GstElement* object, gpointer user_data) {
   gst_buffer_extract_dup(buffer, 0, gst_buffer_get_size(buffer), &copy, &copy_size);
 
   HypcastSinkRef* sink_ref = (HypcastSinkRef*) user_data;
-
   hypcastGlobalSink(sink_ref, copy, copy_size, GST_BUFFER_DURATION(buffer));
 
   free(copy);

@@ -1,14 +1,10 @@
 package tuner
 
 import (
-	cryptorand "crypto/rand"
 	"fmt"
-	"math"
-	"math/big"
-	"math/rand"
-	"sync"
 	"time"
 
+	"github.com/pion/randutil"
 	"github.com/pion/webrtc/v2"
 	"github.com/pion/webrtc/v2/pkg/media"
 
@@ -152,11 +148,11 @@ const (
 	audioClockRate = 48_000
 )
 
-func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track, err error) {
-	ssrcBase := generateSSRCBase()
+var ssrcGenerator = randutil.NewMathRandomGenerator()
 
+func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track, err error) {
 	video, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeVP8, ssrcBase, streamID, streamID,
+		webrtc.DefaultPayloadTypeVP8, ssrcGenerator.Uint32(), streamID, streamID,
 		webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, videoClockRate),
 	)
 	if err != nil {
@@ -164,7 +160,7 @@ func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track,
 	}
 
 	audio, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeOpus, ssrcBase+1, streamID, streamID,
+		webrtc.DefaultPayloadTypeOpus, ssrcGenerator.Uint32(), streamID, streamID,
 		webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, audioClockRate),
 	)
 	return
@@ -177,27 +173,4 @@ func sinkTrack(track *webrtc.Track, clockRate int) gst.Sink {
 			Samples: media.NSamples(d, clockRate),
 		})
 	})
-}
-
-var (
-	ssrcMu   sync.Mutex
-	ssrcRand *rand.Rand
-)
-
-func init() {
-	max := big.NewInt(math.MaxInt64)
-	seed, err := cryptorand.Int(cryptorand.Reader, max)
-	if err != nil {
-		panic(fmt.Errorf("failed to init random ssrc generator: %w", err))
-	}
-
-	source := rand.NewSource(seed.Int64())
-	ssrcRand = rand.New(source)
-}
-
-func generateSSRCBase() uint32 {
-	ssrcMu.Lock()
-	defer ssrcMu.Unlock()
-
-	return ssrcRand.Uint32() &^ 1
 }
