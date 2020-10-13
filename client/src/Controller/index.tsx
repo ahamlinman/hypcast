@@ -17,7 +17,9 @@ export interface State {
   mediaStream: undefined | MediaStream;
 
   changeChannel: (channelName: string) => void;
-  requestedChannelName: undefined | string;
+  currentChannelName: undefined | string;
+
+  turnOff: () => void;
 }
 
 const Context = React.createContext<null | State>(null);
@@ -72,7 +74,8 @@ const defaultState = (): State => ({
   tunerState: undefined,
   mediaStream: undefined,
   changeChannel: () => {},
-  requestedChannelName: undefined,
+  currentChannelName: undefined,
+  turnOff: () => {},
 });
 
 type Action =
@@ -90,6 +93,7 @@ const reduce = (state: State, action: Action): State => {
         ...state,
         connectionState: action.backend.connectionState,
         changeChannel: action.backend.changeChannel.bind(action.backend),
+        turnOff: action.backend.turnOff.bind(action.backend),
       };
 
     case "connectionchange":
@@ -99,10 +103,10 @@ const reduce = (state: State, action: Action): State => {
       return {
         ...state,
         tunerState: action.state,
-        requestedChannelName:
+        currentChannelName:
           action.state.status === TunerStatus.Started
             ? action.state.channelName
-            : state.requestedChannelName,
+            : undefined,
       };
 
     case "streamreceived":

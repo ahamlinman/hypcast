@@ -10,14 +10,15 @@ const App = () => {
       <h1>It works!</h1>
       <p>Connection Status: {controller.connectionState.status}</p>
       <p>Tuner Status: {controller.tunerState?.status}</p>
-      <p>Current Channel: {controller.requestedChannelName || "(unknown)"}</p>
+      <p>Now Watching: {controller.currentChannelName || "(none)"}</p>
       <p>
-        Change Channel:{" "}
+        Controls:{" "}
         <ChannelSelector
           onTune={async (name: string) => {
             controller.changeChannel(name);
           }}
         />
+        <button onClick={() => controller.turnOff()}>Stop</button>
       </p>
       {controller.mediaStream ? (
         <VideoPlayer stream={controller.mediaStream} />

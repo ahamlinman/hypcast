@@ -37,24 +37,6 @@ func main() {
 	http.Handle("/config/channels", client.ChannelListHandler(channels))
 	http.Handle("/control-socket", client.TunerControlHandler(tuner))
 
-	// TODO: Remove this and let client change channels
-	var channel atsc.Channel
-	if flag.NArg() > 0 {
-		for _, ch := range channels {
-			if ch.Name == flag.Arg(0) {
-				channel = ch
-				break
-			}
-		}
-	}
-	if channel == (atsc.Channel{}) {
-		channel = channels[0]
-	}
-	log.Printf("Watching %v", channel)
-	if err := tuner.Tune(channel.Name); err != nil {
-		log.Fatalf("Unable to tune to channel: %v", err)
-	}
-
 	log.Print("Starting web server")
 	server := http.Server{Addr: ":9200"}
 	go server.ListenAndServe()
