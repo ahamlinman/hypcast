@@ -121,7 +121,7 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! decodebin
 	! audioconvert
 	! audioresample
-	! audio/x-raw,rate=48000
+	! audio/x-raw,rate=48000,channels=2
 	! opusenc bitrate=128000
 	! appsink name=audio max-buffers=32 drop=true
 `))
