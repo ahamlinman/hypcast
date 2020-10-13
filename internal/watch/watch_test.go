@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -280,6 +281,42 @@ func TestCancelFromHandler(t *testing.T) {
 	}
 }
 
+func TestWait(t *testing.T) {
+	// A specific test to ensure that Wait properly blocks until the subscription
+	// has terminated.
+
+	var (
+		v = NewValue("alice")
+
+		block  = make(chan struct{})
+		notify = make(chan string)
+		done   = make(chan struct{})
+	)
+
+	s := v.Subscribe(func(x interface{}) {
+		<-block
+		notify <- x.(string)
+	})
+
+	// Ensure that we have a handler in flight.
+	block <- struct{}{}
+
+	// Start waiting in the background. We should remain blocked.
+	go func() {
+		defer close(done)
+		s.Wait()
+	}()
+	assertBlocked(t, done)
+
+	// Cancel the subscription, and ensure that we are still blocked.
+	s.Cancel()
+	assertBlocked(t, done)
+
+	// Allow the handler to finish. At this point, we should become unblocked.
+	assertNextReceive(t, notify, "alice")
+	assertSubscriptionDone(t, s)
+}
+
 func assertNextReceive(t *testing.T, ch chan string, want string) {
 	t.Helper()
 
@@ -307,5 +344,19 @@ func assertSubscriptionDone(t *testing.T, s *Subscription) {
 	case <-done:
 	case <-time.After(timeout):
 		t.Fatalf("subscription routine still running after %v", timeout)
+	}
+}
+
+func assertBlocked(t *testing.T, ch chan struct{}) {
+	t.Helper()
+
+	// If any background routines are going to close ch when they should not,
+	// let's help them along a bit.
+	runtime.Gosched()
+
+	select {
+	case <-ch:
+		t.Fatal("progress was not blocked")
+	default:
 	}
 }
