@@ -75,7 +75,7 @@ class Backend extends EventEmitter {
   constructor() {
     super();
     this.pc = new RTCPeerConnection();
-    this.ws = new WebSocket(`ws://${window.location.host}/control-socket`);
+    this.ws = new WebSocket(`ws://${window.location.host}/old-control-socket`);
     this.setup();
   }
 

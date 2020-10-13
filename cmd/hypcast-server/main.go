@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/client"
+	"github.com/ahamlinman/hypcast/internal/oldclient"
 	"github.com/ahamlinman/hypcast/internal/tuner"
 )
 
@@ -34,8 +34,8 @@ func main() {
 
 	tuner := tuner.NewTuner(channels)
 
-	http.Handle("/config/channels", client.ChannelListHandler(channels))
-	http.Handle("/control-socket", client.TunerControlHandler(tuner))
+	http.Handle("/config/channels", oldclient.ChannelListHandler(channels))
+	http.Handle("/old-control-socket", oldclient.TunerControlHandler(tuner))
 
 	log.Print("Starting web server")
 	server := http.Server{Addr: ":9200"}
