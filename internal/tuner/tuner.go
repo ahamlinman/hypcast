@@ -2,6 +2,7 @@ package tuner
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/pion/randutil"
@@ -31,6 +32,8 @@ type Status struct {
 // to update their local status. Clients may register with the Tuner to be
 // notified when they should reread the current state.
 type Tuner struct {
+	mu sync.Mutex
+
 	channels   []atsc.Channel
 	channelMap map[string]atsc.Channel
 
@@ -81,6 +84,9 @@ func (t *Tuner) Subscribe(handler func(Status)) *watch.Subscription {
 
 // Stop closes any active pipeline for this Tuner, releasing the DVB device.
 func (t *Tuner) Stop() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	err := t.destroyAnyRunningPipeline()
 	t.status.Set(Status{Error: err})
 	return err
@@ -89,6 +95,9 @@ func (t *Tuner) Stop() error {
 // Tune closes any active pipeline for this Tuner, and starts a new pipeline to
 // stream the channel with the provided name.
 func (t *Tuner) Tune(channelName string) (err error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	channel, ok := t.channelMap[channelName]
 	if !ok {
 		return fmt.Errorf("channel %q not available in this tuner", channelName)
