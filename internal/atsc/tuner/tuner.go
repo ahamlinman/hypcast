@@ -1,6 +1,7 @@
 package tuner
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -119,6 +120,9 @@ func (t *Tuner) Stop() error {
 	return err
 }
 
+// ErrChannelNotFound is returned when tuning to a channel that does not exist.
+var ErrChannelNotFound error = errors.New("channel not found")
+
 // Tune closes any active pipeline for this Tuner, and starts a new pipeline to
 // stream the channel with the provided name.
 func (t *Tuner) Tune(channelName string) (err error) {
@@ -127,7 +131,7 @@ func (t *Tuner) Tune(channelName string) (err error) {
 
 	channel, ok := t.channelMap[channelName]
 	if !ok {
-		return fmt.Errorf("channel %q not available in this tuner", channelName)
+		return ErrChannelNotFound
 	}
 
 	t.status.Set(Status{
