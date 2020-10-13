@@ -43,13 +43,10 @@ type Tuner struct {
 
 // NewTuner creates a new Tuner that can tune to any of the provided channels.
 func NewTuner(channels []atsc.Channel) *Tuner {
-	var status watch.Value
-	status.Set(Status{})
-
 	return &Tuner{
 		channels:   channels,
 		channelMap: makeChannelMap(channels),
-		status:     &status,
+		status:     watch.NewValue(Status{}),
 	}
 }
 

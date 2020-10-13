@@ -4,8 +4,10 @@ package watch
 
 import "sync"
 
-// Value provides synchronized reads and writes of an arbitrary value, and
-// continuously provides updates to subscribers as writes are made.
+// Value provides synchronized reads and writes of an arbitrary interface{}
+// value, and continuously provides updates to subscribers as writes are made.
+//
+// The zero value of a Value is valid and has the value nil.
 type Value struct {
 	valueMu sync.RWMutex
 	value   interface{}
@@ -14,15 +16,20 @@ type Value struct {
 	subscribers   map[*Subscription]struct{}
 }
 
-// Get returns the value set by the most recent Set.
+// NewValue creates a Value whose value is initially set to x.
+func NewValue(x interface{}) *Value {
+	return &Value{value: x}
+}
+
+// Get returns the current value of v.
 func (v *Value) Get() interface{} {
 	v.valueMu.RLock()
 	defer v.valueMu.RUnlock()
 	return v.value
 }
 
-// Set sets the value of the Value to x, and schedules notifications to
-// subscribers to ensure that they eventually receive the new value.
+// Set sets the value of v to x, and schedules notifications to subscribers to
+// ensure that they eventually receive the new value.
 func (v *Value) Set(x interface{}) {
 	v.setValue(x)
 	v.pingSubscribers()
@@ -57,10 +64,10 @@ func (v *Value) pingSubscribers() {
 // may see the value from a single call to Set more than once across consecutive
 // calls.
 //
-// Subscriptions are not recovered by the garbage collector until they are
-// canceled by a call to Subscription.Cancel and any running handler has
-// finished executing. Values are not recovered by the garbage collector until
-// all subscriptions have been recovered.
+// A Subscription is not recovered by the garbage collector until it is canceled
+// by a call to Subscription.Cancel and any outstanding notification has
+// finished processing. Values are not recovered by the garbage collector until
+// all of their subscriptions have been recovered.
 func (v *Value) Subscribe(handle func(x interface{})) *Subscription {
 	s := &Subscription{
 		value:   v,
@@ -115,11 +122,11 @@ func (s *Subscription) run() {
 	}
 }
 
-// Cancel requests that the subscription be canceled, enabling its resources to
-// be released once any outstanding notification has been processed. Cancel does
-// not wait for a handler call in flight to finish, and does not guarantee that
-// no new call will be made to the handler after it returns. Use Wait to
-// guarantee these conditions.
+// Cancel requests that s be canceled, enabling its resources to be released
+// once any outstanding notification has been processed. Cancel does not wait
+// for a handler call in flight to finish, and does not guarantee that no new
+// call will be made to the handler after it returns. Use Wait to guarantee
+// these conditions.
 func (s *Subscription) Cancel() {
 	s.value.unsetSubscription(s)
 	close(s.flag)
@@ -133,9 +140,9 @@ func (s *Subscription) clearFlag() {
 	}
 }
 
-// Wait blocks until the subscription is fully canceled, and any outstanding
-// call to the handler function has finished. After Wait returns, no new calls
-// will be made to the handler.
+// Wait blocks until s is canceled and all outstanding notifications have been
+// processed, including the completion of any handler calls. After Wait returns,
+// no new calls will be made to the handler.
 func (s *Subscription) Wait() {
 	<-s.done
 }

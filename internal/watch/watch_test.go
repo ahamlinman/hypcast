@@ -20,7 +20,7 @@ func TestValue(t *testing.T) {
 	)
 
 	var (
-		v Value
+		v = NewValue(int(0))
 
 		handlerGroup sync.WaitGroup
 		setGroup     sync.WaitGroup
@@ -29,8 +29,6 @@ func TestValue(t *testing.T) {
 
 		done = make(chan struct{})
 	)
-
-	v.Set(int(0))
 
 	handlerGroup.Add(nSubscribers)
 	for i := 0; i < nSubscribers; i++ {
@@ -87,6 +85,38 @@ func TestValue(t *testing.T) {
 	}
 }
 
+func TestGetZeroValue(t *testing.T) {
+	// A simple test for getting the zero value of a Value.
+	var v Value
+	if x := v.Get(); x != nil {
+		t.Errorf("zero value of Value contained %v; want nil", x)
+	}
+}
+
+func TestSubscribeZeroValue(t *testing.T) {
+	var (
+		v      Value
+		notify = make(chan interface{})
+	)
+
+	s := v.Subscribe(func(x interface{}) {
+		notify <- x
+	})
+
+	select {
+	case x := <-notify:
+		if x != nil {
+			t.Errorf("subscriber to zero value of Value got %v; want nil", x)
+		}
+
+	case <-time.After(timeout):
+		t.Fatalf("reached %v timeout before subscriber was notified", timeout)
+	}
+
+	s.Cancel()
+	assertSubscriptionDone(t, s)
+}
+
 func TestBlockedSubscriber(t *testing.T) {
 	// A specific test for calling Set while some handlers for a previous Set call
 	// are still in progress. We expect that unrelated subscribers will continue
@@ -94,14 +124,12 @@ func TestBlockedSubscriber(t *testing.T) {
 	// additional notification for any state that was set while it was blocked.
 
 	var (
-		v Value
+		v = NewValue("alice")
 
 		block           = make(chan struct{})
 		notifyBlocked   = make(chan string)
 		notifyUnblocked = make(chan string)
 	)
-
-	v.Set("alice")
 
 	blockedSub := v.Subscribe(func(x interface{}) {
 		<-block
@@ -154,12 +182,10 @@ func TestSetFromHandler(t *testing.T) {
 
 	const stopValue = 10
 	var (
-		v Value
-
+		v    = NewValue(int(0))
 		done = make(chan struct{})
 	)
 
-	v.Set(int(0))
 	s := v.Subscribe(func(x interface{}) {
 		if i := x.(int); i < stopValue {
 			v.Set(i + 1)
@@ -190,13 +216,12 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	// handler was running.
 
 	var (
-		v Value
+		v = NewValue("alice")
 
 		block  = make(chan struct{})
 		notify = make(chan string)
 	)
 
-	v.Set("alice")
 	s := v.Subscribe(func(x interface{}) {
 		<-block
 		notify <- x.(string)
@@ -229,13 +254,12 @@ func TestCancelFromHandler(t *testing.T) {
 	// as the caller of Cancel is the handler itself.
 
 	var (
-		v Value
+		v = NewValue("alice")
 
 		canceled bool
 		subCh    = make(chan *Subscription)
 	)
 
-	v.Set("alice")
 	s := v.Subscribe(func(x interface{}) {
 		if canceled {
 			t.Fatal("handler called after cancellation")
