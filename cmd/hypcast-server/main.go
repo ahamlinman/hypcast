@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
+	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 	"github.com/ahamlinman/hypcast/internal/oldclient"
-	"github.com/ahamlinman/hypcast/internal/tuner"
 )
 
 func main() {

@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v2"
 
-	"github.com/ahamlinman/hypcast/internal/tuner"
+	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
