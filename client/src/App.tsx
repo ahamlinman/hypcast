@@ -12,13 +12,8 @@ const App = () => {
       <p>Tuner Status: {controller.tunerState?.status}</p>
       <p>Now Watching: {controller.currentChannelName || "(none)"}</p>
       <p>
-        Controls:{" "}
-        <ChannelSelector
-          onTune={async (name: string) => {
-            controller.changeChannel(name);
-          }}
-        />
-        <button onClick={() => controller.turnOff()}>Stop</button>
+        Controls: <ChannelSelector onTune={changeChannel} />
+        <button onClick={turnOff}>Stop</button>
       </p>
       {controller.mediaStream ? (
         <VideoPlayer stream={controller.mediaStream} />
@@ -90,7 +85,6 @@ const ChannelSelector = ({
     <>
       <select
         name="channel"
-        disabled={disabled}
         value={selected}
         onChange={(evt) => setSelected(evt.currentTarget.value)}
       >
@@ -128,3 +122,26 @@ const useChannelNames = (): undefined | string[] | Error => {
 
   return result;
 };
+
+function changeChannel(name: string) {
+  return callRPC("tune", { ChannelName: name }).catch(console.error);
+}
+
+function turnOff() {
+  return callRPC("stop").catch(console.error);
+}
+
+async function callRPC(name: string, params?: { [k: string]: any }) {
+  const response = await fetch(`/api/rpc/${name}`, {
+    method: "POST",
+    body: params ? JSON.stringify(params) : undefined,
+    headers: params
+      ? new Headers({ "Content-Type": "application/json" })
+      : undefined,
+  });
+
+  if (!response.ok) {
+    const body = await response.json();
+    throw new Error(body.Error);
+  }
+}

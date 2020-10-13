@@ -171,16 +171,6 @@ func (c *client) runReceiver() error {
 				return err
 			}
 
-		case messageKindChangeChannel:
-			if err := c.tuner.Tune(msg.ChannelName); err != nil {
-				return err
-			}
-
-		case messageKindTurnOff:
-			if err := c.tuner.Stop(); err != nil {
-				return err
-			}
-
 		default:
 			return fmt.Errorf("received unknown message kind %q", msg.Kind)
 		}

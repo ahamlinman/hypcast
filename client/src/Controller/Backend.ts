@@ -111,25 +111,6 @@ class Backend extends EventEmitter {
     this.ws.close();
   }
 
-  changeChannel(channelName: string) {
-    console.log("Requested channel change", channelName);
-    this.ws.send(
-      JSON.stringify({
-        Kind: "ChangeChannel",
-        ChannelName: channelName,
-      }),
-    );
-  }
-
-  turnOff() {
-    console.log("Requested to turn off");
-    this.ws.send(
-      JSON.stringify({
-        Kind: "TurnOff",
-      }),
-    );
-  }
-
   private handleSocketMessage(evt: MessageEvent) {
     const message: Message = JSON.parse(evt.data);
     console.log("Received message", message);

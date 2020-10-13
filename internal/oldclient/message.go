@@ -10,9 +10,7 @@ const (
 	messageKindTunerStatus messageKind = "TunerStatus"
 
 	// Client-sent messages
-	messageKindRTCAnswer     messageKind = "RTCAnswer"
-	messageKindChangeChannel messageKind = "ChangeChannel"
-	messageKindTurnOff       messageKind = "TurnOff"
+	messageKindRTCAnswer messageKind = "RTCAnswer"
 )
 
 type message struct {
@@ -22,8 +20,6 @@ type message struct {
 	SDP *webrtc.SessionDescription `json:",omitempty"`
 	// TunerStatus
 	TunerStatus *tunerStatus `json:",omitempty"`
-	// ChangeChannel
-	ChannelName string `json:",omitempty"`
 }
 
 type tunerStatus struct {
