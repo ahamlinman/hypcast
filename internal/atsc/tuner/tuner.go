@@ -60,7 +60,9 @@ func makeChannelMap(channels []atsc.Channel) map[string]atsc.Channel {
 
 // Channels returns the set of channels known to this Tuner.
 func (t *Tuner) Channels() []atsc.Channel {
-	return t.channels
+	channels := make([]atsc.Channel, len(t.channels))
+	copy(channels, t.channels)
+	return channels
 }
 
 // Status returns the current status of this tuner.
@@ -125,8 +127,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return
 	}
 
-	t.pipeline.SetSink(gst.SinkTypeVideo, sinkTrack(status.VideoTrack, videoClockRate))
-	t.pipeline.SetSink(gst.SinkTypeAudio, sinkTrack(status.AudioTrack, audioClockRate))
+	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(status.VideoTrack, videoClockRate))
+	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(status.AudioTrack, audioClockRate))
 
 	err = t.pipeline.Start()
 	if err != nil {
@@ -172,7 +174,7 @@ func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track,
 	return
 }
 
-func sinkTrack(track *webrtc.Track, clockRate int) gst.Sink {
+func createTrackSink(track *webrtc.Track, clockRate int) gst.Sink {
 	return gst.Sink(func(b []byte, d time.Duration) {
 		track.WriteSample(media.Sample{
 			Data:    b,

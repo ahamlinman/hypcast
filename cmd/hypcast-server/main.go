@@ -34,7 +34,7 @@ func main() {
 
 	tuner := tuner.NewTuner(channels)
 
-	http.Handle("/config/channels", oldclient.ChannelListHandler(channels))
+	http.Handle("/config/channels", oldclient.ChannelListHandler(tuner.Channels()))
 	http.Handle("/old-control-socket", oldclient.TunerControlHandler(tuner))
 
 	log.Print("Starting web server")
