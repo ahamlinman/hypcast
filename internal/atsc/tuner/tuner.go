@@ -34,8 +34,7 @@ const (
 type Status struct {
 	State   State
 	Channel atsc.Channel
-
-	Error error
+	Error   error
 }
 
 // Tracks represents the current set of video and audio tracks for use by WebRTC

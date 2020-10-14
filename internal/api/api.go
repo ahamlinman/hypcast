@@ -4,8 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 )
+
+var websocketUpgrader = &websocket.Upgrader{
+	// TODO: Improve this function for better security
+	CheckOrigin: func(_ *http.Request) bool { return true },
+}
 
 // Handler serves the Hypcast API for a single tuner.
 type Handler struct {
@@ -49,9 +56,5 @@ func (h *Handler) handleConfigChannels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleSocketWebRTCSignaling(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
