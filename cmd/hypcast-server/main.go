@@ -37,18 +37,14 @@ func main() {
 
 	tuner := tuner.NewTuner(channels)
 
-	// TODO: /old-control-socket is a legacy API; use api.Handler directly once it
-	// is fully implemented
-	mux := http.NewServeMux()
-	mux.Handle("/api/", api.NewHandler(tuner))
-	mux.Handle("/old-control-socket", oldclient.TunerControlHandler(tuner))
+	// TODO: /old-control-socket is a legacy API; only use api.Handler once it is
+	// fully implemented
+	http.Handle("/api/", api.NewHandler(tuner))
+	http.Handle("/old-control-socket", oldclient.TunerControlHandler(tuner))
 
-	log.Printf("Starting Hypcast server on %s", *flagAddr)
-	server := http.Server{
-		Addr:    *flagAddr,
-		Handler: mux,
-	}
+	server := http.Server{Addr: *flagAddr}
 	go server.ListenAndServe()
+	log.Printf("Started Hypcast server on %s", *flagAddr)
 
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
