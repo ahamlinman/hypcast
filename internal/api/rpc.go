@@ -12,9 +12,9 @@ import (
 
 type rpcParams map[string]interface{}
 
-type rpcHandlerFunc func(params rpcParams) (code int, resp interface{})
+type rpcHandlerFunc func(rpcParams) (code int, body interface{})
 
-func (h *Handler) rpcStop(_ rpcParams) (code int, resp interface{}) {
+func (h *Handler) rpcStop(_ rpcParams) (code int, body interface{}) {
 	if err := h.tuner.Stop(); err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -22,7 +22,7 @@ func (h *Handler) rpcStop(_ rpcParams) (code int, resp interface{}) {
 	return http.StatusNoContent, nil
 }
 
-func (h *Handler) rpcTune(params rpcParams) (code int, resp interface{}) {
+func (h *Handler) rpcTune(params rpcParams) (code int, body interface{}) {
 	channelName, ok := params["ChannelName"].(string)
 	if !ok {
 		return http.StatusBadRequest, errors.New("channel name required")
@@ -50,35 +50,35 @@ func handleRPC(handler rpcHandlerFunc) http.Handler {
 
 		var (
 			code int
-			resp interface{}
+			body interface{}
 
 			params, err = readRPCParams(r)
 		)
 
 		switch {
 		case errors.Is(err, errBodyTooLarge):
-			code, resp = http.StatusRequestEntityTooLarge, err
+			code, body = http.StatusRequestEntityTooLarge, err
 		case errors.Is(err, errInvalidBodyType):
-			code, resp = http.StatusUnsupportedMediaType, err
+			code, body = http.StatusUnsupportedMediaType, err
 		case errors.Is(err, errInvalidBody):
-			code, resp = http.StatusBadRequest, err
+			code, body = http.StatusBadRequest, err
 		case err != nil:
-			code, resp = http.StatusInternalServerError, err
+			code, body = http.StatusInternalServerError, err
 
 		default:
-			code, resp = handler(params)
+			code, body = handler(params)
 		}
 
-		if err, ok := resp.(error); ok {
-			resp = struct{ Error string }{err.Error()}
+		if err, ok := body.(error); ok {
+			body = struct{ Error string }{err.Error()}
 		}
 
-		if resp != nil {
+		if body != nil {
 			w.Header().Add("Content-Type", "application/json")
 		}
 		w.WriteHeader(code)
-		if resp != nil {
-			json.NewEncoder(w).Encode(resp)
+		if body != nil {
+			json.NewEncoder(w).Encode(body)
 		}
 	})
 }
