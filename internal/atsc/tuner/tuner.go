@@ -40,8 +40,8 @@ type Status struct {
 // Tracks represents the current set of video and audio tracks for use by WebRTC
 // clients.
 type Tracks struct {
-	VideoTrack *webrtc.Track
-	AudioTrack *webrtc.Track
+	Video *webrtc.Track
+	Audio *webrtc.Track
 }
 
 // Tuner represents an ATSC tuner made available to WebRTC clients.
@@ -173,8 +173,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		Channel: channel,
 	})
 	t.tracks.Set(Tracks{
-		VideoTrack: vt,
-		AudioTrack: at,
+		Video: vt,
+		Audio: at,
 	})
 	return nil
 }

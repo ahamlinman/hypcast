@@ -142,20 +142,20 @@ func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
 		Direction: webrtc.RTPTransceiverDirectionSendonly,
 	}
 
-	if _, err := wh.pc.AddTransceiverFromTrack(ts.VideoTrack, init); err != nil {
+	if _, err := wh.pc.AddTransceiverFromTrack(ts.Video, init); err != nil {
 		return err
 	}
-	if _, err := wh.pc.AddTransceiverFromTrack(ts.AudioTrack, init); err != nil {
+	if _, err := wh.pc.AddTransceiverFromTrack(ts.Audio, init); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (wh *webrtcHandler) addTracksWithExistingTransceivers(ts tuner.Tracks) error {
-	if _, err := wh.pc.AddTrack(ts.VideoTrack); err != nil {
+	if _, err := wh.pc.AddTrack(ts.Video); err != nil {
 		return err
 	}
-	if _, err := wh.pc.AddTrack(ts.AudioTrack); err != nil {
+	if _, err := wh.pc.AddTrack(ts.Audio); err != nil {
 		return err
 	}
 	return nil
