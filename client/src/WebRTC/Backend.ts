@@ -31,7 +31,7 @@ class Backend extends EventEmitter {
     super();
     this.pc = new RTCPeerConnection();
     this.ws = new WebSocket(
-      `ws://${window.location.host}/api/sockets/webrtc-peer`,
+      `ws://${window.location.host}/api/socket/webrtc-peer`,
     );
     this.setup();
   }

@@ -29,7 +29,7 @@ export const TunerStatusProvider = ({
 
   React.useEffect(() => {
     const ws = new WebSocket(
-      `ws://${window.location.host}/api/sockets/tuner-status`,
+      `ws://${window.location.host}/api/socket/tuner-status`,
     );
 
     let closed = false;

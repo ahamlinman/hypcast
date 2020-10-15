@@ -32,8 +32,8 @@ func NewHandler(tuner *tuner.Tuner) *Handler {
 	h.mux.Handle("/api/rpc/stop", handleRPC(h.rpcStop))
 	h.mux.Handle("/api/rpc/tune", handleRPC(h.rpcTune))
 
-	h.mux.HandleFunc("/api/sockets/webrtc-peer", h.handleSocketWebRTCPeer)
-	h.mux.HandleFunc("/api/sockets/tuner-status", h.handleSocketTunerStatus)
+	h.mux.HandleFunc("/api/socket/webrtc-peer", h.handleSocketWebRTCPeer)
+	h.mux.HandleFunc("/api/socket/tuner-status", h.handleSocketTunerStatus)
 
 	return h
 }
