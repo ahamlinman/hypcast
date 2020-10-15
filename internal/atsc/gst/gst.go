@@ -1,8 +1,9 @@
 // Package gst manages GStreamer pipelines that process live ATSC TV signals
 // from Linux DVB devices.
 //
-// The basic concepts behind this integration are heavily inspired by
-// https://github.com/pion/rtwatch.
+// This implementation is heavily inspired by https://github.com/pion/rtwatch,
+// which uses GStreamer and Pion WebRTC to stream a video file from disk. I
+// doubt that I could have figured this out without that project as a reference.
 package gst
 
 // #cgo pkg-config: gstreamer-1.0
@@ -126,18 +127,16 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! appsink name=audio max-buffers=32 drop=true
 `))
 
-var errPipelineNotInitialized = errors.New("pipeline not initialized")
-
 // Start sets the pipeline to the GStreamer PLAYING state, in which it will tune
 // to a channel and produce streams.
 func (p *Pipeline) Start() error {
 	if p.gstPipeline == nil {
-		return errPipelineNotInitialized
+		panic("pipeline not initialized")
 	}
 
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_PLAYING)
 	if result == C.GST_STATE_CHANGE_FAILURE {
-		return errors.New("failed to change GStreamer pipeline state")
+		return errors.New("failed to start pipeline")
 	}
 	return nil
 }
@@ -146,12 +145,12 @@ func (p *Pipeline) Start() error {
 // running streams and release the TV tuner device.
 func (p *Pipeline) Stop() error {
 	if p.gstPipeline == nil {
-		return errPipelineNotInitialized
+		panic("pipeline not initialized")
 	}
 
 	result := C.gst_element_set_state(p.gstPipeline, C.GST_STATE_NULL)
 	if result == C.GST_STATE_CHANGE_FAILURE {
-		return errors.New("failed to change GStreamer pipeline state")
+		return errors.New("failed to stop pipeline")
 	}
 	return nil
 }
