@@ -32,7 +32,7 @@ func NewHandler(tuner *tuner.Tuner) *Handler {
 	h.mux.Handle("/api/rpc/stop", handleRPC(h.rpcStop))
 	h.mux.Handle("/api/rpc/tune", handleRPC(h.rpcTune))
 
-	h.mux.HandleFunc("/api/sockets/webrtc-signaling", h.handleSocketWebRTCSignaling)
+	h.mux.HandleFunc("/api/sockets/webrtc-peer", h.handleSocketWebRTCPeer)
 	h.mux.HandleFunc("/api/sockets/tuner-status", h.handleSocketTunerStatus)
 
 	return h
@@ -53,8 +53,4 @@ func (h *Handler) handleConfigChannels(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(names)
-}
-
-func (h *Handler) handleSocketWebRTCSignaling(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNoContent)
 }

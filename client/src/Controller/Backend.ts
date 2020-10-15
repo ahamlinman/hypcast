@@ -19,7 +19,7 @@ export type ConnectionState =
       error: Error;
     };
 
-type Message = { Kind: "RTCOffer"; SDP: any };
+type Message = { SDP: any };
 
 declare interface Backend {
   emit(event: "connectionchange", state: ConnectionState): boolean;
@@ -47,7 +47,9 @@ class Backend extends EventEmitter {
   constructor() {
     super();
     this.pc = new RTCPeerConnection();
-    this.ws = new WebSocket(`ws://${window.location.host}/old-control-socket`);
+    this.ws = new WebSocket(
+      `ws://${window.location.host}/api/sockets/webrtc-peer`,
+    );
     this.setup();
   }
 
@@ -79,15 +81,8 @@ class Backend extends EventEmitter {
 
   private handleSocketMessage(evt: MessageEvent) {
     const message: Message = JSON.parse(evt.data);
-    console.log("Received RTC signal message", message);
-    switch (message.Kind) {
-      case "RTCOffer":
-        this.handleRTCOffer(message.SDP);
-        break;
-
-      default:
-        break;
-    }
+    console.log("Received WebRTC offer", message);
+    this.handleRTCOffer(message.SDP);
   }
 
   private async handleRTCOffer(sdp: any) {
@@ -98,12 +93,7 @@ class Backend extends EventEmitter {
     console.log("Created local description", answer);
     await this.pc.setLocalDescription(answer);
 
-    this.ws.send(
-      JSON.stringify({
-        Kind: "RTCAnswer",
-        SDP: answer,
-      }),
-    );
+    this.ws.send(JSON.stringify({ SDP: answer }));
   }
 
   private handleSocketOpen() {
