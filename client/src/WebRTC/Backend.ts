@@ -1,23 +1,8 @@
 import { EventEmitter } from "events";
 
-export enum ConnectionStatus {
-  Disconnected = "Disconnected",
-  Connecting = "Connecting",
-  Connected = "Connected",
-  Error = "Error",
-}
-
 export type ConnectionState =
-  | {
-      status:
-        | ConnectionStatus.Disconnected
-        | ConnectionStatus.Connecting
-        | ConnectionStatus.Connected;
-    }
-  | {
-      status: ConnectionStatus.Error;
-      error: Error;
-    };
+  | { Status: "Disconnected" | "Connecting" | "Connected" }
+  | { Status: "Error"; Error: Error };
 
 type Message = { SDP: any };
 
@@ -39,9 +24,7 @@ class Backend extends EventEmitter {
   private pc: RTCPeerConnection;
   private ws: WebSocket;
 
-  private _connectionState: ConnectionState = {
-    status: ConnectionStatus.Connecting,
-  };
+  private _connectionState: ConnectionState = { Status: "Connecting" };
   private _mediaStream: undefined | MediaStream;
 
   constructor() {
@@ -97,20 +80,20 @@ class Backend extends EventEmitter {
   }
 
   private handleSocketOpen() {
-    this._connectionState = { status: ConnectionStatus.Connected };
+    this._connectionState = { Status: "Connected" };
     this.emit("connectionchange", this._connectionState);
   }
 
   private handleSocketClose() {
-    this._connectionState = { status: ConnectionStatus.Disconnected };
+    this._connectionState = { Status: "Disconnected" };
     this.emit("connectionchange", this._connectionState);
   }
 
   private handleSocketError(evt: Event) {
     console.log("RTC socket error", evt);
     this._connectionState = {
-      status: ConnectionStatus.Error,
-      error: new Error(evt.toString()),
+      Status: "Error",
+      Error: new Error(evt.toString()),
     };
     this.emit("connectionchange", this._connectionState);
   }

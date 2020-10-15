@@ -1,19 +1,19 @@
 import React, { FormEvent } from "react";
 
-import { useController } from "./Controller";
+import { useWebRTC } from "./WebRTC";
 import { useTunerStatus, Status as TunerStatus } from "./TunerStatus";
 
 import rpc from "./rpc";
 import useConfig from "./useConfig";
 
 const App = () => {
-  const controller = useController();
+  const webRTC = useWebRTC();
   const tunerStatus = useTunerStatus();
 
   return (
     <>
       <h1>It works!</h1>
-      <p>WebRTC Status: {controller.connectionState.status}</p>
+      <p>WebRTC Status: {webRTC.Connection.Status}</p>
       <TunerStatusDisplay status={tunerStatus} />
       <p>
         Controls:{" "}
@@ -24,9 +24,7 @@ const App = () => {
         />
         <button onClick={() => rpc("stop").catch(console.error)}>Stop</button>
       </p>
-      {controller.mediaStream ? (
-        <VideoPlayer stream={controller.mediaStream} />
-      ) : null}
+      {webRTC.MediaStream ? <VideoPlayer stream={webRTC.MediaStream} /> : null}
     </>
   );
 };

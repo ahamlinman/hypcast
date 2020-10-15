@@ -2,16 +2,16 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import App from "./App";
-import { Controller } from "./Controller";
+import { WebRTCProvider } from "./WebRTC";
 import { TunerStatusProvider } from "./TunerStatus";
 
 ReactDOM.render(
   <React.StrictMode>
-    <Controller>
+    <WebRTCProvider>
       <TunerStatusProvider>
         <App />
       </TunerStatusProvider>
-    </Controller>
+    </WebRTCProvider>
   </React.StrictMode>,
   document.getElementById("root"),
 );
