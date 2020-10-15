@@ -2,6 +2,7 @@ import React, { FormEvent } from "react";
 
 import { useController } from "./Controller";
 import { useTunerStatus, Status as TunerStatus } from "./TunerStatus";
+import rpc from "./rpc";
 
 const App = () => {
   const controller = useController();
@@ -13,8 +14,13 @@ const App = () => {
       <p>WebRTC Status: {controller.connectionState.status}</p>
       <TunerStatusDisplay status={tunerStatus} />
       <p>
-        Controls: <ChannelSelector onTune={changeChannel} />
-        <button onClick={turnOff}>Stop</button>
+        Controls:{" "}
+        <ChannelSelector
+          onTune={(ChannelName) =>
+            rpc("tune", { ChannelName }).catch(console.error)
+          }
+        />
+        <button onClick={() => rpc("stop").catch(console.error)}>Stop</button>
       </p>
       {controller.mediaStream ? (
         <VideoPlayer stream={controller.mediaStream} />
@@ -142,26 +148,3 @@ const useChannelNames = (): undefined | string[] | Error => {
 
   return result;
 };
-
-function changeChannel(name: string) {
-  return callRPC("tune", { ChannelName: name }).catch(console.error);
-}
-
-function turnOff() {
-  return callRPC("stop").catch(console.error);
-}
-
-async function callRPC(name: string, params?: { [k: string]: any }) {
-  const response = await fetch(`/api/rpc/${name}`, {
-    method: "POST",
-    body: params ? JSON.stringify(params) : undefined,
-    headers: params
-      ? new Headers({ "Content-Type": "application/json" })
-      : undefined,
-  });
-
-  if (!response.ok) {
-    const body = await response.json();
-    throw new Error(body.Error);
-  }
-}
