@@ -1,16 +1,17 @@
 import React, { FormEvent } from "react";
 
 import { useController } from "./Controller";
+import { useTunerStatus, Status as TunerStatus } from "./TunerStatus";
 
 const App = () => {
   const controller = useController();
+  const tunerStatus = useTunerStatus();
 
   return (
     <>
       <h1>It works!</h1>
-      <p>Connection Status: {controller.connectionState.status}</p>
-      <p>Tuner Status: {controller.tunerState?.status}</p>
-      <p>Now Watching: {controller.currentChannelName || "(none)"}</p>
+      <p>WebRTC Status: {controller.connectionState.status}</p>
+      <TunerStatusDisplay status={tunerStatus} />
       <p>
         Controls: <ChannelSelector onTune={changeChannel} />
         <button onClick={turnOff}>Stop</button>
@@ -23,6 +24,25 @@ const App = () => {
 };
 
 export default App;
+
+const TunerStatusDisplay = ({ status }: { status: TunerStatus }) => (
+  <p>Tuner Status: {tunerStatusToString(status)}</p>
+);
+
+const tunerStatusToString = (status: TunerStatus) => {
+  if (status.Connection !== "Connected") {
+    return `(${status.Connection})`;
+  }
+
+  if (status.State === "Stopped") {
+    if (status.Error !== undefined) {
+      return `${status.State} (${status.Error})`;
+    }
+    return status.State;
+  }
+
+  return `${status.State} ${status.ChannelName}`;
+};
 
 const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
   const videoElement = React.useRef<null | HTMLVideoElement>(null);

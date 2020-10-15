@@ -4,18 +4,13 @@ import {
   default as Backend,
   ConnectionState,
   ConnectionStatus,
-  TunerState,
-  TunerStatus,
 } from "./Backend";
 
-export { ConnectionStatus, TunerStatus };
+export { ConnectionStatus };
 
 export interface State {
   connectionState: ConnectionState;
-
-  tunerState: undefined | TunerState;
   mediaStream: undefined | MediaStream;
-  currentChannelName: undefined | string;
 }
 
 const Context = React.createContext<null | State>(null);
@@ -32,12 +27,6 @@ export const Controller = ({ children }: { children: React.ReactNode }) => {
     backend.on("connectionchange", (state: ConnectionState) =>
       dispatch({
         kind: "connectionchange",
-        state,
-      }),
-    );
-    backend.on("tunerchange", (state: TunerState) =>
-      dispatch({
-        kind: "tunerchange",
         state,
       }),
     );
@@ -67,18 +56,14 @@ export const useController = (): State => {
 
 const defaultState = (): State => ({
   connectionState: { status: ConnectionStatus.Connecting },
-  tunerState: undefined,
   mediaStream: undefined,
-  currentChannelName: undefined,
 });
 
 type Action =
   | { kind: "backend"; backend: Backend }
   | { kind: "connectionchange"; state: ConnectionState }
-  | { kind: "tunerchange"; state: TunerState }
   | { kind: "streamreceived"; stream: MediaStream }
-  | { kind: "streamremoved" }
-  | { kind: "changechannel"; channelName: string };
+  | { kind: "streamremoved" };
 
 const reduce = (state: State, action: Action): State => {
   switch (action.kind) {
@@ -91,23 +76,10 @@ const reduce = (state: State, action: Action): State => {
     case "connectionchange":
       return { ...state, connectionState: action.state };
 
-    case "tunerchange":
-      return {
-        ...state,
-        tunerState: action.state,
-        currentChannelName:
-          action.state.status === TunerStatus.Starting ||
-          action.state.status === TunerStatus.Playing
-            ? action.state.channelName
-            : undefined,
-      };
-
     case "streamreceived":
       return { ...state, mediaStream: action.stream };
 
     case "streamremoved":
       return { ...state, mediaStream: undefined };
   }
-
-  return state;
 };

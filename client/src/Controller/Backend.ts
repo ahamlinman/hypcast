@@ -19,38 +19,7 @@ export type ConnectionState =
       error: Error;
     };
 
-export enum TunerStatus {
-  Stopped = "Stopped",
-  Starting = "Starting",
-  Playing = "Playing",
-  Error = "Error",
-}
-
-export type TunerState =
-  | {
-      status: TunerStatus.Starting | TunerStatus.Playing;
-      channelName: string;
-    }
-  | { status: TunerStatus.Stopped }
-  | { status: TunerStatus.Error; error: Error };
-
-type TunerStatusMessage =
-  | {
-      State: "Stopped";
-      Error: undefined | string;
-    }
-  | {
-      State: "Starting" | "Playing";
-      ChannelName: string;
-    };
-
-type Message =
-  | { Kind: "RTCOffer"; SDP: any }
-  | { Kind: "ChannelList"; ChannelNames: string[] }
-  | {
-      Kind: "TunerStatus";
-      TunerStatus: TunerStatusMessage;
-    };
+type Message = { Kind: "RTCOffer"; SDP: any };
 
 declare interface Backend {
   emit(event: "connectionchange", state: ConnectionState): boolean;
@@ -58,9 +27,6 @@ declare interface Backend {
     event: "connectionchange",
     listener: (state: ConnectionState) => void,
   ): this;
-
-  emit(event: "tunerchange", state: TunerState): boolean;
-  on(event: "tunerchange", listener: (state: TunerState) => void): this;
 
   emit(event: "streamreceived", stream: MediaStream): boolean;
   on(event: "streamreceived", listener: (stream: MediaStream) => void): this;
@@ -113,14 +79,10 @@ class Backend extends EventEmitter {
 
   private handleSocketMessage(evt: MessageEvent) {
     const message: Message = JSON.parse(evt.data);
-    console.log("Received message", message);
+    console.log("Received RTC signal message", message);
     switch (message.Kind) {
       case "RTCOffer":
         this.handleRTCOffer(message.SDP);
-        break;
-
-      case "TunerStatus":
-        this.handleTunerStatus(message.TunerStatus);
         break;
 
       default:
@@ -144,51 +106,18 @@ class Backend extends EventEmitter {
     );
   }
 
-  private handleTunerStatus(status: TunerStatusMessage) {
-    switch (status.State) {
-      case "Stopped":
-        if (status.Error) {
-          this.emit("tunerchange", {
-            status: TunerStatus.Error,
-            error: new Error(status.Error),
-          });
-        } else {
-          this.emit("tunerchange", {
-            status: TunerStatus.Stopped,
-          });
-        }
-        break;
-
-      case "Starting":
-        this.emit("tunerchange", {
-          status: TunerStatus.Starting,
-          channelName: status.ChannelName,
-        });
-        break;
-
-      case "Playing":
-        this.emit("tunerchange", {
-          status: TunerStatus.Playing,
-          channelName: status.ChannelName,
-        });
-        break;
-    }
-  }
-
   private handleSocketOpen() {
-    console.log("WebSocket opened");
     this._connectionState = { status: ConnectionStatus.Connected };
     this.emit("connectionchange", this._connectionState);
   }
 
   private handleSocketClose() {
-    console.log("WebSocket closed");
     this._connectionState = { status: ConnectionStatus.Disconnected };
     this.emit("connectionchange", this._connectionState);
   }
 
   private handleSocketError(evt: Event) {
-    console.log("WebSocket error", evt);
+    console.log("RTC socket error", evt);
     this._connectionState = {
       status: ConnectionStatus.Error,
       error: new Error(evt.toString()),

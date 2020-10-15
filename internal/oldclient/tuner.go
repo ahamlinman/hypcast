@@ -39,11 +39,9 @@ func TunerControlHandler(tuner *tuner.Tuner) http.Handler {
 }
 
 type client struct {
-	tuner                   *tuner.Tuner
-	tunerStatusSubscription *watch.Subscription
-	tunerStatusUpdates      chan tuner.Status
-	tunerTrackSubscription  *watch.Subscription
-	tunerTrackUpdates       chan tuner.Tracks
+	tuner                  *tuner.Tuner
+	tunerTrackSubscription *watch.Subscription
+	tunerTrackUpdates      chan tuner.Tracks
 
 	ws *websocket.Conn
 	pc *webrtc.PeerConnection
@@ -56,10 +54,6 @@ type client struct {
 
 func (c *client) run() error {
 	defer func() {
-		if c.tunerStatusSubscription != nil {
-			c.closeStatusSubscription()
-		}
-
 		if c.tunerTrackSubscription != nil {
 			c.closeTrackSubscription()
 		}
@@ -94,36 +88,9 @@ func (c *client) init() error {
 		return err
 	}
 
-	c.tunerStatusUpdates = make(chan tuner.Status)
-	c.tunerStatusSubscription = c.tuner.SubscribeStatus(c.receiveNewTunerStatus)
 	c.tunerTrackUpdates = make(chan tuner.Tracks)
 	c.tunerTrackSubscription = c.tuner.SubscribeTracks(c.receiveNewTunerTracks)
 	return nil
-}
-
-func (c *client) receiveNewTunerStatus(s tuner.Status) {
-	c.logf("Received new tuner status: %#v", s)
-	c.tunerStatusUpdates <- s
-}
-
-func (c *client) closeStatusSubscription() {
-	c.tunerStatusSubscription.Cancel()
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		c.tunerStatusSubscription.Wait()
-	}()
-
-	// Clean up any in-flight receiveNewTunerStatus calls, and wait for the
-	// subscription to finish.
-	for {
-		select {
-		case <-c.tunerStatusUpdates:
-		case <-done:
-			return
-		}
-	}
 }
 
 func (c *client) receiveNewTunerTracks(ts tuner.Tracks) {
@@ -182,11 +149,6 @@ func (c *client) runSender() error {
 		select {
 		case err := <-c.receiverDone:
 			return err
-
-		case s := <-c.tunerStatusUpdates:
-			if err := c.writeTunerStatusMessage(s); err != nil {
-				return err
-			}
 
 		case ts := <-c.tunerTrackUpdates:
 			if err := c.processTunerTracks(ts); err != nil {
@@ -253,23 +215,6 @@ func (c *client) writeOfferMessage(sdp webrtc.SessionDescription) error {
 	return c.ws.WriteJSON(message{
 		Kind: messageKindRTCOffer,
 		SDP:  &sdp,
-	})
-}
-
-var tunerStateMap = map[tuner.State]string{
-	tuner.StateStopped:  "Stopped",
-	tuner.StateStarting: "Starting",
-	tuner.StatePlaying:  "Playing",
-}
-
-func (c *client) writeTunerStatusMessage(s tuner.Status) error {
-	return c.ws.WriteJSON(message{
-		Kind: messageKindTunerStatus,
-		TunerStatus: &tunerStatus{
-			State:       tunerStateMap[s.State],
-			ChannelName: s.Channel.Name,
-			Error:       s.Error,
-		},
 	})
 }
 
