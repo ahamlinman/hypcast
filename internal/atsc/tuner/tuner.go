@@ -200,8 +200,8 @@ var ssrcGenerator = randutil.NewMathRandomGenerator()
 
 func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track, err error) {
 	video, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeVP8, ssrcGenerator.Uint32(), streamID, streamID,
-		webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, videoClockRate),
+		webrtc.DefaultPayloadTypeH264, ssrcGenerator.Uint32(), streamID, streamID,
+		webrtc.NewRTPH264Codec(webrtc.DefaultPayloadTypeH264, videoClockRate),
 	)
 	if err != nil {
 		return
