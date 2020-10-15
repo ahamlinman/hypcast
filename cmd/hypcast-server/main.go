@@ -14,7 +14,6 @@ import (
 	"github.com/ahamlinman/hypcast/internal/api"
 	"github.com/ahamlinman/hypcast/internal/atsc"
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
-	"github.com/ahamlinman/hypcast/internal/oldclient"
 )
 
 func main() {
@@ -37,10 +36,7 @@ func main() {
 
 	tuner := tuner.NewTuner(channels)
 
-	// TODO: /old-control-socket is a legacy API; only use api.Handler once it is
-	// fully implemented
 	http.Handle("/api/", api.NewHandler(tuner))
-	http.Handle("/old-control-socket", oldclient.TunerControlHandler(tuner))
 
 	server := http.Server{Addr: *flagAddr}
 	go server.ListenAndServe()
