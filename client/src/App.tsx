@@ -1,33 +1,54 @@
 import React, { FormEvent } from "react";
 
-import { useController } from "./Controller";
+import { useWebRTC } from "./WebRTC";
+import { useTunerStatus, Status as TunerStatus } from "./TunerStatus";
+
+import rpc from "./rpc";
+import useConfig from "./useConfig";
 
 const App = () => {
-  const controller = useController();
+  const webRTC = useWebRTC();
+  const tunerStatus = useTunerStatus();
 
   return (
     <>
       <h1>It works!</h1>
-      <p>Connection Status: {controller.connectionState.status}</p>
-      <p>Tuner Status: {controller.tunerState?.status}</p>
-      <p>Now Watching: {controller.currentChannelName || "(none)"}</p>
+      <p>WebRTC Status: {webRTC.Connection.Status}</p>
+      <TunerStatusDisplay status={tunerStatus} />
       <p>
         Controls:{" "}
         <ChannelSelector
-          onTune={async (name: string) => {
-            controller.changeChannel(name);
-          }}
+          onTune={(ChannelName) =>
+            rpc("tune", { ChannelName }).catch(console.error)
+          }
         />
-        <button onClick={() => controller.turnOff()}>Stop</button>
+        <button onClick={() => rpc("stop").catch(console.error)}>Stop</button>
       </p>
-      {controller.mediaStream ? (
-        <VideoPlayer stream={controller.mediaStream} />
-      ) : null}
+      {webRTC.MediaStream ? <VideoPlayer stream={webRTC.MediaStream} /> : null}
     </>
   );
 };
 
 export default App;
+
+const TunerStatusDisplay = ({ status }: { status: TunerStatus }) => (
+  <p>Tuner Status: {tunerStatusToString(status)}</p>
+);
+
+const tunerStatusToString = (status: TunerStatus) => {
+  if (status.Connection !== "Connected") {
+    return `(${status.Connection})`;
+  }
+
+  if (status.State === "Stopped") {
+    if (status.Error !== undefined) {
+      return `${status.State} (${status.Error})`;
+    }
+    return status.State;
+  }
+
+  return `${status.State} ${status.ChannelName}`;
+};
 
 const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
   const videoElement = React.useRef<null | HTMLVideoElement>(null);
@@ -54,11 +75,15 @@ const ChannelSelector = ({
 }: {
   onTune: (ch: string) => Promise<void>;
 }) => {
-  const channelNames = useChannelNames();
+  const channelNames = useConfig<string[]>("channels");
+
   const [selected, setSelected] = React.useState<undefined | string>();
   const [forceDisabled, setForceDisabled] = React.useState(false);
 
   React.useEffect(() => {
+    if (channelNames instanceof Error) {
+      console.error(channelNames);
+    }
     if (channelNames instanceof Array) {
       setSelected((s) => (s === undefined ? channelNames[0] : s));
     }
@@ -87,10 +112,9 @@ const ChannelSelector = ({
   };
 
   return (
-    <form style={{ display: "inline" }} onSubmit={handleTune}>
+    <>
       <select
         name="channel"
-        disabled={disabled}
         value={selected}
         onChange={(evt) => setSelected(evt.currentTarget.value)}
       >
@@ -102,29 +126,9 @@ const ChannelSelector = ({
             ))
           : null}
       </select>
-      <button type="submit" disabled={disabled}>
+      <button disabled={disabled} onClick={handleTune}>
         Tune
       </button>
-    </form>
+    </>
   );
-};
-
-const useChannelNames = (): undefined | string[] | Error => {
-  const [result, setResult] = React.useState<undefined | string[] | Error>();
-
-  React.useEffect(() => {
-    const startFetch = async () => {
-      try {
-        const result = await fetch("/config/channels");
-        const channels: string[] = await result.json();
-        setResult(channels);
-      } catch (e) {
-        setResult(e);
-      }
-    };
-
-    startFetch();
-  }, []);
-
-  return result;
 };
