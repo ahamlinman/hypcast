@@ -2,7 +2,9 @@ import React, { FormEvent } from "react";
 
 import { useController } from "./Controller";
 import { useTunerStatus, Status as TunerStatus } from "./TunerStatus";
+
 import rpc from "./rpc";
+import useConfig from "./useConfig";
 
 const App = () => {
   const controller = useController();
@@ -75,11 +77,15 @@ const ChannelSelector = ({
 }: {
   onTune: (ch: string) => Promise<void>;
 }) => {
-  const channelNames = useChannelNames();
+  const channelNames = useConfig<string[]>("channels");
+
   const [selected, setSelected] = React.useState<undefined | string>();
   const [forceDisabled, setForceDisabled] = React.useState(false);
 
   React.useEffect(() => {
+    if (channelNames instanceof Error) {
+      console.error(channelNames);
+    }
     if (channelNames instanceof Array) {
       setSelected((s) => (s === undefined ? channelNames[0] : s));
     }
@@ -127,24 +133,4 @@ const ChannelSelector = ({
       </button>
     </>
   );
-};
-
-const useChannelNames = (): undefined | string[] | Error => {
-  const [result, setResult] = React.useState<undefined | string[] | Error>();
-
-  React.useEffect(() => {
-    const startFetch = async () => {
-      try {
-        const result = await fetch("/api/config/channels");
-        const channels: string[] = await result.json();
-        setResult(channels);
-      } catch (e) {
-        setResult(e);
-      }
-    };
-
-    startFetch();
-  }, []);
-
-  return result;
 };
