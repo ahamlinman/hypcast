@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v2"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
@@ -40,17 +39,8 @@ var (
 )
 
 func init() {
-	mediaEngine.RegisterCodec(webrtc.NewRTPCodec(
-		webrtc.RTPCodecTypeVideo,
-		webrtc.H264,
-		90_000,
-		0,
-		"profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1",
-		webrtc.DefaultPayloadTypeH264,
-		&codecs.H264Payloader{},
-	))
-
-	mediaEngine.RegisterCodec(webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, 48_000))
+	mediaEngine.RegisterCodec(tuner.VideoCodec)
+	mediaEngine.RegisterCodec(tuner.AudioCodec)
 	webrtcAPI = webrtc.NewAPI(webrtc.WithMediaEngine(mediaEngine))
 }
 

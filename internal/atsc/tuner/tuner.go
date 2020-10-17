@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pion/randutil"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v2"
 	"github.com/pion/webrtc/v2/pkg/media"
 
@@ -196,20 +197,32 @@ const (
 	audioClockRate = 48_000
 )
 
+var (
+	// VideoCodec represents the RTP codec settings for the H.264 Constrained
+	// Baseline Level 4.0 video signal produced by the tuner.
+	VideoCodec = webrtc.NewRTPCodec(
+		webrtc.RTPCodecTypeVideo, webrtc.H264, videoClockRate, 0,
+		"profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1",
+		webrtc.DefaultPayloadTypeH264, &codecs.H264Payloader{},
+	)
+
+	// AudioCodec represents the RTP codec settings for the Opus audio signal
+	// produced by the tuner.
+	AudioCodec = webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, audioClockRate)
+)
+
 var ssrcGenerator = randutil.NewMathRandomGenerator()
 
 func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track, err error) {
 	video, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeH264, ssrcGenerator.Uint32(), streamID, streamID,
-		webrtc.NewRTPH264Codec(webrtc.DefaultPayloadTypeH264, videoClockRate),
+		webrtc.DefaultPayloadTypeH264, ssrcGenerator.Uint32(), streamID, streamID, VideoCodec,
 	)
 	if err != nil {
 		return
 	}
 
 	audio, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeOpus, ssrcGenerator.Uint32(), streamID, streamID,
-		webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, audioClockRate),
+		webrtc.DefaultPayloadTypeOpus, ssrcGenerator.Uint32(), streamID, streamID, AudioCodec,
 	)
 	return
 }
