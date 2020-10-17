@@ -18,9 +18,6 @@ with the new implementation. Numerous areas for improvement remain:
 
 - The UI needs work, both visually and in terms of robustness (e.g. automatic
   reconnection if the server restarts or whatever).
-- Video quality is noticeably worse than in version 1. Switching from VP8
-  (libvpx) back to H.264 (x264) will probably make a difference, though for
-  some reason I've had trouble getting H.264 video to work.
 - There are no controls for data rate and encoding quality like version 1 had.
   Ideally these would adjust automatically based on connection quality,
   possibly with some way for clients to request a lower quality to save data.
