@@ -40,7 +40,7 @@ const (
 
 	// SinkTypeRaw represents the raw MPEG-TS stream.
 	SinkTypeRaw
-	// SinkTypeVideo represents the VP8-encoded video stream.
+	// SinkTypeVideo represents the H.264-encoded video stream.
 	SinkTypeVideo
 	// SinkTypeAudio represents the Opus-encoded audio stream.
 	SinkTypeAudio

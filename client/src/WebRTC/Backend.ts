@@ -51,6 +51,9 @@ class Backend extends EventEmitter {
     this.pc.addEventListener("signalingstatechange", (evt) =>
       console.log("Signaling state", this.pc.signalingState, evt),
     );
+
+    this.pc.addTransceiver("video", { direction: "recvonly" });
+    this.pc.addTransceiver("audio", { direction: "recvonly" });
   }
 
   get connectionState() {

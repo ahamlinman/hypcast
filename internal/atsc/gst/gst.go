@@ -112,9 +112,8 @@ var pipelineTemplate = template.Must(template.New("").Parse(`
 	! decodebin
 	! videoconvert
 	! deinterlace
-	! videoscale add-borders=true
-	! video/x-raw,width=1280,height=720
-	! vp8enc cpu-used=8 deadline=1 resize-allowed=true
+	! x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast
+	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
 	! appsink name=video max-buffers=32 drop=true
 
 	demux.

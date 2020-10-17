@@ -10,6 +10,7 @@ require (
 	github.com/pion/dtls/v2 v2.0.3 // indirect
 	github.com/pion/quic v0.1.4 // indirect
 	github.com/pion/randutil v0.1.0
+	github.com/pion/rtp v1.6.1
 	github.com/pion/sctp v1.7.11 // indirect
 	github.com/pion/srtp v1.5.2 // indirect
 	github.com/pion/webrtc/v2 v2.2.26

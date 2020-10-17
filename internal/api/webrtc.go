@@ -33,6 +33,17 @@ type webrtcHandler struct {
 	clientDone chan struct{}
 }
 
+var (
+	mediaEngine = webrtc.MediaEngine{}
+	webrtcAPI   *webrtc.API
+)
+
+func init() {
+	mediaEngine.RegisterCodec(tuner.VideoCodec)
+	mediaEngine.RegisterCodec(tuner.AudioCodec)
+	webrtcAPI = webrtc.NewAPI(webrtc.WithMediaEngine(mediaEngine))
+}
+
 func (wh *webrtcHandler) run() (err error) {
 	wh.logf("Starting new connection")
 	defer func() { wh.logf("Finished with error: %v", err) }()
@@ -40,7 +51,7 @@ func (wh *webrtcHandler) run() (err error) {
 	wh.err = make(chan error, 1)
 	wh.clientDone = make(chan struct{})
 
-	wh.pc, err = webrtc.NewPeerConnection(webrtc.Configuration{})
+	wh.pc, err = webrtcAPI.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		return
 	}
