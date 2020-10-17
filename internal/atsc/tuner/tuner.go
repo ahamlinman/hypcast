@@ -45,11 +45,9 @@ type Tracks struct {
 	Audio *webrtc.Track
 }
 
-// Tuner represents an ATSC tuner made available to WebRTC clients.
-//
-// Clients are free to read the current state of the Tuner as necessary in order
-// to update their local status. Clients may register with the Tuner to be
-// notified when they should reread the current state.
+// Tuner represents an ATSC tuner whose video and audio signals are encoded for
+// use by WebRTC clients, and whose consumers are notified of ongoing state
+// changes.
 type Tuner struct {
 	mu sync.Mutex
 
@@ -159,8 +157,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return
 	}
 
-	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(vt, videoClockRate))
-	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(at, audioClockRate))
+	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(vt))
+	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(at))
 
 	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
@@ -195,23 +193,31 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 const (
 	videoClockRate = 90_000
 	audioClockRate = 48_000
+
+	// All of this is described by https://tools.ietf.org/html/rfc6184.
+	//
+	// profile-level-id in particular is described in section 8.1 of the RFC. The
+	// first 2 octets together indicate the Constrained Baseline profile (42h to
+	// specify the Baseline profile, e0h to specify constraint set 1). The third
+	// octet (28h = 40) specifies level 4.0 (the level number times 10), the
+	// lowest to support 1920x1080 video per
+	// https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
+	videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
 )
 
 var (
-	// VideoCodec represents the RTP codec settings for the H.264 Constrained
-	// Baseline Level 4.0 video signal produced by the tuner.
+	// VideoCodec represents the RTP codec settings for the video signal produced
+	// by the tuner.
 	VideoCodec = webrtc.NewRTPCodec(
-		webrtc.RTPCodecTypeVideo, webrtc.H264, videoClockRate, 0,
-		"profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1",
+		webrtc.RTPCodecTypeVideo, webrtc.H264, videoClockRate, 0, videoCodecFMTP,
 		webrtc.DefaultPayloadTypeH264, &codecs.H264Payloader{},
 	)
-
-	// AudioCodec represents the RTP codec settings for the Opus audio signal
-	// produced by the tuner.
+	// AudioCodec represents the RTP codec settings for the audio signal produced
+	// by the tuner.
 	AudioCodec = webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, audioClockRate)
-)
 
-var ssrcGenerator = randutil.NewMathRandomGenerator()
+	ssrcGenerator = randutil.NewMathRandomGenerator()
+)
 
 func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track, err error) {
 	video, err = webrtc.NewTrack(
@@ -227,7 +233,8 @@ func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track,
 	return
 }
 
-func createTrackSink(track *webrtc.Track, clockRate int) gst.Sink {
+func createTrackSink(track *webrtc.Track) gst.Sink {
+	clockRate := int(track.Codec().ClockRate)
 	return gst.Sink(func(b []byte, d time.Duration) {
 		track.WriteSample(media.Sample{
 			Data:    b,
