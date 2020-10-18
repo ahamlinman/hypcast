@@ -2,13 +2,20 @@ import React from "react";
 
 import { useWebRTC } from "../WebRTC";
 import { useTunerStatus, Status as TunerStatus } from "../TunerStatus";
+import rpc from "../rpc";
 
 export default function Header() {
   const webRTC = useWebRTC();
   const tunerStatus = useTunerStatus();
 
   return (
-    <header className="AppHeader">
+    <header className="Header">
+      <PowerButton
+        active={
+          tunerStatus.Connection === "Connected" &&
+          tunerStatus.State === "Playing"
+        }
+      />
       <h1>hypcast</h1>
       <StatusIndicator
         description={`WebRTC ${webRTC.Connection.Status}`}
@@ -25,6 +32,17 @@ export default function Header() {
   );
 }
 
+function PowerButton({ active }: { active: boolean }) {
+  return (
+    <button
+      className={`PowerButton ${active ? "PowerButton--Active" : ""}`}
+      onClick={() => rpc("stop").catch(console.error)}
+    >
+      <span hidden>Turn Off</span>
+    </button>
+  );
+}
+
 function StatusIndicator({
   active,
   description,
@@ -33,11 +51,13 @@ function StatusIndicator({
   description: string;
 }) {
   return (
-    <div className="AppHeaderStatusIndicator">
+    <div className="StatusIndicator">
       <div
-        className={`AppHeaderStatusIndicatorDot ${active ? "Active" : ""}`}
+        className={`StatusIndicator__Dot ${
+          active ? "StatusIndicator__Dot--Active" : ""
+        }`}
       ></div>
-      <span className="AppHeaderStatusIndicatorDescription">{description}</span>
+      <span className="StatusIndicator__Description">{description}</span>
     </div>
   );
 }

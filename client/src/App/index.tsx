@@ -15,13 +15,11 @@ export default function App() {
     <div className="AppContainer">
       <Header />
       <p>
-        Controls:{" "}
         <ChannelSelector
           onTune={(ChannelName) =>
             rpc("tune", { ChannelName }).catch(console.error)
           }
         />
-        <button onClick={() => rpc("stop").catch(console.error)}>Stop</button>
       </p>
       {webRTC.MediaStream ? <VideoPlayer stream={webRTC.MediaStream} /> : null}
     </div>

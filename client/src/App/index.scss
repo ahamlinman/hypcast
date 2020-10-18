@@ -2,22 +2,38 @@
   display: grid;
 }
 
-.AppHeader {
+.Header {
   background-color: #5158bb;
   color: #f6f6f4;
   padding: 0 1em;
 
   h1 {
     display: inline-block;
-    margin: 0.5em 0;
+    margin: 0.5em 16px;
   }
 }
 
-.AppHeaderStatusIndicator {
+.PowerButton {
+  border: none;
+  background-color: #f6f6f4;
+  width: 32px;
+  height: 32px;
+  border-radius: 32px;
+  background-image: url(./power-icon.svg);
+  background-size: 60%;
+  background-repeat: no-repeat;
+  background-position: 50% 45%;
+
+  &--Active {
+    background-color: #f26df9;
+  }
+}
+
+.StatusIndicator {
   display: inline;
   margin-left: 32px;
 
-  .AppHeaderStatusIndicatorDot {
+  &__Dot {
     display: inline-block;
     width: 8px;
     height: 8px;
@@ -25,7 +41,7 @@
     margin-right: 4px;
     background-color: #f6f6f4;
 
-    &.Active {
+    &--Active {
       background-color: #f26df9;
     }
   }
