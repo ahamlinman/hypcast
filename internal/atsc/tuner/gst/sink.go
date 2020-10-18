@@ -38,9 +38,12 @@ type SinkType int
 const (
 	sinkTypeStart SinkType = iota - 1
 
-	// SinkTypeRaw represents the raw MPEG-TS stream.
+	// SinkTypeRaw represents the raw MPEG-TS stream produced by the tuner,
+	// without demuxing or filtering. Program and channel information can be
+	// extracted from this stream with an appropriate demuxer and parser.
 	SinkTypeRaw
-	// SinkTypeVideo represents the H.264-encoded video stream.
+	// SinkTypeVideo represents the H.264-encoded video stream, using the
+	// Constrained Baseline profile to meet WebRTC requirements.
 	SinkTypeVideo
 	// SinkTypeAudio represents the Opus-encoded audio stream.
 	SinkTypeAudio
@@ -79,6 +82,9 @@ func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
 	p.sinks[sinkType] = sink
 }
 
+// hypcastGlobalSink is called by GStreamer to pass data from the encoding
+// pipeline into Go handler functions. See gst.c for details.
+//
 //export hypcastGlobalSink
 func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buf unsafe.Pointer, bufLen C.int, durNs C.int) {
 	sinkType := SinkType(sinkRef.sink_type)

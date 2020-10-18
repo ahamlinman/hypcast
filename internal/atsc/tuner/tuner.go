@@ -202,6 +202,8 @@ const (
 	// octet (28h = 40) specifies level 4.0 (the level number times 10), the
 	// lowest to support 1920x1080 video per
 	// https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
+	//
+	// This needs to match up with the pipeline definition in the gst package.
 	videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
 )
 
