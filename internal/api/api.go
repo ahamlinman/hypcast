@@ -43,14 +43,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleConfigChannels(w http.ResponseWriter, r *http.Request) {
-	var (
-		channels = h.tuner.Channels()
-		names    = make([]string, len(channels))
-	)
-	for i, ch := range channels {
-		names[i] = ch.Name
-	}
-
 	w.Header().Add("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(names)
+	json.NewEncoder(w).Encode(h.tuner.ChannelNames())
 }

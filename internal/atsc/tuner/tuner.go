@@ -34,7 +34,7 @@ const (
 // Status represents the public state of the tuner for reading by clients.
 type Status struct {
 	State   State
-	Channel atsc.Channel
+	Channel atsc.Channel // TODO: Only expose channel name
 	Error   error
 }
 
@@ -77,11 +77,14 @@ func makeChannelMap(channels []atsc.Channel) map[string]atsc.Channel {
 	return m
 }
 
-// Channels returns the set of channels known to this Tuner.
-func (t *Tuner) Channels() []atsc.Channel {
-	channels := make([]atsc.Channel, len(t.channels))
-	copy(channels, t.channels)
-	return channels
+// ChannelNames returns the names of channels that are known to this tuner and
+// may be passed to Tune.
+func (t *Tuner) ChannelNames() []string {
+	channelNames := make([]string, len(t.channels))
+	for i, ch := range t.channels {
+		channelNames[i] = ch.Name
+	}
+	return channelNames
 }
 
 // WatchStatus sets up a handler function to continuously receive the status of
