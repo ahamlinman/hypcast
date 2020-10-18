@@ -3,8 +3,10 @@ import React from "react";
 import useConfig from "../useConfig";
 
 export default function ChannelSelector({
+  selected,
   onTune,
 }: {
+  selected?: string;
   onTune: (ch: string) => Promise<void>;
 }) {
   const channelNames = useConfig<string[]>("channels");
@@ -31,6 +33,7 @@ export default function ChannelSelector({
         <Channel
           key={ch}
           name={ch}
+          active={ch === selected}
           onClick={() => {
             handleTune(ch);
           }}
@@ -50,7 +53,12 @@ function Channel({
   onClick: () => void;
 }) {
   return (
-    <button className="ChannelSelector__Channel" onClick={onClick}>
+    <button
+      className={`ChannelSelector__Channel ${
+        active ? "ChannelSelector__Channel--Active" : ""
+      }`}
+      onClick={onClick}
+    >
       {name}
     </button>
   );

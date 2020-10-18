@@ -1,5 +1,17 @@
+$base: #5158bb;
+$base-dark: #282c67;
+$base-darker: #17193b;
+$base-darkest: #06060f;
+
+$accent: #f26df9;
+
+$foreground: #f6f6f4;
+
 .AppContainer {
+  width: 100%;
   height: 100%;
+
+  max-width: 100%;
   max-height: 100%;
 
   display: grid;
@@ -23,9 +35,11 @@
 .Header {
   grid-area: Header;
 
-  background-color: #5158bb;
-  color: #f6f6f4;
+  background-color: $base;
+  color: $foreground;
   padding: 0 1em;
+
+  border-bottom: 1px solid $base-dark;
 
   h1 {
     display: inline-block;
@@ -34,7 +48,7 @@
 
   .PowerButton {
     border: none;
-    background-color: #f6f6f4;
+    background-color: $foreground;
     width: 32px;
     height: 32px;
     border-radius: 32px;
@@ -44,7 +58,7 @@
     background-position: 50% 45%;
 
     &--Active {
-      background-color: #f26df9;
+      background-color: $accent;
     }
   }
 
@@ -58,10 +72,10 @@
       height: 8px;
       border-radius: 8px;
       margin-right: 4px;
-      background-color: #f6f6f4;
+      background-color: $foreground;
 
       &--Active {
-        background-color: #f26df9;
+        background-color: $accent;
       }
     }
   }
@@ -70,15 +84,46 @@
 .ChannelSelector {
   grid-area: ChannelSelector;
 
+  width: 100%;
   height: 100%;
   overflow-y: scroll;
+  scrollbar-color: $base $base-dark;
 
   &__Channel {
     display: block;
     width: 100%;
+
+    border: none;
+    border-bottom: 1px solid $foreground;
+
+    padding: 12px 0;
+
+    font-size: 1em;
+
+    background-color: $base-darker;
+    color: $foreground;
+
+    &--Active {
+      background-color: $base-dark;
+      font-weight: 900;
+    }
   }
 }
 
 .VideoPlayer {
   grid-area: VideoPlayer;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background-color: $base-darkest;
+
+  overflow: hidden;
+
+  video {
+    margin: 3em;
+    max-width: 100%;
+    max-height: 100%;
+  }
 }

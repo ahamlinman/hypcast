@@ -15,12 +15,8 @@ export default function VideoPlayer({
   }, [stream]);
 
   return (
-    <video
-      className="VideoPlayer"
-      style={{ border: "1px solid black" }}
-      ref={videoElement}
-      autoPlay
-      controls
-    />
+    <div className="VideoPlayer">
+      <video ref={videoElement} autoPlay controls />
+    </div>
   );
 }
