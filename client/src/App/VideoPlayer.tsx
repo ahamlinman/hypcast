@@ -14,9 +14,16 @@ export default function VideoPlayer({
     videoElement.current.srcObject = stream || null;
   }, [stream]);
 
+  const show = stream !== undefined;
+
   return (
     <div className="VideoPlayer">
-      <video ref={videoElement} autoPlay controls />
+      <video
+        style={{ display: show ? undefined : "none" }}
+        ref={videoElement}
+        autoPlay
+        controls
+      />
     </div>
   );
 }
