@@ -40,10 +40,10 @@ func (tsh *tunerStatusHandler) run() (err error) {
 	go tsh.drainReader()
 	defer func() { <-tsh.readerDone }()
 
-	s := tsh.tuner.SubscribeStatus(tsh.sendNewTunerStatus)
+	w := tsh.tuner.WatchStatus(tsh.sendNewTunerStatus)
 	defer func() {
-		s.Cancel()
-		s.Wait()
+		w.Cancel()
+		w.Wait()
 	}()
 
 	return <-tsh.err

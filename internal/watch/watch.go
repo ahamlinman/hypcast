@@ -1,19 +1,20 @@
-// Package watch provides primitives to enable monitoring of live state by
-// multiple parties.
+// Package watch provides primitives to enable shared state with live updates
+// among multiple parties.
 package watch
 
 import "sync"
 
 // Value provides synchronized reads and writes of an arbitrary interface{}
-// value, and continuously provides updates to subscribers as writes are made.
+// value, and enables watchers to be notified of updates as they are made.
 //
 // The zero value of a Value is valid and has the value nil.
 type Value struct {
 	valueMu sync.RWMutex
 	value   interface{}
 
-	subscribersMu sync.Mutex
-	subscribers   map[*Subscription]struct{}
+	// watchersMu must be held while valueMu is held
+	watchersMu sync.Mutex
+	watchers   map[*Watch]struct{}
 }
 
 // NewValue creates a Value whose value is initially set to x.
@@ -25,124 +26,121 @@ func NewValue(x interface{}) *Value {
 func (v *Value) Get() interface{} {
 	v.valueMu.RLock()
 	defer v.valueMu.RUnlock()
+
 	return v.value
 }
 
-// Set sets the value of v to x, and schedules notifications to subscribers to
-// ensure that they eventually receive the new value.
+// Set sets the value of v to x.
 func (v *Value) Set(x interface{}) {
-	v.setValue(x)
-	v.pingSubscribers()
-}
-
-func (v *Value) setValue(x interface{}) {
 	v.valueMu.Lock()
 	defer v.valueMu.Unlock()
-	v.value = x
-}
 
-func (v *Value) pingSubscribers() {
-	v.subscribersMu.Lock()
-	defer v.subscribersMu.Unlock()
-	for s := range v.subscribers {
-		s.setFlag()
+	v.value = x
+
+	v.watchersMu.Lock()
+	defer v.watchersMu.Unlock()
+
+	for w := range v.watchers {
+		w.update(x)
 	}
 }
 
-// Subscribe sets up a handler function to continuously receive the value of v
-// as it is updated, until the associated subscription is canceled.
+// Watch creates a new watch on the value of v.
 //
-// An initial call to handle will be scheduled when the subscription is first
-// created. Subscribers should rely on this call to initialize any state
-// associated with their subscription, to avoid losing updates between calls to
-// Get and Subscribe.
+// Each active watch executes up to one instance of handle at a time in a new
+// goroutine, first with the value of v at the time the watch was created, then
+// with subsequent values of v as it is updated. If updates are made to v while
+// an execution is in flight, handle will be called once more with the latest
+// value of v following its current execution. Intermediate updates preceding
+// the latest value will be dropped.
 //
-// Each subscription executes up to one instance of handle at a time in a new
-// goroutine. Any calls to Set while handle is running will result in handle
-// being called once more with the latest value following completion of the
-// current call. handle may not receive every value that Set is called with, and
-// may see the value from a single call to Set more than once across consecutive
-// calls.
-//
-// A Subscription is not recovered by the garbage collector until it is canceled
-// by a call to Subscription.Cancel and any outstanding notification has
-// finished processing. Values are not recovered by the garbage collector until
-// all of their subscriptions have been recovered.
-func (v *Value) Subscribe(handle func(x interface{})) *Subscription {
-	s := &Subscription{
+// Values are not recovered by the garbage collector until all of their
+// associated watches have terminated. A watch is terminated after it has been
+// canceled by a call to Watch.Cancel, and any pending or in-flight handler
+// execution has finished.
+func (v *Value) Watch(handle func(x interface{})) *Watch {
+	w := &Watch{
 		value:   v,
 		handler: handle,
-		flag:    make(chan struct{}, 1),
+		next:    make(chan interface{}, 1),
 		done:    make(chan struct{}),
 	}
 
-	s.setFlag()
-	v.setSubscription(s)
-	go s.run()
+	v.initializeAndRegisterWatch(w)
+	go w.run()
 
-	return s
+	return w
 }
 
-func (v *Value) setSubscription(s *Subscription) {
-	v.subscribersMu.Lock()
-	defer v.subscribersMu.Unlock()
+func (v *Value) initializeAndRegisterWatch(w *Watch) {
+	v.valueMu.RLock()
+	defer v.valueMu.RUnlock()
 
-	if v.subscribers == nil {
-		v.subscribers = make(map[*Subscription]struct{})
+	w.update(v.value)
+
+	v.watchersMu.Lock()
+	defer v.watchersMu.Unlock()
+
+	if v.watchers == nil {
+		v.watchers = make(map[*Watch]struct{})
 	}
-	v.subscribers[s] = struct{}{}
+	v.watchers[w] = struct{}{}
 }
 
-func (v *Value) unsetSubscription(s *Subscription) {
-	v.subscribersMu.Lock()
-	defer v.subscribersMu.Unlock()
-	delete(v.subscribers, s)
+func (v *Value) unregisterWatch(w *Watch) {
+	v.valueMu.RLock()
+	defer v.valueMu.RUnlock()
+
+	v.watchersMu.Lock()
+	defer v.watchersMu.Unlock()
+
+	delete(v.watchers, w)
 }
 
-// Subscription represents a subscription to the value of a Value. See
-// Value.Subscribe for details.
-type Subscription struct {
+// Watch represents a single watch on a Value. See Value.Watch for details.
+type Watch struct {
 	value   *Value
 	handler func(interface{})
-	flag    chan struct{} // Buffered with size 1
-	done    chan struct{} // Unbuffered; for testing only
+	next    chan interface{} // Buffered with size 1
+	done    chan struct{}    // Unbuffered
 }
 
-func (s *Subscription) setFlag() {
+func (w *Watch) run() {
+	defer close(w.done)
+	for next := range w.next {
+		w.handler(next)
+	}
+}
+
+func (w *Watch) update(x interface{}) {
 	select {
-	case s.flag <- struct{}{}:
+	// If there is a pending value and the run loop has not picked it up, replace
+	// it with the latest value.
+	case <-w.next:
+		w.next <- x
+
+	// Otherwise, simply provide the next value to trigger a call to the handler.
+	case w.next <- x:
+	}
+}
+
+// Cancel requests that this watch be terminated as soon as possible,
+// potentially after a pending or in-flight handler execution has finished.
+func (w *Watch) Cancel() {
+	w.value.unregisterWatch(w)
+	w.clearNext()
+	close(w.next)
+}
+
+func (w *Watch) clearNext() {
+	select {
+	case <-w.next:
 	default:
 	}
 }
 
-func (s *Subscription) run() {
-	defer close(s.done)
-	for range s.flag {
-		s.handler(s.value.Get())
-	}
-}
-
-// Cancel requests that s be canceled, enabling its resources to be released
-// once any outstanding notification has been processed. Cancel does not wait
-// for a handler call in flight to finish, and does not guarantee that no new
-// call will be made to the handler after it returns. Use Wait to guarantee
-// these conditions.
-func (s *Subscription) Cancel() {
-	s.value.unsetSubscription(s)
-	close(s.flag)
-	s.clearFlag()
-}
-
-func (s *Subscription) clearFlag() {
-	select {
-	case <-s.flag:
-	default:
-	}
-}
-
-// Wait blocks until s is canceled and all outstanding notifications have been
-// processed, including the completion of any handler calls. After Wait returns,
-// no new calls will be made to the handler.
-func (s *Subscription) Wait() {
-	<-s.done
+// Wait blocks until this watch has terminated following a call to Cancel. After
+// Wait returns, it is guaranteed that no new handler execution will start.
+func (w *Watch) Wait() {
+	<-w.done
 }

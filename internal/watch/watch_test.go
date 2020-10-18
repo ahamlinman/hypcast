@@ -11,13 +11,12 @@ const timeout = 2 * time.Second
 
 func TestValue(t *testing.T) {
 	// A stress test meant to be run with the race detector enabled. This test
-	// ensures that all access to a Value is synchronized, that subscription
-	// handlers run serially, and that handlers are properly notified of the most
-	// recent state.
+	// ensures that all access to a Value is synchronized, that handlers run
+	// serially, and that handlers are properly notified of the most recent state.
 
 	const (
-		nWrites      = 1000
-		nSubscribers = 50
+		nWrites   = 1000
+		nWatchers = 50
 	)
 
 	var (
@@ -26,19 +25,19 @@ func TestValue(t *testing.T) {
 		handlerGroup sync.WaitGroup
 		setGroup     sync.WaitGroup
 
-		subscriptions [nSubscribers]*Subscription
+		watches [nWatchers]*Watch
 
 		done = make(chan struct{})
 	)
 
-	handlerGroup.Add(nSubscribers)
-	for i := 0; i < nSubscribers; i++ {
+	handlerGroup.Add(nWatchers)
+	for i := 0; i < nWatchers; i++ {
 		var (
 			sum      int
 			sawFinal bool
 		)
 
-		subscriptions[i] = v.Subscribe(func(x interface{}) {
+		watches[i] = v.Watch(func(x interface{}) {
 			current := x.(int)
 
 			// This will quickly make the race detector complain if more than one
@@ -77,12 +76,12 @@ func TestValue(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before all subscribers saw final state", timeout)
+		t.Fatalf("reached %v timeout before all watchers saw final state", timeout)
 	}
 
-	for _, s := range subscriptions {
-		s.Cancel()
-		assertSubscriptionDone(t, s)
+	for _, w := range watches {
+		w.Cancel()
+		assertWatchTerminates(t, w)
 	}
 }
 
@@ -94,35 +93,35 @@ func TestGetZeroValue(t *testing.T) {
 	}
 }
 
-func TestSubscribeZeroValue(t *testing.T) {
+func TestWatchZeroValue(t *testing.T) {
 	var (
 		v      Value
 		notify = make(chan interface{})
 	)
 
-	s := v.Subscribe(func(x interface{}) {
+	w := v.Watch(func(x interface{}) {
 		notify <- x
 	})
 
 	select {
 	case x := <-notify:
 		if x != nil {
-			t.Errorf("subscriber to zero value of Value got %v; want nil", x)
+			t.Errorf("watch on zero value of Value got %v; want nil", x)
 		}
 
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before subscriber was notified", timeout)
+		t.Fatalf("reached %v timeout before watcher was notified", timeout)
 	}
 
-	s.Cancel()
-	assertSubscriptionDone(t, s)
+	w.Cancel()
+	assertWatchTerminates(t, w)
 }
 
-func TestBlockedSubscriber(t *testing.T) {
+func TestBlockedWatcher(t *testing.T) {
 	// A specific test for calling Set while some handlers for a previous Set call
-	// are still in progress. We expect that unrelated subscribers will continue
-	// to receive notifications, and that the blocked subscriber will see an
-	// additional notification for any state that was set while it was blocked.
+	// are still in progress. We expect that unrelated watchers will continue to
+	// receive notifications, and that the blocked watcher will see an additional
+	// notification for any state that was set while it was blocked.
 
 	var (
 		v = NewValue("alice")
@@ -132,26 +131,26 @@ func TestBlockedSubscriber(t *testing.T) {
 		notifyUnblocked = make(chan string)
 	)
 
-	blockedSub := v.Subscribe(func(x interface{}) {
+	blockedWatcher := v.Watch(func(x interface{}) {
 		<-block
 		notifyBlocked <- x.(string)
 	})
 
-	unblockedSub := v.Subscribe(func(x interface{}) {
+	unblockedWatcher := v.Watch(func(x interface{}) {
 		notifyUnblocked <- x.(string)
 	})
 
-	// Handle the initial notification to both subscribers.
+	// Handle the initial notification to both watchers.
 	block <- struct{}{}
 	assertNextReceive(t, notifyBlocked, "alice")
 	assertNextReceive(t, notifyUnblocked, "alice")
 
-	// Notify both subscribers. Ensure that the blocked subscriber has a running
-	// handler for the value "bob" before continuing.
+	// Notify both watchers. Ensure that the blocked watcher has a running handler
+	// for the value "bob" before continuing.
 	v.Set("bob")
 	block <- struct{}{}
 
-	// Blockage of one subscriber should not block the other.
+	// Blockage of one watcher should not block the other.
 	assertNextReceive(t, notifyUnblocked, "bob")
 	v.Set("carol")
 	assertNextReceive(t, notifyUnblocked, "carol")
@@ -160,20 +159,20 @@ func TestBlockedSubscriber(t *testing.T) {
 	v.Set("eve")
 	assertNextReceive(t, notifyUnblocked, "eve")
 
-	// Finish handling the notification that the blocked subscriber received for
+	// Finish handling the notification that the blocked watcher received for
 	// "bob".
 	assertNextReceive(t, notifyBlocked, "bob")
 
-	// Ensure that the blocked subscriber receives a notification for "eve", which
+	// Ensure that the blocked watcher receives a notification for "eve", which
 	// was set while it was blocked.
 	close(block)
 	assertNextReceive(t, notifyBlocked, "eve")
 
-	// Cancel our subscriptions.
-	unblockedSub.Cancel()
-	assertSubscriptionDone(t, unblockedSub)
-	blockedSub.Cancel()
-	assertSubscriptionDone(t, blockedSub)
+	// Terminate our watches.
+	unblockedWatcher.Cancel()
+	assertWatchTerminates(t, unblockedWatcher)
+	blockedWatcher.Cancel()
+	assertWatchTerminates(t, blockedWatcher)
 }
 
 func TestSetFromHandler(t *testing.T) {
@@ -187,7 +186,7 @@ func TestSetFromHandler(t *testing.T) {
 		done = make(chan struct{})
 	)
 
-	s := v.Subscribe(func(x interface{}) {
+	w := v.Watch(func(x interface{}) {
 		if i := x.(int); i < stopValue {
 			v.Set(i + 1)
 			v.Set(i + 1)
@@ -206,15 +205,12 @@ func TestSetFromHandler(t *testing.T) {
 		t.Errorf("unexpected value; got %d, want %d", got, want)
 	}
 
-	s.Cancel()
-	assertSubscriptionDone(t, s)
+	w.Cancel()
+	assertWatchTerminates(t, w)
 }
 
-func TestCancelBlockedSubscriber(t *testing.T) {
-	// A specific test for canceling a subscription while it is handling a
-	// notification. The requirement is that after Cancel returns, no *new* calls
-	// will be made to the handler, regardless of any state updates made while the
-	// handler was running.
+func TestCancelBlockedWatcher(t *testing.T) {
+	// A specific test for canceling a watch while it is handling a notification.
 
 	var (
 		v = NewValue("alice")
@@ -223,7 +219,7 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 		notify = make(chan string)
 	)
 
-	s := v.Subscribe(func(x interface{}) {
+	w := v.Watch(func(x interface{}) {
 		<-block
 		notify <- x.(string)
 	})
@@ -231,14 +227,14 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	// Ensure that we have a handler in flight.
 	block <- struct{}{}
 
-	// Set some new values. We must schedule another call to the subscriber
-	// following the current execution for the value "alice".
+	// Set some new values. We must schedule another call to the watcher following
+	// the current execution for the value "alice".
 	v.Set("bob")
 	v.Set("carol")
 
-	// Cancel the subscription while the handler for "alice" is still running. The
+	// Cancel the watch while the handler for "alice" is still running. The
 	// additional call that we forced to be scheduled above must be canceled.
-	s.Cancel()
+	w.Cancel()
 
 	// Set another value, to ensure that it doesn't schedule a new handler call
 	// either.
@@ -247,7 +243,7 @@ func TestCancelBlockedSubscriber(t *testing.T) {
 	// Allow the original notification for "alice" to finish, and ensure that no
 	// other calls will be made to the handler.
 	assertNextReceive(t, notify, "alice")
-	assertSubscriptionDone(t, s)
+	assertWatchTerminates(t, w)
 }
 
 func TestCancelFromHandler(t *testing.T) {
@@ -258,23 +254,23 @@ func TestCancelFromHandler(t *testing.T) {
 		v = NewValue("alice")
 
 		canceled bool
-		subCh    = make(chan *Subscription)
+		watchCh  = make(chan *Watch)
 	)
 
-	s := v.Subscribe(func(x interface{}) {
+	w := v.Watch(func(x interface{}) {
 		if canceled {
 			t.Fatal("handler called after cancellation")
 		}
 
 		v.Set("bob")
 
-		s := <-subCh
-		s.Cancel()
+		w := <-watchCh
+		w.Cancel()
 		canceled = true
 	})
 
-	subCh <- s
-	assertSubscriptionDone(t, s)
+	watchCh <- w
+	assertWatchTerminates(t, w)
 
 	if got, want := v.Get().(string), "bob"; got != want {
 		t.Errorf("unexpected value: got %q, want %q", got, want)
@@ -282,8 +278,8 @@ func TestCancelFromHandler(t *testing.T) {
 }
 
 func TestWait(t *testing.T) {
-	// A specific test to ensure that Wait properly blocks until the subscription
-	// has terminated.
+	// A specific test to ensure that Wait properly blocks until the watch has
+	// terminated.
 
 	var (
 		v = NewValue("alice")
@@ -293,7 +289,7 @@ func TestWait(t *testing.T) {
 		done   = make(chan struct{})
 	)
 
-	s := v.Subscribe(func(x interface{}) {
+	w := v.Watch(func(x interface{}) {
 		<-block
 		notify <- x.(string)
 	})
@@ -304,17 +300,17 @@ func TestWait(t *testing.T) {
 	// Start waiting in the background. We should remain blocked.
 	go func() {
 		defer close(done)
-		s.Wait()
+		w.Wait()
 	}()
 	assertBlocked(t, done)
 
-	// Cancel the subscription, and ensure that we are still blocked.
-	s.Cancel()
+	// Cancel the watch, and ensure that we are still blocked.
+	w.Cancel()
 	assertBlocked(t, done)
 
 	// Allow the handler to finish. At this point, we should become unblocked.
 	assertNextReceive(t, notify, "alice")
-	assertSubscriptionDone(t, s)
+	assertWatchTerminates(t, w)
 }
 
 func assertNextReceive(t *testing.T, ch chan string, want string) {
@@ -327,11 +323,11 @@ func assertNextReceive(t *testing.T, ch chan string, want string) {
 		}
 
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before subscriber was notified", timeout)
+		t.Fatalf("reached %v timeout before watcher was notified", timeout)
 	}
 }
 
-func assertSubscriptionDone(t *testing.T, s *Subscription) {
+func assertWatchTerminates(t *testing.T, s *Watch) {
 	t.Helper()
 
 	done := make(chan struct{})
@@ -343,7 +339,7 @@ func assertSubscriptionDone(t *testing.T, s *Subscription) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		t.Fatalf("subscription routine still running after %v", timeout)
+		t.Fatalf("watch not terminated after %v", timeout)
 	}
 }
 

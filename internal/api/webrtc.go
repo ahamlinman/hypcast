@@ -60,10 +60,10 @@ func (wh *webrtcHandler) run() (err error) {
 	go wh.handleClientSessionAnswers()
 	defer func() { <-wh.clientDone }()
 
-	s := wh.tuner.SubscribeTracks(wh.handleTrackUpdate)
+	w := wh.tuner.WatchTracks(wh.handleTrackUpdate)
 	defer func() {
-		s.Cancel()
-		s.Wait()
+		w.Cancel()
+		w.Wait()
 	}()
 
 	return <-wh.err

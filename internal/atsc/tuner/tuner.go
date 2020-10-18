@@ -84,25 +84,19 @@ func (t *Tuner) Channels() []atsc.Channel {
 	return channels
 }
 
-// SubscribeStatus sets up a handler function to continuously receive the status
-// of the tuner as it is updated, until the associated subscription is canceled.
-//
-// See the documentation for the watch package for details of how the
-// subscription works.
-func (t *Tuner) SubscribeStatus(handler func(Status)) *watch.Subscription {
-	return t.status.Subscribe(func(x interface{}) {
+// WatchStatus sets up a handler function to continuously receive the status of
+// the tuner as it is updated. See the watch package documentation for details.
+func (t *Tuner) WatchStatus(handler func(Status)) *watch.Watch {
+	return t.status.Watch(func(x interface{}) {
 		handler(x.(Status))
 	})
 }
 
-// SubscribeTracks sets up a handler function to continuously receive the
-// tuner's WebRTC tracks as they are updated, until the associated subscription
-// is canceled.
-//
-// See the documentation for the watch package for details of how the
-// subscription works.
-func (t *Tuner) SubscribeTracks(handler func(Tracks)) *watch.Subscription {
-	return t.tracks.Subscribe(func(x interface{}) {
+// WatchTracks sets up a handler function to continuously receive the tuner's
+// WebRTC tracks as they are updated. See the watch package documentation for
+// details.
+func (t *Tuner) WatchTracks(handler func(Tracks)) *watch.Watch {
+	return t.tracks.Watch(func(x interface{}) {
 		handler(x.(Tracks))
 	})
 }
