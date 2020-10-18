@@ -16,6 +16,7 @@ export default function VideoPlayer({
 
   return (
     <video
+      className="VideoPlayer"
       style={{ border: "1px solid black" }}
       ref={videoElement}
       autoPlay

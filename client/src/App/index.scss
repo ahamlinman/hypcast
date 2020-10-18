@@ -1,8 +1,26 @@
 .AppContainer {
+  height: 100%;
   display: grid;
+
+  grid-template-rows: 80px auto;
+  grid-template-columns: 320px auto;
+  grid-template-areas:
+    "Header Header"
+    "ChannelSelector VideoPlayer";
+
+  @media screen and (max-width: 639px) {
+    grid-template-rows: 64px 200px auto;
+    grid-template-columns: auto;
+    grid-template-areas:
+      "Header"
+      "VideoPlayer"
+      "ChannelSelector";
+  }
 }
 
 .Header {
+  grid-area: Header;
+
   background-color: #5158bb;
   color: #f6f6f4;
   padding: 0 1em;
@@ -11,38 +29,46 @@
     display: inline-block;
     margin: 0.5em 16px;
   }
-}
 
-.PowerButton {
-  border: none;
-  background-color: #f6f6f4;
-  width: 32px;
-  height: 32px;
-  border-radius: 32px;
-  background-image: url(./power-icon.svg);
-  background-size: 60%;
-  background-repeat: no-repeat;
-  background-position: 50% 45%;
-
-  &--Active {
-    background-color: #f26df9;
-  }
-}
-
-.StatusIndicator {
-  display: inline;
-  margin-left: 32px;
-
-  &__Dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 8px;
-    margin-right: 4px;
+  .PowerButton {
+    border: none;
     background-color: #f6f6f4;
+    width: 32px;
+    height: 32px;
+    border-radius: 32px;
+    background-image: url(./power-icon.svg);
+    background-size: 60%;
+    background-repeat: no-repeat;
+    background-position: 50% 45%;
 
     &--Active {
       background-color: #f26df9;
     }
   }
+
+  .StatusIndicator {
+    display: inline;
+    margin-left: 32px;
+
+    &__Dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 8px;
+      margin-right: 4px;
+      background-color: #f6f6f4;
+
+      &--Active {
+        background-color: #f26df9;
+      }
+    }
+  }
+}
+
+.ChannelSelector {
+  grid-area: ChannelSelector;
+}
+
+.VideoPlayer {
+  grid-area: VideoPlayer;
 }

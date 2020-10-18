@@ -44,7 +44,7 @@ export default function ChannelSelector({
   };
 
   return (
-    <p>
+    <p className="ChannelSelector">
       <select
         name="channel"
         value={selected}
