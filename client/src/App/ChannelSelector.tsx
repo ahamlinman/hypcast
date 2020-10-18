@@ -1,4 +1,4 @@
-import React, { FormEvent } from "react";
+import React from "react";
 
 import useConfig from "../useConfig";
 
@@ -9,58 +9,49 @@ export default function ChannelSelector({
 }) {
   const channelNames = useConfig<string[]>("channels");
 
-  const [selected, setSelected] = React.useState<undefined | string>();
-  const [forceDisabled, setForceDisabled] = React.useState(false);
-
-  React.useEffect(() => {
-    if (channelNames instanceof Error) {
-      console.error(channelNames);
-    }
-    if (channelNames instanceof Array) {
-      setSelected((s) => (s === undefined ? channelNames[0] : s));
-    }
-  }, [channelNames]);
-
-  const disabled =
-    forceDisabled ||
-    channelNames === undefined ||
-    channelNames instanceof Error;
-
-  const handleTune = async (evt: FormEvent) => {
-    evt.preventDefault();
-
+  const handleTune = async (selected: string) => {
     if (selected === undefined) {
       throw new Error("tried to tune before channels loaded");
     }
 
-    setForceDisabled(true);
     try {
       await onTune(selected);
     } catch (e) {
       console.error("Tune request failed", e);
-    } finally {
-      setForceDisabled(false);
     }
   };
 
+  if (!(channelNames instanceof Array)) {
+    return null;
+  }
+
   return (
-    <p className="ChannelSelector">
-      <select
-        name="channel"
-        value={selected}
-        onChange={(evt) => setSelected(evt.currentTarget.value)}
-      >
-        {channelNames instanceof Array
-          ? channelNames.map((ch) => (
-              <option key={ch} value={ch}>
-                {ch}
-              </option>
-            ))
-          : null}
-      </select>
-      <button disabled={disabled} onClick={handleTune}>
-        Tune
-      </button>
-    </p>
+    <div className="ChannelSelector">
+      {channelNames.map((ch) => (
+        <Channel
+          key={ch}
+          name={ch}
+          onClick={() => {
+            handleTune(ch);
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Channel({
+  name,
+  active,
+  onClick,
+}: {
+  name: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button className="ChannelSelector__Channel" onClick={onClick}>
+      {name}
+    </button>
   );
 }
