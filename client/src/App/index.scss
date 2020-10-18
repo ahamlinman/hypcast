@@ -35,6 +35,9 @@ $foreground: #f6f6f4;
 .Header {
   grid-area: Header;
 
+  display: flex;
+  align-items: center;
+
   background-color: $base;
   color: $foreground;
   padding: 0 1em;
@@ -43,15 +46,18 @@ $foreground: #f6f6f4;
 
   h1 {
     display: inline-block;
-    margin: 0.5em 16px;
+    margin: 0 16px;
   }
 
   .PowerButton {
     border: none;
+
     background-color: $foreground;
+
     width: 32px;
     height: 32px;
     border-radius: 32px;
+
     background-image: url(./power-icon.svg);
     background-size: 60%;
     background-repeat: no-repeat;
@@ -60,18 +66,24 @@ $foreground: #f6f6f4;
     &--Active {
       background-color: $accent;
     }
+
+    @media screen and (max-width: 639px) {
+      order: 1;
+    }
   }
 
   .StatusIndicator {
     display: inline;
-    margin-left: 32px;
 
     &__Dot {
       display: inline-block;
+
       width: 8px;
       height: 8px;
       border-radius: 8px;
-      margin-right: 4px;
+
+      margin-right: 8px;
+
       background-color: $foreground;
 
       &--Active {
