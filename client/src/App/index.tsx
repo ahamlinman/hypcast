@@ -1,20 +1,19 @@
 import React, { FormEvent } from "react";
 
-import { useWebRTC } from "./WebRTC";
-import { useTunerStatus, Status as TunerStatus } from "./TunerStatus";
+import { useWebRTC } from "../WebRTC";
+import rpc from "../rpc";
+import useConfig from "../useConfig";
 
-import rpc from "./rpc";
-import useConfig from "./useConfig";
+import "./index.scss";
 
-const App = () => {
+import Header from "./Header";
+
+export default function App() {
   const webRTC = useWebRTC();
-  const tunerStatus = useTunerStatus();
 
   return (
-    <>
-      <h1>It works!</h1>
-      <p>WebRTC Status: {webRTC.Connection.Status}</p>
-      <TunerStatusDisplay status={tunerStatus} />
+    <div className="AppContainer">
+      <Header />
       <p>
         Controls:{" "}
         <ChannelSelector
@@ -25,30 +24,9 @@ const App = () => {
         <button onClick={() => rpc("stop").catch(console.error)}>Stop</button>
       </p>
       {webRTC.MediaStream ? <VideoPlayer stream={webRTC.MediaStream} /> : null}
-    </>
+    </div>
   );
-};
-
-export default App;
-
-const TunerStatusDisplay = ({ status }: { status: TunerStatus }) => (
-  <p>Tuner Status: {tunerStatusToString(status)}</p>
-);
-
-const tunerStatusToString = (status: TunerStatus) => {
-  if (status.Connection !== "Connected") {
-    return `(${status.Connection})`;
-  }
-
-  if (status.State === "Stopped") {
-    if (status.Error !== undefined) {
-      return `${status.State} (${status.Error})`;
-    }
-    return status.State;
-  }
-
-  return `${status.State} ${status.ChannelName}`;
-};
+}
 
 const VideoPlayer = ({ stream }: { stream: MediaStream }) => {
   const videoElement = React.useRef<null | HTMLVideoElement>(null);

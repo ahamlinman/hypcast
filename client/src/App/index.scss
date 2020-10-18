@@ -1,0 +1,32 @@
+.AppContainer {
+  display: grid;
+}
+
+.AppHeader {
+  background-color: #5158bb;
+  color: #f6f6f4;
+  padding: 0 1em;
+
+  h1 {
+    display: inline-block;
+    margin: 0.5em 0;
+  }
+}
+
+.AppHeaderStatusIndicator {
+  display: inline;
+  margin-left: 32px;
+
+  .AppHeaderStatusIndicatorDot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 8px;
+    margin-right: 4px;
+    background-color: #f6f6f4;
+
+    &.Active {
+      background-color: #f26df9;
+    }
+  }
+}
