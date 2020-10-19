@@ -26,9 +26,8 @@ function PowerButton() {
     <button
       className={`PowerButton ${active ? "PowerButton--Active" : ""}`}
       onClick={() => rpc("stop").catch(console.error)}
-    >
-      <span hidden>Turn Off</span>
-    </button>
+      aria-label="Turn Off"
+    />
   );
 }
 
