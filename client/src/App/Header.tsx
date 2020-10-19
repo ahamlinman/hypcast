@@ -23,10 +23,11 @@ function PowerButton() {
   const tunerStatus = useTunerStatus();
   const channelNames = useConfig<string[]>("channels");
 
-  const active = isTunerActive(tunerStatus);
+  const poweredOn =
+    tunerStatus.Connection === "Connected" && tunerStatus.State !== "Stopped";
 
   const handleClick = () => {
-    if (active) {
+    if (poweredOn) {
       rpc("stop").catch(console.error);
     } else if (channelNames instanceof Array) {
       rpc("tune", { ChannelName: channelNames[0] }).catch(console.error);
@@ -35,7 +36,7 @@ function PowerButton() {
 
   return (
     <button
-      className={`PowerButton ${active ? "PowerButton--Active" : ""}`}
+      className={`PowerButton ${poweredOn ? "PowerButton--Active" : ""}`}
       onClick={handleClick}
     >
       <svg
@@ -56,19 +57,32 @@ function StatusIndicator() {
   const webRTC = useWebRTC();
   const tunerStatus = useTunerStatus();
 
-  const active = isActive(webRTC, tunerStatus);
+  const indicatorActive = isActiveAndPlaying(webRTC, tunerStatus);
 
   return (
     <div className="StatusIndicator">
       <div
         className={`StatusIndicator__Dot ${
-          active ? "StatusIndicator__Dot--Active" : ""
+          indicatorActive ? "StatusIndicator__Dot--Active" : ""
         }`}
       ></div>
       <span className="StatusIndicator__Description">
         {statusString(webRTC, tunerStatus)}
       </span>
     </div>
+  );
+}
+
+function isActiveAndPlaying(
+  webRTC: WebRTCState,
+  tunerStatus: TunerStatus,
+): boolean {
+  if (webRTC.Connection.Status !== "Connected") {
+    return false;
+  }
+
+  return (
+    tunerStatus.Connection === "Connected" && tunerStatus.State === "Playing"
   );
 }
 
@@ -89,29 +103,25 @@ function webRTCStatusString(state: WebRTCState): string | undefined {
   return undefined;
 }
 
-function tunerStatusString(status: TunerStatus) {
+function tunerStatusString(status: TunerStatus): string {
   if (status.Connection !== "Connected") {
     return status.Connection;
   }
 
   if (status.State === "Stopped") {
     if (status.Error !== undefined) {
-      return "Error";
+      return "Failed to Tune";
     }
-    return status.State;
+    return "Powered Off";
   }
 
-  return `${status.State} ${status.ChannelName}`;
-}
-
-function isActive(webRTC: WebRTCState, tunerStatus: TunerStatus): boolean {
-  if (webRTC.Connection.Status !== "Connected") {
-    return false;
+  if (status.State === "Starting") {
+    return `Tuning to ${status.ChannelName}`;
   }
 
-  return isTunerActive(tunerStatus);
-}
+  if (status.State === "Playing") {
+    return `Watching ${status.ChannelName}`;
+  }
 
-function isTunerActive(status: TunerStatus) {
-  return status.Connection === "Connected" && status.State === "Playing";
+  return status.State;
 }
