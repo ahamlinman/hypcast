@@ -25,7 +25,7 @@ $mobile-break: 639px;
     "ChannelSelector VideoPlayer";
 
   @media screen and (max-width: $mobile-break) {
-    grid-template-rows: 64px 200px auto;
+    grid-template-rows: 64px 240px auto;
     grid-template-columns: auto;
     grid-template-areas:
       "Header"
@@ -97,6 +97,11 @@ $mobile-break: 639px;
     white-space: nowrap;
     text-overflow: ellipsis;
 
+    &__Description {
+      position: relative;
+      top: 1px;
+    }
+
     &__Dot {
       display: inline-block;
 
@@ -156,8 +161,8 @@ $mobile-break: 639px;
   overflow: hidden;
 
   video {
-    margin: 3em;
     max-width: 100%;
     max-height: 100%;
+    margin: 8px;
   }
 }
