@@ -1,0 +1,181 @@
+$base: #5158bb;
+$base-dark: #282c67;
+$base-darker: #17193b;
+$base-darkest: #06060f;
+
+$accent: #f26df9;
+
+$foreground: #f6f6f4;
+
+$mobile-break: 639px;
+@mixin if-mobile {
+  @media screen and (max-width: $mobile-break) {
+    @content;
+  }
+}
+
+.AppContainer {
+  width: 100%;
+  height: 100%;
+
+  max-width: 100%;
+  max-height: 100%;
+
+  display: grid;
+  grid:
+    "Header Header" 80px
+    "ChannelSelector VideoPlayer" auto
+    / 320px auto;
+
+  @include if-mobile {
+    grid:
+      "Header" 64px
+      "VideoPlayer" 240px
+      "ChannelSelector" auto;
+  }
+}
+
+.Header {
+  grid-area: Header;
+
+  display: grid;
+  align-items: center;
+
+  padding: 0 24px;
+  grid:
+    "PowerButton Title StatusIndicator"
+    / 32px min-content auto;
+
+  @include if-mobile {
+    padding: 0;
+    grid:
+      "Title StatusIndicator PowerButton"
+      / min-content auto 64px;
+  }
+
+  background-color: $base;
+  color: $foreground;
+
+  border-bottom: 1px solid $base-dark;
+
+  h1 {
+    grid-area: Title;
+
+    position: relative;
+    top: -1px;
+
+    margin: 0 20px;
+
+    @include if-mobile {
+      margin: 0 16px;
+    }
+  }
+
+  .PowerButton {
+    grid-area: PowerButton;
+    justify-self: center;
+
+    border: none;
+    padding: 0;
+
+    $size: 32px;
+    width: $size;
+    height: $size;
+    border-radius: $size;
+
+    background-color: $foreground;
+
+    &--Active {
+      background-color: $accent;
+    }
+
+    &__Icon {
+      width: 20px;
+      height: 31px;
+      fill: $base-darker;
+    }
+  }
+
+  .StatusIndicator {
+    grid-area: StatusIndicator;
+
+    // Ensure Chrome doesn't cut off our text (don't know why this happens)
+    // https://stackoverflow.com/a/32141572
+    padding: 4px 0;
+
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    &__Description {
+      position: relative;
+      top: 1px;
+    }
+
+    &__Dot {
+      display: inline-block;
+
+      $size: 8px;
+      width: $size;
+      height: $size;
+      border-radius: $size;
+
+      margin-right: 6px;
+
+      background-color: $foreground;
+
+      &--Active {
+        background-color: $accent;
+      }
+    }
+  }
+}
+
+.ChannelSelector {
+  grid-area: ChannelSelector;
+
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  scrollbar-color: $base $base-dark;
+
+  &__Channel {
+    display: block;
+    width: 100%;
+
+    font-size: 1em;
+    padding: 12px;
+
+    border: none;
+    border-bottom: 1px solid $foreground;
+    &:last-child {
+      border-bottom: none;
+    }
+
+    color: $foreground;
+    background-color: $base-darker;
+
+    &--Active {
+      background-color: $base-dark;
+      font-weight: 900;
+    }
+  }
+}
+
+.VideoPlayer {
+  grid-area: VideoPlayer;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background-color: $base-darkest;
+
+  overflow: hidden;
+
+  video {
+    max-width: 100%;
+    max-height: 100%;
+    margin: 8px;
+  }
+}

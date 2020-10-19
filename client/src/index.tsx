@@ -5,6 +5,8 @@ import App from "./App";
 import { WebRTCProvider } from "./WebRTC";
 import { TunerStatusProvider } from "./TunerStatus";
 
+import "./index.scss";
+
 ReactDOM.render(
   <React.StrictMode>
     <WebRTCProvider>
