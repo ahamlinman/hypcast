@@ -73,20 +73,22 @@ $mobile-break: 639px;
     justify-self: center;
 
     border: none;
-
-    background-color: $foreground;
+    padding: 0;
 
     width: 32px;
     height: 32px;
     border-radius: 32px;
 
-    background-image: url(./power-icon.svg);
-    background-size: 60%;
-    background-repeat: no-repeat;
-    background-position: 50% 46%;
+    background-color: $foreground;
 
     &--Active {
       background-color: $accent;
+    }
+
+    &__Icon {
+      width: 20px;
+      height: 31px;
+      fill: $base-darker;
     }
   }
 
