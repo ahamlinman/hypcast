@@ -28,7 +28,7 @@ export default function ChannelSelector({
   }
 
   return (
-    <div className="ChannelSelector">
+    <aside className="ChannelSelector">
       {channelNames.map((ch) => (
         <Channel
           key={ch}
@@ -39,7 +39,7 @@ export default function ChannelSelector({
           }}
         />
       ))}
-    </div>
+    </aside>
   );
 }
 

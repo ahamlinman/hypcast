@@ -8,8 +8,8 @@ import useConfig from "../useConfig";
 export default function Header() {
   return (
     <header className="Header">
-      <PowerButton />
       <Title />
+      <PowerButton />
       <StatusIndicator />
     </header>
   );

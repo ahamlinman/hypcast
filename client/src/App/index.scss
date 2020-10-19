@@ -8,6 +8,11 @@ $accent: #f26df9;
 $foreground: #f6f6f4;
 
 $mobile-break: 639px;
+@mixin if-mobile {
+  @media screen and (max-width: $mobile-break) {
+    @content;
+  }
+}
 
 .AppContainer {
   width: 100%;
@@ -17,20 +22,16 @@ $mobile-break: 639px;
   max-height: 100%;
 
   display: grid;
+  grid:
+    "Header Header" 80px
+    "ChannelSelector VideoPlayer" auto
+    / 320px auto;
 
-  grid-template-rows: 80px auto;
-  grid-template-columns: 320px auto;
-  grid-template-areas:
-    "Header Header"
-    "ChannelSelector VideoPlayer";
-
-  @media screen and (max-width: $mobile-break) {
-    grid-template-rows: 64px 240px auto;
-    grid-template-columns: auto;
-    grid-template-areas:
-      "Header"
-      "VideoPlayer"
-      "ChannelSelector";
+  @include if-mobile {
+    grid:
+      "Header" 64px
+      "VideoPlayer" 240px
+      "ChannelSelector" auto;
   }
 }
 
@@ -41,13 +42,15 @@ $mobile-break: 639px;
   align-items: center;
 
   padding: 0 24px;
-  grid-template-columns: 32px min-content auto;
-  grid-template-areas: "PowerButton Title StatusIndicator";
+  grid:
+    "PowerButton Title StatusIndicator"
+    / 32px min-content auto;
 
-  @media screen and (max-width: $mobile-break) {
+  @include if-mobile {
     padding: 0;
-    grid-template-columns: min-content auto 64px;
-    grid-template-areas: "Title StatusIndicator PowerButton";
+    grid:
+      "Title StatusIndicator PowerButton"
+      / min-content auto 64px;
   }
 
   background-color: $base;
@@ -63,7 +66,7 @@ $mobile-break: 639px;
 
     margin: 0 20px;
 
-    @media screen and (max-width: $mobile-break) {
+    @include if-mobile {
       margin: 0 16px;
     }
   }
@@ -75,9 +78,10 @@ $mobile-break: 639px;
     border: none;
     padding: 0;
 
-    width: 32px;
-    height: 32px;
-    border-radius: 32px;
+    $size: 32px;
+    width: $size;
+    height: $size;
+    border-radius: $size;
 
     background-color: $foreground;
 
@@ -111,11 +115,12 @@ $mobile-break: 639px;
     &__Dot {
       display: inline-block;
 
-      width: 8px;
-      height: 8px;
-      border-radius: 8px;
+      $size: 8px;
+      width: $size;
+      height: $size;
+      border-radius: $size;
 
-      margin-right: 4px;
+      margin-right: 6px;
 
       background-color: $foreground;
 
@@ -138,18 +143,17 @@ $mobile-break: 639px;
     display: block;
     width: 100%;
 
+    font-size: 1em;
+    padding: 12px;
+
     border: none;
     border-bottom: 1px solid $foreground;
     &:last-child {
       border-bottom: none;
     }
 
-    padding: 12px 0;
-
-    font-size: 1em;
-
-    background-color: $base-darker;
     color: $foreground;
+    background-color: $base-darker;
 
     &--Active {
       background-color: $base-dark;

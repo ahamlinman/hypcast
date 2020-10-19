@@ -17,13 +17,13 @@ export default function VideoPlayer({
   const show = stream !== undefined;
 
   return (
-    <div className="VideoPlayer">
+    <main className="VideoPlayer">
       <video
         style={{ display: show ? undefined : "none" }}
         ref={videoElement}
         autoPlay
         controls
       />
-    </div>
+    </main>
   );
 }
