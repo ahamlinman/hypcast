@@ -16,8 +16,8 @@ and streaming live video. It provides significantly faster startup and
 channel switches than version 1, which is the primary issue I hoped to solve
 with the new implementation. Numerous areas for improvement remain:
 
-- The UI needs work, both visually and in terms of robustness (e.g. automatic
-  reconnection if the server restarts or whatever).
+- The UI could use some additional work to ensure robustness against
+  failures, e.g. automatic reconnection if the server restarts or whatever.
 - There are no controls for data rate and encoding quality like version 1 had.
   Ideally these would adjust automatically based on connection quality,
   possibly with some way for clients to request a lower quality to save data.
@@ -29,7 +29,6 @@ with the new implementation. Numerous areas for improvement remain:
   version of Hypcast has ever been designed to support public access (no
   authorization mechanism, internal state sometimes exposed to clients,
   etc.).
-
-Hypcast version 2 maintains the caveats and limitations of version 1: one
-tuner only, ATSC only, no pausing or time shifting, modern browser required,
-don't expose it to the Internet.
+- Other limitations carried over from v1 include: no support for subtitles,
+  one tuner only, ATSC only. Subtitle support should absolutely be
+  implemented. The others would be nice to have.
