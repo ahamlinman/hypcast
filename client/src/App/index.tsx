@@ -5,6 +5,7 @@ import rpc from "../rpc";
 
 import "./index.scss";
 
+import Title from "./Title";
 import Header from "./Header";
 import ChannelSelector from "./ChannelSelector";
 import VideoPlayer from "./VideoPlayer";
@@ -16,6 +17,7 @@ export default function App() {
 
   return (
     <div className="AppContainer">
+      <Title />
       <Header />
       <ChannelSelector
         selected={
