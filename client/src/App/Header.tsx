@@ -95,6 +95,9 @@ function tunerStatusString(status: TunerStatus) {
   }
 
   if (status.State === "Stopped") {
+    if (status.Error !== undefined) {
+      return "Error";
+    }
     return status.State;
   }
 
