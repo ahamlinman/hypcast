@@ -33,9 +33,9 @@ const (
 
 // Status represents the public state of the tuner for reading by clients.
 type Status struct {
-	State   State
-	Channel atsc.Channel // TODO: Only expose channel name
-	Error   error
+	State       State
+	ChannelName string
+	Error       error
 }
 
 // Tracks represents the current set of video and audio tracks for use by WebRTC
@@ -130,8 +130,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	}
 
 	t.status.Set(Status{
-		State:   StateStarting,
-		Channel: channel,
+		State:       StateStarting,
+		ChannelName: channel.Name,
 	})
 
 	defer func() {
@@ -165,8 +165,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	log.Printf("Tuner(%p): Started pipeline", t)
 
 	t.status.Set(Status{
-		State:   StatePlaying,
-		Channel: channel,
+		State:       StatePlaying,
+		ChannelName: channelName,
 	})
 	t.tracks.Set(Tracks{
 		Video: vt,

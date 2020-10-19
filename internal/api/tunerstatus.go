@@ -91,7 +91,7 @@ var tunerStateStrings = map[tuner.State]string{
 func (tsh *tunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStatusMsg {
 	msg := tunerStatusMsg{
 		State:       tunerStateStrings[s.State],
-		ChannelName: s.Channel.Name,
+		ChannelName: s.ChannelName,
 	}
 	if s.Error != nil {
 		msg.Error = s.Error.Error()
