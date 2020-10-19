@@ -93,7 +93,11 @@ $mobile-break: 639px;
   .StatusIndicator {
     grid-area: StatusIndicator;
 
-    overflow: hidden;
+    // Ensure Chrome doesn't cut off our text (don't know why this happens)
+    // https://stackoverflow.com/a/32141572
+    padding: 4px 0;
+
+    overflow-x: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 
@@ -134,6 +138,9 @@ $mobile-break: 639px;
 
     border: none;
     border-bottom: 1px solid $foreground;
+    &:last-child {
+      border-bottom: none;
+    }
 
     padding: 12px 0;
 
