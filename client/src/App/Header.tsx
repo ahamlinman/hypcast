@@ -3,6 +3,7 @@ import React from "react";
 import { useWebRTC, State as WebRTCState } from "../WebRTC";
 import { useTunerStatus, Status as TunerStatus } from "../TunerStatus";
 import rpc from "../rpc";
+import useConfig from "../useConfig";
 
 export default function Header() {
   return (
@@ -20,17 +21,27 @@ function Title() {
 
 function PowerButton() {
   const tunerStatus = useTunerStatus();
+  const channelNames = useConfig<string[]>("channels");
+
   const active = isTunerActive(tunerStatus);
+
+  const handleClick = () => {
+    if (active) {
+      rpc("stop").catch(console.error);
+    } else if (channelNames instanceof Array) {
+      rpc("tune", { ChannelName: channelNames[0] }).catch(console.error);
+    }
+  };
 
   return (
     <button
       className={`PowerButton ${active ? "PowerButton--Active" : ""}`}
-      onClick={() => rpc("stop").catch(console.error)}
+      onClick={handleClick}
     >
       <svg
         viewBox="0 0 360 360"
         className="PowerButton__Icon"
-        aria-label="Turn Off"
+        aria-label="Power"
       >
         <g>
           <path d="m265.57 72.483c-7.646-4.394-17.355-2.01-21.575 5.297-4.217 7.307-1.925 16.547 5.095 20.536l5.813 4.406c29.892 22.655 49.207 58.524 49.207 98.923 0 68.543-55.565 124.11-124.11 124.11-68.543 0-124.11-55.566-124.11-124.11 0-39.822 18.771-75.242 47.934-97.944l6.177-4.809c7.521-4.306 10.222-13.806 6.003-21.112s-13.923-9.693-21.566-5.303l-6.408 4.742c-38.083 28.184-62.784 73.409-62.784 124.43-0.004 85.46 69.282 154.75 154.75 154.75s154.75-69.287 154.75-154.76c0-51.011-24.696-96.232-62.772-124.42l-6.41-4.737z" />

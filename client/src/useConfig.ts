@@ -9,13 +9,7 @@ export default function useConfig<T>(name: string): undefined | T | Error {
 
     async function startFetch() {
       try {
-        const response = await fetch(`/api/config/${name}`);
-        if (!response.ok) {
-          throw new Error(
-            `failed to retrieve ${name} config: ${response.statusText}`,
-          );
-        }
-        setResult(await response.json());
+        setResult(await fetchConfigWithCache(name));
       } catch (e) {
         setResult(e);
       }
@@ -23,4 +17,25 @@ export default function useConfig<T>(name: string): undefined | T | Error {
   }, [name]);
 
   return result;
+}
+
+const FETCH_CACHE = new Map<string, Promise<any>>();
+
+function fetchConfigWithCache(name: string) {
+  const cachedPromise = FETCH_CACHE.get(name);
+  if (cachedPromise !== undefined) {
+    return cachedPromise;
+  }
+
+  const responsePromise = fetch(`/api/config/${name}`).then((response) => {
+    if (!response.ok) {
+      return new Error(
+        `failed to retrieve ${name} config: ${response.statusText}`,
+      );
+    }
+    return response.json();
+  });
+
+  FETCH_CACHE.set(name, responsePromise);
+  return responsePromise;
 }
