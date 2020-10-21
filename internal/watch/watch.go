@@ -12,7 +12,6 @@ type Value struct {
 	valueMu sync.RWMutex
 	value   interface{}
 
-	// watchersMu must be held while valueMu is held
 	watchersMu sync.Mutex
 	watchers   map[*Watch]struct{}
 }
@@ -88,9 +87,6 @@ func (v *Value) initializeAndRegisterWatch(w *Watch) {
 }
 
 func (v *Value) unregisterWatch(w *Watch) {
-	v.valueMu.RLock()
-	defer v.valueMu.RUnlock()
-
 	v.watchersMu.Lock()
 	defer v.watchersMu.Unlock()
 
