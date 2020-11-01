@@ -8,7 +8,7 @@ RUN apk add --no-cache \
 COPY go.mod go.sum ./
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
-RUN go install -v -ldflags="-s -w" ./cmd/hypcast-server
+RUN go install -v -ldflags="-s -w" -trimpath ./cmd/hypcast-server
 
 
 FROM node:14-alpine AS client-build
