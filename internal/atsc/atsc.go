@@ -8,7 +8,7 @@
 // The https://github.com/stefantalpalaru/w_scan2 utility is useful for
 // generating a compatible file:
 //
-//   ./w_scan2 -f a -c us -X >> channels.conf
+//   w_scan2 -f a -c us -X > channels.conf
 package atsc
 
 import (
