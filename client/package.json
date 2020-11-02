@@ -1,22 +1,20 @@
 {
   "name": "hypcast-client",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "dependencies": {
     "@types/node": "^14.11.8",
     "@types/react": "^16.9.0",
     "@types/react-dom": "^16.9.0",
     "@types/react-helmet": "^6.1.0",
+    "http-proxy-middleware": "^1.0.5",
     "node-sass": "^4.14.1",
     "react": "^17.0.1",
+    "prettier": "^2.0.5",
     "react-dom": "^17.0.1",
     "react-helmet": "^6.1.0",
     "react-scripts": "^4.0.0",
     "typescript": "^4.0.3"
-  },
-  "devDependencies": {
-    "http-proxy-middleware": "^1.0.5",
-    "prettier": "^2.0.5"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -24,17 +22,17 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "prettier": {
-    "trailingComma": "all"
-  },
   "eslintConfig": {
     "extends": "react-app"
+  },
+  "prettier": {
+    "trailingComma": "all"
   },
   "browserslist": {
     "production": [
       ">0.2%",
       "not dead",
-      "not op_mini all"
+      "supports rtcpeerconnection"
     ],
     "development": [
       "last 1 chrome version",

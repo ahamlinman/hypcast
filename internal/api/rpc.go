@@ -34,10 +34,9 @@ func (h *Handler) rpcTune(params rpcParams) (code int, body interface{}) {
 		return http.StatusBadRequest, err
 	case err != nil:
 		return http.StatusInternalServerError, err
-
-	default:
-		return http.StatusNoContent, nil
 	}
+
+	return http.StatusNoContent, nil
 }
 
 func handleRPC(handler rpcHandlerFunc) http.Handler {
@@ -48,13 +47,12 @@ func handleRPC(handler rpcHandlerFunc) http.Handler {
 			return
 		}
 
+		params, err := readRPCParams(r)
+
 		var (
 			code int
 			body interface{}
-
-			params, err = readRPCParams(r)
 		)
-
 		switch {
 		case errors.Is(err, errBodyTooLarge):
 			code, body = http.StatusRequestEntityTooLarge, err
