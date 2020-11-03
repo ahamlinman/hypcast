@@ -104,7 +104,8 @@ func (t *Tuner) WatchTracks(handler func(Tracks)) *watch.Watch {
 	})
 }
 
-// Stop closes any active pipeline for this Tuner, releasing the DVB device.
+// Stop ends any active stream and releases the DVB device associated with this
+// tuner.
 func (t *Tuner) Stop() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -118,8 +119,7 @@ func (t *Tuner) Stop() error {
 // ErrChannelNotFound is returned when tuning to a channel that does not exist.
 var ErrChannelNotFound error = errors.New("channel not found")
 
-// Tune closes any active pipeline for this Tuner, and starts a new pipeline to
-// stream the channel with the provided name.
+// Tune attempts to start a stream for the named channel.
 func (t *Tuner) Tune(channelName string) (err error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -145,13 +145,12 @@ func (t *Tuner) Tune(channelName string) (err error) {
 
 	t.pipeline, err = gst.NewPipeline(channel)
 	if err != nil {
-		return
+		return err
 	}
 
-	streamID := fmt.Sprintf("Tuner(%p)", t)
-	vt, at, err := createTrackPair(streamID)
+	vt, at, err := t.createTrackPair()
 	if err != nil {
-		return
+		return err
 	}
 
 	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(vt))
@@ -160,7 +159,7 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
 	if err != nil {
-		return
+		return err
 	}
 	log.Printf("Tuner(%p): Started pipeline", t)
 
@@ -176,15 +175,13 @@ func (t *Tuner) Tune(channelName string) (err error) {
 }
 
 func (t *Tuner) destroyAnyRunningPipeline() error {
-	defer func() {
-		t.pipeline = nil
-	}()
-
 	if t.pipeline == nil {
 		return nil
 	}
 
-	return t.pipeline.Close()
+	err := t.pipeline.Close()
+	t.pipeline = nil
+	return err
 }
 
 const (
@@ -218,7 +215,9 @@ var (
 	ssrcGenerator = randutil.NewMathRandomGenerator()
 )
 
-func createTrackPair(streamID string) (video *webrtc.Track, audio *webrtc.Track, err error) {
+func (t *Tuner) createTrackPair() (video *webrtc.Track, audio *webrtc.Track, err error) {
+	streamID := fmt.Sprintf("Tuner(%p)", t)
+
 	video, err = webrtc.NewTrack(
 		webrtc.DefaultPayloadTypeH264, ssrcGenerator.Uint32(), streamID, streamID, VideoCodec,
 	)

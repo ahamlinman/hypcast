@@ -95,7 +95,7 @@ func ParseChannelsConf(r io.Reader) ([]Channel, error) {
 			if err == nil {
 				err = fmt.Errorf("channels.conf line %d has unknown modulation %q", line, s)
 			}
-			return Modulation("") // Invalid; should never leave this function
+			return Modulation("") // Invalid; should never leave the parent function
 		}
 
 		channels = append(channels, Channel{
