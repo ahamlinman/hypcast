@@ -1,4 +1,4 @@
-FROM golang:1.15-alpine AS server-build
+FROM golang:1.15-alpine3.12 AS server-build
 WORKDIR /var/tmp/hypcast
 
 RUN apk add --no-cache \
@@ -11,7 +11,7 @@ COPY internal/ ./internal/
 RUN go install -v -ldflags="-s -w" -trimpath ./cmd/hypcast-server
 
 
-FROM node:14-alpine AS client-build
+FROM node:14-alpine3.12 AS client-build
 WORKDIR /var/tmp/hypcast/client
 
 COPY client/package.json client/yarn.lock ./
