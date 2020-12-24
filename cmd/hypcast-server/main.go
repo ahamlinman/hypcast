@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ahamlinman/hypcast/client"
 	"github.com/ahamlinman/hypcast/internal/api"
 	"github.com/ahamlinman/hypcast/internal/assets"
 	"github.com/ahamlinman/hypcast/internal/atsc"
@@ -27,10 +28,6 @@ func main() {
 			"channels", "/etc/hypcast/channels.conf",
 			"Path to the channels.conf file containing the list of available channels",
 		)
-		flagAssets = flag.String(
-			"assets", "",
-			"Path to static assets; if unset, static assets will not be served",
-		)
 	)
 	flag.Parse()
 
@@ -43,10 +40,7 @@ func main() {
 	tuner := tuner.NewTuner(channels)
 
 	http.Handle("/api/", api.NewHandler(tuner))
-	if *flagAssets != "" {
-		log.Printf("Serving assets from %s", *flagAssets)
-		http.Handle("/", http.FileServer(assets.Dir(*flagAssets)))
-	}
+	http.Handle("/", http.FileServer(assets.FileSystem{FileSystem: http.FS(client.FS)}))
 
 	server := http.Server{Addr: *flagAddr}
 	go server.ListenAndServe()
