@@ -38,9 +38,16 @@ func main() {
 	}
 
 	tuner := tuner.NewTuner(channels)
-
 	http.Handle("/api/", api.NewHandler(tuner))
-	http.Handle("/", http.FileServer(assets.FileSystem{FileSystem: http.FS(client.FS)}))
+
+	if client.FS != nil {
+		log.Printf("Serving embedded web client")
+		http.Handle("/", http.FileServer(
+			assets.FileSystem{FileSystem: http.FS(client.FS)},
+		))
+	} else {
+		log.Printf("Serving API only; no web client")
+	}
 
 	server := http.Server{Addr: *flagAddr}
 	go server.ListenAndServe()

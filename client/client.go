@@ -1,19 +1,7 @@
 package client
 
-import (
-	"embed"
-	"io/fs"
-)
+import "io/fs"
 
-//go:embed build
-var build embed.FS
-
-// FS embeds resources for the Hypcast web client.
-var FS = must(fs.Sub(build, "build"))
-
-func must(fsys fs.FS, err error) fs.FS {
-	if err != nil {
-		panic(err)
-	}
-	return fsys
-}
+// FS embeds resources for the Hypcast web client when the "embedclient" build
+// tag is set. FS will be nil when client resources are not available.
+var FS fs.FS
