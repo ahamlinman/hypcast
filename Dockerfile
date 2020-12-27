@@ -1,5 +1,5 @@
 FROM docker.io/library/golang:1.15-alpine3.12 AS server-build
-WORKDIR /var/tmp/hypcast
+WORKDIR /tmp/hypcast
 
 RUN apk add --no-cache \
       build-base \
@@ -8,11 +8,14 @@ RUN apk add --no-cache \
 COPY go.mod go.sum ./
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
-RUN go install -v -ldflags="-s -w" -trimpath ./cmd/hypcast-server
+
+RUN go build -v \
+      -trimpath -ldflags="-s -w" \
+      ./cmd/hypcast-server
 
 
-FROM docker.io/library/node:14-alpine3.12 AS client-build
-WORKDIR /var/tmp/hypcast/client
+FROM --platform=$BUILDPLATFORM docker.io/library/node:14-alpine3.12 AS client-build
+WORKDIR /tmp/hypcast/client
 
 COPY client/package.json client/yarn.lock ./
 RUN yarn install
@@ -32,8 +35,8 @@ RUN apk add --no-cache \
       gst-plugins-bad \
       gst-plugins-ugly
 
-COPY --from=server-build /go/bin/hypcast-server ./hypcast-server
-COPY --from=client-build /var/tmp/hypcast/client/build/ ./assets/
+COPY --from=server-build /tmp/hypcast/hypcast-server ./hypcast-server
+COPY --from=client-build /tmp/hypcast/client/build/ ./assets/
 
 ENTRYPOINT [ \
   "/sbin/tini", "--", \
