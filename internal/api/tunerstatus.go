@@ -3,50 +3,58 @@ package api
 import (
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
+	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
+type tunerStatusHandler struct {
+	tuner *tuner.Tuner
+
+	conn        *websocket.Conn
+	watch       *watch.Watch
+	shutdownErr chan error
+	wg          sync.WaitGroup
+}
+
 func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocketUpgrader.Upgrade(w, r, nil)
+	tsh := &tunerStatusHandler{
+		tuner:       h.tuner,
+		shutdownErr: make(chan error, 1),
+	}
+
+	tsh.ServeHTTP(w, r)
+}
+
+func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	tsh.logf("Starting new connection")
+	defer func() {
+		tsh.waitForCleanup()
+		tsh.logf("Finished with error: %v", err)
+	}()
+
+	tsh.conn, err = websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer tsh.conn.Close()
 
-	tsh := &tunerStatusHandler{
-		conn:  conn,
-		tuner: h.tuner,
-	}
-	tsh.run()
-}
-
-type tunerStatusHandler struct {
-	conn       *websocket.Conn
-	tuner      *tuner.Tuner
-	err        chan error
-	readerDone chan struct{}
-}
-
-func (tsh *tunerStatusHandler) run() (err error) {
-	tsh.logf("Starting new connection")
-	defer func() { tsh.logf("Finished with error: %v", err) }()
-
-	tsh.err = make(chan error, 1)
-	tsh.readerDone = make(chan struct{})
-
-	go tsh.drainReader()
-	defer func() { <-tsh.readerDone }()
-
-	w := tsh.tuner.WatchStatus(tsh.sendNewTunerStatus)
-	defer func() {
-		w.Cancel()
-		w.Wait()
+	tsh.wg.Add(1)
+	go func() {
+		defer tsh.wg.Done()
+		tsh.drainClient()
 	}()
 
-	return <-tsh.err
+	tsh.watch = tsh.tuner.WatchStatus(tsh.sendNewTunerStatus)
+	defer tsh.watch.Cancel()
+
+	err = <-tsh.shutdownErr
+	return
 }
 
 func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
@@ -58,8 +66,7 @@ func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
 	}
 }
 
-func (tsh *tunerStatusHandler) drainReader() {
-	defer close(tsh.readerDone)
+func (tsh *tunerStatusHandler) drainClient() {
 	// see https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages
 	for {
 		if _, _, err := tsh.conn.NextReader(); err != nil {
@@ -71,9 +78,14 @@ func (tsh *tunerStatusHandler) drainReader() {
 
 func (tsh *tunerStatusHandler) shutdown(err error) {
 	select {
-	case tsh.err <- err:
+	case tsh.shutdownErr <- err:
 	default:
 	}
+}
+
+func (tsh *tunerStatusHandler) waitForCleanup() {
+	tsh.watch.Wait()
+	tsh.wg.Wait()
 }
 
 type tunerStatusMsg struct {

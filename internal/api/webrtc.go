@@ -4,52 +4,58 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v2"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
+	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
-func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocketUpgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
+var webrtcAPI *webrtc.API
 
-	wh := &webrtcHandler{
-		conn:  conn,
-		tuner: h.tuner,
-	}
-	wh.run()
+func init() {
+	var me webrtc.MediaEngine
+	me.RegisterCodec(tuner.VideoCodec)
+	me.RegisterCodec(tuner.AudioCodec)
+
+	webrtcAPI = webrtc.NewAPI(webrtc.WithMediaEngine(me))
 }
 
 type webrtcHandler struct {
-	conn       *websocket.Conn
-	tuner      *tuner.Tuner
-	pc         *webrtc.PeerConnection
-	err        chan error
-	clientDone chan struct{}
+	tuner *tuner.Tuner
+
+	conn        *websocket.Conn
+	pc          *webrtc.PeerConnection
+	watch       *watch.Watch
+	shutdownErr chan error
+	wg          sync.WaitGroup
 }
 
-var (
-	mediaEngine = webrtc.MediaEngine{}
-	webrtcAPI   *webrtc.API
-)
+func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request) {
+	wh := &webrtcHandler{
+		tuner:       h.tuner,
+		shutdownErr: make(chan error, 1),
+	}
 
-func init() {
-	mediaEngine.RegisterCodec(tuner.VideoCodec)
-	mediaEngine.RegisterCodec(tuner.AudioCodec)
-	webrtcAPI = webrtc.NewAPI(webrtc.WithMediaEngine(mediaEngine))
+	wh.ServeHTTP(w, r)
 }
 
-func (wh *webrtcHandler) run() (err error) {
+func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var err error
+
 	wh.logf("Starting new connection")
-	defer func() { wh.logf("Finished with error: %v", err) }()
+	defer func() {
+		wh.waitForCleanup()
+		wh.logf("Finished with error: %v", err)
+	}()
 
-	wh.err = make(chan error, 1)
-	wh.clientDone = make(chan struct{})
+	wh.conn, err = websocketUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer wh.conn.Close()
 
 	wh.pc, err = webrtcAPI.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
@@ -57,20 +63,20 @@ func (wh *webrtcHandler) run() (err error) {
 	}
 	defer wh.pc.Close()
 
-	go wh.handleClientSessionAnswers()
-	defer func() { <-wh.clientDone }()
-
-	w := wh.tuner.WatchTracks(wh.handleTrackUpdate)
-	defer func() {
-		w.Cancel()
-		w.Wait()
+	wh.wg.Add(1)
+	go func() {
+		defer wh.wg.Done()
+		wh.handleClientSessionAnswers()
 	}()
 
-	return <-wh.err
+	wh.watch = wh.tuner.WatchTracks(wh.handleTrackUpdate)
+	defer wh.watch.Cancel()
+
+	err = <-wh.shutdownErr
+	return
 }
 
 func (wh *webrtcHandler) handleClientSessionAnswers() {
-	defer close(wh.clientDone)
 	for {
 		_, r, err := wh.conn.NextReader()
 		if err != nil {
@@ -174,9 +180,14 @@ func (wh *webrtcHandler) addTracksWithExistingTransceivers(ts tuner.Tracks) erro
 
 func (wh *webrtcHandler) shutdown(err error) {
 	select {
-	case wh.err <- err:
+	case wh.shutdownErr <- err:
 	default:
 	}
+}
+
+func (wh *webrtcHandler) waitForCleanup() {
+	wh.watch.Wait()
+	wh.wg.Wait()
 }
 
 func (wh *webrtcHandler) logf(format string, v ...interface{}) {
