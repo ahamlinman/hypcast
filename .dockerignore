@@ -1,1 +1,4 @@
-client/node_modules
+/.git
+/client/build
+/client/node_modules
+/hypcast-server
