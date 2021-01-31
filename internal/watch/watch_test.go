@@ -3,6 +3,7 @@ package watch
 import (
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -355,4 +356,47 @@ func assertBlocked(t *testing.T, ch chan struct{}) {
 		t.Fatal("progress was not blocked")
 	default:
 	}
+}
+
+func BenchmarkSet1Watcher(b *testing.B) {
+	benchmarkSetWithWatchers(b, 1)
+}
+
+func BenchmarkSet10Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 10)
+}
+
+func BenchmarkSet100Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 100)
+}
+
+func benchmarkSetWithWatchers(b *testing.B, nWatchers int) {
+	var (
+		n        uint64
+		v        = NewValue(uint64(0))
+		watchers = make([]*Watch, nWatchers)
+	)
+
+	for i := 0; i < nWatchers; i++ {
+		var sum uint64
+		watchers[i] = v.Watch(func(x interface{}) {
+			sum += x.(uint64)
+		})
+	}
+
+	b.Cleanup(func() {
+		for _, w := range watchers {
+			w.Cancel()
+			w.Wait()
+		}
+	})
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			next := atomic.AddUint64(&n, 1)
+			v.Set(next)
+		}
+	})
+
 }
