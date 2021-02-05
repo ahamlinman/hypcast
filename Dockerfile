@@ -16,7 +16,7 @@ RUN \
   --mount=type=cache,id=hypcast.go-build,target=/root/.cache/go-build,from=golang,source=/root/.cache/go-build \
   cd /mnt/hypcast && \
   go build -v \
-    -trimpath -ldflags='-s -w' \
+    -ldflags='-s -w' \
     -o /hypcast-server \
     ./cmd/hypcast-server
 
