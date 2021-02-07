@@ -11,6 +11,8 @@ void hypcast_define_sink(GstElement* pipeline, char* sink_name, HypcastSinkRef* 
 }
 
 GstFlowReturn hypcast_sink_sample(GstElement* object, gpointer user_data) {
+  HypcastSinkRef* sink_ref = (HypcastSinkRef*) user_data;
+
   GstSample* sample = NULL;
   g_signal_emit_by_name(object, "pull-sample", &sample);
   if (sample == NULL) {
@@ -23,14 +25,8 @@ GstFlowReturn hypcast_sink_sample(GstElement* object, gpointer user_data) {
     return GST_FLOW_OK;
   }
 
-  gpointer copy = NULL;
-  gsize copy_size = 0;
-  gst_buffer_extract_dup(buffer, 0, gst_buffer_get_size(buffer), &copy, &copy_size);
+  hypcastGlobalSink(sink_ref, buffer, gst_buffer_get_size(buffer));
 
-  HypcastSinkRef* sink_ref = (HypcastSinkRef*) user_data;
-  hypcastGlobalSink(sink_ref, copy, copy_size, GST_BUFFER_DURATION(buffer));
-
-  free(copy);
   gst_sample_unref(sample);
   return GST_FLOW_OK;
 }

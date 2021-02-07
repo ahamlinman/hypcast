@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	"unsafe"
 )
 
 // Signal Handling and the Global Pipeline Map
@@ -82,11 +81,11 @@ func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
 	p.sinks[sinkType] = sink
 }
 
-// hypcastGlobalSink is called by GStreamer to pass data from the encoding
-// pipeline into Go handler functions. See gst.c for details.
+// GStreamer calls hypcastGlobalSink to pass data from the encoding pipeline
+// into Go handler functions. See gst.c for details.
 //
 //export hypcastGlobalSink
-func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buf unsafe.Pointer, bufLen C.int, durNs C.int) {
+func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buffer *C.GstBuffer, size C.gsize) {
 	sinkType := SinkType(sinkRef.sink_type)
 	if sinkType <= sinkTypeStart || sinkType >= sinkTypeEnd {
 		panic(fmt.Errorf("invalid sink type ID %d", sinkType))
@@ -102,11 +101,10 @@ func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buf unsafe.Pointer, bufLen C.i
 		panic("attempted to sink to unregistered sink type")
 	}
 
-	var (
-		buffer   = C.GoBytes(buf, bufLen)
-		duration = time.Duration(durNs)
-	)
-	sinkFn(buffer, duration)
+	const offset = 0
+	data := make([]byte, size)
+	extracted := C.gst_buffer_extract(buffer, offset, C.gpointer(&data[0]), size)
+	sinkFn(data[:extracted], time.Duration(buffer.duration))
 }
 
 type globalPipelineID C.uint

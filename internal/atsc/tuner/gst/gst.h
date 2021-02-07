@@ -16,7 +16,7 @@ typedef struct HypcastSinkRef {
   unsigned int sink_type;
 } HypcastSinkRef;
 
-extern void hypcastGlobalSink(HypcastSinkRef*, void*, int, int);
+extern void hypcastGlobalSink(HypcastSinkRef*, GstBuffer*, gsize);
 
 void hypcast_define_sink(GstElement*, char*, HypcastSinkRef*);
 GstFlowReturn hypcast_sink_sample(GstElement*, gpointer);
