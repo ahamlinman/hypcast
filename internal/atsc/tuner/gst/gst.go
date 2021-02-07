@@ -28,7 +28,7 @@ func init() {
 type Pipeline struct {
 	gstPipeline *C.GstElement
 
-	globalID globalPipelineID
+	pid C.HypcastPID
 
 	sinks    [sinkTypeEnd]Sink
 	sinkRefs [sinkTypeEnd]*C.HypcastSinkRef
@@ -57,7 +57,7 @@ func NewPipeline(channel atsc.Channel) (*Pipeline, error) {
 	C.gst_object_ref_sink(C.gpointer(gstPipeline))
 
 	pipeline := &Pipeline{gstPipeline: gstPipeline}
-	registerGlobalPipeline(pipeline)
+	registerPipeline(pipeline)
 	return pipeline, nil
 }
 
@@ -158,7 +158,7 @@ func (p *Pipeline) Stop() error {
 // associated with it.
 func (p *Pipeline) Close() error {
 	p.Stop()
-	unregisterGlobalPipeline(p)
+	unregisterPipeline(p)
 
 	// The behavior of multiple calls to Close is undefined, however it definitely
 	// should not corrupt the C heap with double-free errors. To ensure this:

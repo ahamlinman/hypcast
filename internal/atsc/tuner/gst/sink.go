@@ -28,22 +28,22 @@ import (
 // Writes to the map are extremely rare compared to reads. Profiling proves the
 // impact of the read lock to be negligible.)
 
-// Sink is a type for functions that receive stream data from a Pipeline.
+// Sink is a type for functions that receive data streams from a Pipeline.
 type Sink func([]byte, time.Duration)
 
-// SinkType represents the data streams available to a Sink.
-type SinkType int
+// SinkType represents the various data streams that can be sent to a Sink.
+type SinkType uint
 
 const (
-	sinkTypeStart SinkType = iota - 1
-
 	// SinkTypeRaw represents the raw MPEG-TS stream produced by the tuner,
 	// without demuxing or filtering. Program and channel information can be
 	// extracted from this stream with an appropriate demuxer and parser.
-	SinkTypeRaw
+	SinkTypeRaw SinkType = iota
+
 	// SinkTypeVideo represents the H.264-encoded video stream, using the
 	// Constrained Baseline profile to meet WebRTC requirements.
 	SinkTypeVideo
+
 	// SinkTypeAudio represents the Opus-encoded audio stream.
 	SinkTypeAudio
 
@@ -71,8 +71,8 @@ func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
 
 	if p.sinkRefs[sinkType] == nil {
 		sinkRef := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
-		sinkRef.global_pipeline_id = C.uint(p.globalID)
-		sinkRef.sink_type = C.uint(sinkType)
+		sinkRef.pid = p.pid
+		sinkRef.sink_type = C.HypcastSinkType(sinkType)
 		p.sinkRefs[sinkType] = sinkRef
 
 		C.hypcast_define_sink(p.gstPipeline, sinkNames[sinkType], sinkRef)
@@ -87,11 +87,11 @@ func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
 //export hypcastGlobalSink
 func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buffer *C.GstBuffer, size C.gsize) {
 	sinkType := SinkType(sinkRef.sink_type)
-	if sinkType <= sinkTypeStart || sinkType >= sinkTypeEnd {
-		panic(fmt.Errorf("invalid sink type ID %d", sinkType))
+	if sinkType >= sinkTypeEnd {
+		panic(fmt.Errorf("invalid sink type %d", sinkType))
 	}
 
-	pipeline := getGlobalPipeline(globalPipelineID(sinkRef.global_pipeline_id))
+	pipeline := getPipeline(sinkRef.pid)
 	if pipeline == nil {
 		panic("attempted to sink to nonexistent pipeline")
 	}
@@ -107,45 +107,43 @@ func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buffer *C.GstBuffer, size C.gs
 	sinkFn(data[:extracted], time.Duration(buffer.duration))
 }
 
-type globalPipelineID C.uint
-
 var (
-	globalPipelineLock   sync.RWMutex
-	nextGlobalPipelineID globalPipelineID = 0
-	globalPipelineMap                     = make(map[globalPipelineID]*Pipeline)
+	pipelineLock sync.RWMutex
+	nextPID      C.HypcastPID = 0
+	pipelines                 = make(map[C.HypcastPID]*Pipeline)
 )
 
-func registerGlobalPipeline(p *Pipeline) {
-	if p.globalID != 0 {
-		panic("attempted to reregister global pipeline")
+func registerPipeline(p *Pipeline) {
+	if p.pid != 0 {
+		panic("duplicate pipeline registration")
 	}
 
-	globalPipelineLock.Lock()
-	defer globalPipelineLock.Unlock()
+	pipelineLock.Lock()
+	defer pipelineLock.Unlock()
 
-	nextGlobalPipelineID++
-	if _, ok := globalPipelineMap[nextGlobalPipelineID]; ok {
+	nextPID++
+	if _, ok := pipelines[nextPID]; ok {
 		// If you created a new pipeline every second and never destroyed any of
 		// them, even with a 32-bit uint it would take about 136 years to get here.
 		// So if we get here we must have seriously corrupted something.
-		panic("global pipeline ID collision")
+		panic("HypcastPID collision")
 	}
 
-	p.globalID = nextGlobalPipelineID
-	globalPipelineMap[p.globalID] = p
+	p.pid = nextPID
+	pipelines[p.pid] = p
 }
 
-func unregisterGlobalPipeline(p *Pipeline) {
-	globalPipelineLock.Lock()
-	defer globalPipelineLock.Unlock()
+func unregisterPipeline(p *Pipeline) {
+	pipelineLock.Lock()
+	defer pipelineLock.Unlock()
 
-	delete(globalPipelineMap, p.globalID)
-	p.globalID = 0
+	delete(pipelines, p.pid)
+	p.pid = 0
 }
 
-func getGlobalPipeline(id globalPipelineID) *Pipeline {
-	globalPipelineLock.RLock()
-	defer globalPipelineLock.RUnlock()
+func getPipeline(id C.HypcastPID) *Pipeline {
+	pipelineLock.RLock()
+	defer pipelineLock.RUnlock()
 
-	return globalPipelineMap[id]
+	return pipelines[id]
 }

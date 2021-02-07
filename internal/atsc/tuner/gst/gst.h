@@ -11,9 +11,12 @@ extern const char * const HYPCAST_SINK_NAME_RAW;
 extern const char * const HYPCAST_SINK_NAME_VIDEO;
 extern const char * const HYPCAST_SINK_NAME_AUDIO;
 
+typedef unsigned int HypcastPID;
+typedef unsigned int HypcastSinkType;
+
 typedef struct HypcastSinkRef {
-  unsigned int global_pipeline_id;
-  unsigned int sink_type;
+  HypcastPID pid;
+  HypcastSinkType sink_type;
 } HypcastSinkRef;
 
 extern void hypcastGlobalSink(HypcastSinkRef *, GstBuffer *, gsize);
