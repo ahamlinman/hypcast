@@ -81,30 +81,51 @@ func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
 	p.sinks[sinkType] = sink
 }
 
-// GStreamer calls hypcastGlobalSink to pass data from the encoding pipeline
+// GStreamer calls hypcastSinkSample to pass data from the encoding pipeline
 // into Go handler functions. See gst.c for details.
 //
-//export hypcastGlobalSink
-func hypcastGlobalSink(sinkRef *C.HypcastSinkRef, buffer *C.GstBuffer, size C.gsize) {
-	sinkType := SinkType(sinkRef.sink_type)
-	if sinkType >= sinkTypeEnd {
-		panic(fmt.Errorf("invalid sink type %d", sinkType))
+//export hypcastSinkSample
+func hypcastSinkSample(sinkRef *C.HypcastSinkRef, sample *C.GstSample) C.GstFlowReturn {
+	buffer := C.gst_sample_get_buffer(sample)
+	if buffer == nil {
+		C.gst_sample_unref(sample)
+		return C.GST_FLOW_OK
 	}
 
+	const offset = 0
+	var (
+		size = C.gst_buffer_get_size(buffer)
+		data = make([]byte, size)
+	)
+	extracted := C.gst_buffer_extract(buffer, offset, C.gpointer(&data[0]), size)
+	data = data[:extracted]
+
+	duration := time.Duration(buffer.duration)
+
+	C.gst_sample_unref(sample) // Invalidates sample and buffer
+
+	sink := getSink(sinkRef)
+	sink(data, duration)
+	return C.GST_FLOW_OK
+}
+
+func getSink(sinkRef *C.HypcastSinkRef) Sink {
 	pipeline := getPipeline(sinkRef.pid)
 	if pipeline == nil {
 		panic("attempted to sink to nonexistent pipeline")
 	}
 
-	sinkFn := pipeline.sinks[sinkType]
-	if sinkFn == nil {
+	sinkType := SinkType(sinkRef.sink_type)
+	if sinkType >= sinkTypeEnd {
+		panic(fmt.Errorf("invalid sink type %d", sinkType))
+	}
+
+	sink := pipeline.sinks[sinkType]
+	if sink == nil {
 		panic("attempted to sink to unregistered sink type")
 	}
 
-	const offset = 0
-	data := make([]byte, size)
-	extracted := C.gst_buffer_extract(buffer, offset, C.gpointer(&data[0]), size)
-	sinkFn(data[:extracted], time.Duration(buffer.duration))
+	return sink
 }
 
 var (

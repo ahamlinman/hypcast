@@ -19,14 +19,5 @@ GstFlowReturn hypcast_sink_sample(GstElement *object, gpointer user_data) {
     return GST_FLOW_OK;
   }
 
-  GstBuffer *buffer = NULL;
-  buffer = gst_sample_get_buffer(sample);
-  if (buffer == NULL) {
-    return GST_FLOW_OK;
-  }
-
-  hypcastGlobalSink(sink_ref, buffer, gst_buffer_get_size(buffer));
-
-  gst_sample_unref(sample);
-  return GST_FLOW_OK;
+  return hypcastSinkSample(sink_ref, sample); // Transfers ownership of sample
 }
