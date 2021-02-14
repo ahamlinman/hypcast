@@ -7,10 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pion/randutil"
-	"github.com/pion/rtp/codecs"
-	"github.com/pion/webrtc/v2"
-	"github.com/pion/webrtc/v2/pkg/media"
+	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v3/pkg/media"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner/gst"
@@ -41,8 +39,8 @@ type Status struct {
 // Tracks represents the current set of video and audio tracks for use by WebRTC
 // clients.
 type Tracks struct {
-	Video *webrtc.Track
-	Audio *webrtc.Track
+	Video webrtc.TrackLocal
+	Audio webrtc.TrackLocal
 }
 
 // Tuner represents an ATSC tuner whose video and audio signals are encoded for
@@ -184,59 +182,53 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 	return err
 }
 
-const (
-	videoClockRate = 90_000
-	audioClockRate = 48_000
-
-	// All of this is described by https://tools.ietf.org/html/rfc6184.
-	//
-	// profile-level-id in particular is described in section 8.1 of the RFC. The
-	// first 2 octets together indicate the Constrained Baseline profile (42h to
-	// specify the Baseline profile, e0h to specify constraint set 1). The third
-	// octet (28h = 40) specifies level 4.0 (the level number times 10), the
-	// lowest to support 1920x1080 video per
-	// https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
-	//
-	// This needs to match up with the pipeline definition in the gst package.
-	videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
-)
+// fmtp is described by https://tools.ietf.org/html/rfc6184.
+//
+// profile-level-id in particular is described in section 8.1 of the RFC. The
+// first 2 octets together indicate the Constrained Baseline profile (42h to
+// specify the Baseline profile, e0h to specify constraint set 1). The third
+// octet (28h = 40) specifies level 4.0 (the level number times 10), the lowest
+// to support 1920x1080 video per
+// https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
+//
+// This needs to match up with the pipeline definition in the gst package.
+const videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
 
 var (
-	// VideoCodec represents the RTP codec settings for the video signal produced
-	// by the tuner.
-	VideoCodec = webrtc.NewRTPCodec(
-		webrtc.RTPCodecTypeVideo, webrtc.H264, videoClockRate, 0, videoCodecFMTP,
-		webrtc.DefaultPayloadTypeH264, &codecs.H264Payloader{},
-	)
-	// AudioCodec represents the RTP codec settings for the audio signal produced
-	// by the tuner.
-	AudioCodec = webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, audioClockRate)
+	// VideoCodecCapability represents the RTP codec settings for the video signal
+	// produced by the tuner.
+	VideoCodecCapability = webrtc.RTPCodecCapability{
+		MimeType:    webrtc.MimeTypeH264,
+		ClockRate:   90_000,
+		SDPFmtpLine: videoCodecFMTP,
+	}
 
-	ssrcGenerator = randutil.NewMathRandomGenerator()
+	// AudioCodecCapability represents the RTP codec settings for the audio signal
+	// produced by the tuner.
+	AudioCodecCapability = webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeOpus,
+		ClockRate: 48_000,
+		Channels:  2,
+	}
 )
 
-func (t *Tuner) createTrackPair() (video *webrtc.Track, audio *webrtc.Track, err error) {
+func (t *Tuner) createTrackPair() (video, audio *webrtc.TrackLocalStaticSample, err error) {
 	streamID := fmt.Sprintf("Tuner(%p)", t)
 
-	video, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeH264, ssrcGenerator.Uint32(), streamID, streamID, VideoCodec,
-	)
+	video, err = webrtc.NewTrackLocalStaticSample(VideoCodecCapability, streamID, streamID)
 	if err != nil {
 		return
 	}
 
-	audio, err = webrtc.NewTrack(
-		webrtc.DefaultPayloadTypeOpus, ssrcGenerator.Uint32(), streamID, streamID, AudioCodec,
-	)
+	audio, err = webrtc.NewTrackLocalStaticSample(AudioCodecCapability, streamID, streamID)
 	return
 }
 
-func createTrackSink(track *webrtc.Track) gst.Sink {
-	clockRate := int(track.Codec().ClockRate)
-	return gst.Sink(func(b []byte, d time.Duration) {
+func createTrackSink(track *webrtc.TrackLocalStaticSample) gst.Sink {
+	return gst.Sink(func(data []byte, duration time.Duration) {
 		track.WriteSample(media.Sample{
-			Data:    b,
-			Samples: media.NSamples(d, clockRate),
+			Data:     data,
+			Duration: duration,
 		})
 	})
 }
