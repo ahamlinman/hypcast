@@ -182,36 +182,32 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 	return err
 }
 
-const (
-	videoClockRate = 90_000
-	audioClockRate = 48_000
-
-	// All of this is described by https://tools.ietf.org/html/rfc6184.
-	//
-	// profile-level-id in particular is described in section 8.1 of the RFC. The
-	// first 2 octets together indicate the Constrained Baseline profile (42h to
-	// specify the Baseline profile, e0h to specify constraint set 1). The third
-	// octet (28h = 40) specifies level 4.0 (the level number times 10), the
-	// lowest to support 1920x1080 video per
-	// https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
-	//
-	// This needs to match up with the pipeline definition in the gst package.
-	videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
-
-	VideoPayloadType = 102
-	AudioPayloadType = 111
-)
+// fmtp is described by https://tools.ietf.org/html/rfc6184.
+//
+// profile-level-id in particular is described in section 8.1 of the RFC. The
+// first 2 octets together indicate the Constrained Baseline profile (42h to
+// specify the Baseline profile, e0h to specify constraint set 1). The third
+// octet (28h = 40) specifies level 4.0 (the level number times 10), the lowest
+// to support 1920x1080 video per
+// https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
+//
+// This needs to match up with the pipeline definition in the gst package.
+const videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
 
 var (
+	// VideoCodecCapability represents the RTP codec settings for the video signal
+	// produced by the tuner.
 	VideoCodecCapability = webrtc.RTPCodecCapability{
 		MimeType:    webrtc.MimeTypeH264,
-		ClockRate:   videoClockRate,
+		ClockRate:   90_000,
 		SDPFmtpLine: videoCodecFMTP,
 	}
 
+	// AudioCodecCapability represents the RTP codec settings for the audio signal
+	// produced by the tuner.
 	AudioCodecCapability = webrtc.RTPCodecCapability{
 		MimeType:  webrtc.MimeTypeOpus,
-		ClockRate: audioClockRate,
+		ClockRate: 48_000,
 		Channels:  2,
 	}
 )

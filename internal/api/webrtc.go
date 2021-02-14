@@ -16,24 +16,30 @@ import (
 var webrtcAPI *webrtc.API
 
 func init() {
-	var (
-		me  webrtc.MediaEngine
-		err error
+	// https://tools.ietf.org/html/rfc3551#section-3
+	//
+	// "This profile reserves payload type numbers in the range 96-127 exclusively
+	// for dynamic assignment."
+	const (
+		videoPayloadType = 96 + iota
+		audioPayloadType
 	)
 
-	err = me.RegisterCodec(webrtc.RTPCodecParameters{
+	var me webrtc.MediaEngine
+
+	videoParameters := webrtc.RTPCodecParameters{
+		PayloadType:        videoPayloadType,
 		RTPCodecCapability: tuner.VideoCodecCapability,
-		PayloadType:        tuner.VideoPayloadType,
-	}, webrtc.RTPCodecTypeVideo)
-	if err != nil {
+	}
+	if err := me.RegisterCodec(videoParameters, webrtc.RTPCodecTypeVideo); err != nil {
 		panic(err)
 	}
 
-	err = me.RegisterCodec(webrtc.RTPCodecParameters{
+	audioParameters := webrtc.RTPCodecParameters{
+		PayloadType:        audioPayloadType,
 		RTPCodecCapability: tuner.AudioCodecCapability,
-		PayloadType:        tuner.AudioPayloadType,
-	}, webrtc.RTPCodecTypeAudio)
-	if err != nil {
+	}
+	if err := me.RegisterCodec(audioParameters, webrtc.RTPCodecTypeAudio); err != nil {
 		panic(err)
 	}
 
