@@ -11,7 +11,7 @@ import (
 	"github.com/pion/webrtc/v3/pkg/media"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/atsc/tuner/gst"
+	"github.com/ahamlinman/hypcast/internal/gst"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
