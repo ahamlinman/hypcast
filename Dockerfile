@@ -22,7 +22,7 @@ RUN \
 
 # ---
 
-FROM --platform=$BUILDPLATFORM docker.io/library/node:14-alpine3.12 AS client-build
+FROM --platform=$BUILDPLATFORM docker.io/library/node:14-alpine3.13 AS client-build
 
 ENV BUILD_PATH=/build
 RUN \
