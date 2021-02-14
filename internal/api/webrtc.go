@@ -186,7 +186,9 @@ func (wh *webrtcHandler) shutdown(err error) {
 }
 
 func (wh *webrtcHandler) waitForCleanup() {
-	wh.watch.Wait()
+	if wh.watch != nil {
+		wh.watch.Wait()
+	}
 	wh.wg.Wait()
 }
 

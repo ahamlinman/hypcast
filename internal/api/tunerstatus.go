@@ -84,7 +84,9 @@ func (tsh *tunerStatusHandler) shutdown(err error) {
 }
 
 func (tsh *tunerStatusHandler) waitForCleanup() {
-	tsh.watch.Wait()
+	if tsh.watch != nil {
+		tsh.watch.Wait()
+	}
 	tsh.wg.Wait()
 }
 
