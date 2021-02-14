@@ -80,13 +80,6 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer wh.pc.Close()
 
-	// TODO: Don't try to negotiate with the client before we've defined video and
-	// audio transceivers. This is a hack to reproduce Pion WebRTC v2 behavior.
-	_, err = wh.pc.CreateDataChannel("unused", nil)
-	if err != nil {
-		return
-	}
-
 	wh.wg.Add(1)
 	go func() {
 		defer wh.wg.Done()
@@ -148,12 +141,19 @@ func (wh *webrtcHandler) replaceTracks(ts tuner.Tracks) error {
 }
 
 func (wh *webrtcHandler) renegotiateSession() error {
+	if !wh.hasTransceivers() {
+		// Skip negotiation until we've had a chance to properly define video and
+		// audio transceivers based on Tuner tracks.
+		return nil
+	}
+
 	sdp, err := wh.pc.CreateOffer(nil)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Trickle ICE
+	// TODO: Should probably implement trickle ICE, but since Hypcast doesn't
+	// implement STUN support it's not like ICE gathering takes much time.
 	gatherComplete := webrtc.GatheringCompletePromise(wh.pc)
 
 	if err := wh.pc.SetLocalDescription(sdp); err != nil {
@@ -175,11 +175,21 @@ func (wh *webrtcHandler) removeTracks() error {
 }
 
 func (wh *webrtcHandler) addTracks(ts tuner.Tracks) error {
-	if len(wh.pc.GetTransceivers()) == 0 {
-		return wh.addTracksWithNewTransceivers(ts)
+	if wh.hasTransceivers() {
+		return wh.addTracksWithExistingTransceivers(ts)
 	}
 
-	return wh.addTracksWithExistingTransceivers(ts)
+	return wh.addTracksWithNewTransceivers(ts)
+}
+
+func (wh *webrtcHandler) addTracksWithExistingTransceivers(ts tuner.Tracks) error {
+	if _, err := wh.pc.AddTrack(ts.Video); err != nil {
+		return err
+	}
+	if _, err := wh.pc.AddTrack(ts.Audio); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
@@ -196,14 +206,8 @@ func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
 	return nil
 }
 
-func (wh *webrtcHandler) addTracksWithExistingTransceivers(ts tuner.Tracks) error {
-	if _, err := wh.pc.AddTrack(ts.Video); err != nil {
-		return err
-	}
-	if _, err := wh.pc.AddTrack(ts.Audio); err != nil {
-		return err
-	}
-	return nil
+func (wh *webrtcHandler) hasTransceivers() bool {
+	return len(wh.pc.GetTransceivers()) > 0
 }
 
 func (wh *webrtcHandler) shutdown(err error) {
