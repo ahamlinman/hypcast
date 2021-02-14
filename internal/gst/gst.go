@@ -22,10 +22,10 @@ func init() {
 type Pipeline struct {
 	gstPipeline *C.GstElement
 
-	pid C.HypcastPID
+	pid C.uint
 
-	sinks    [sinkTypeEnd]Sink
-	sinkRefs [sinkTypeEnd]*C.HypcastSinkRef
+	sinkIdx map[string]int
+	sinks   []sinkDef
 }
 
 // NewPipeline creates a GStreamer pipeline based on the syntax used in the
@@ -45,7 +45,10 @@ func NewPipeline(description string) (*Pipeline, error) {
 	// https://developer.gnome.org/gobject/stable/gobject-The-Base-Object-Type.html#floating-ref
 	C.gst_object_ref_sink(C.gpointer(gstPipeline))
 
-	pipeline := &Pipeline{gstPipeline: gstPipeline}
+	pipeline := &Pipeline{
+		gstPipeline: gstPipeline,
+		sinkIdx:     make(map[string]int),
+	}
 	registerPipeline(pipeline)
 	return pipeline, nil
 }
@@ -86,10 +89,10 @@ func (p *Pipeline) Close() error {
 	// should not corrupt the C heap with double-free errors. To ensure this:
 	// check nil-ness before freeing, and nil after freeing.
 
-	for i, sinkRef := range p.sinkRefs {
-		if sinkRef != nil {
-			C.free(unsafe.Pointer(sinkRef))
-			p.sinkRefs[i] = nil
+	for _, sink := range p.sinks {
+		if sink.ref != nil {
+			C.free(unsafe.Pointer(sink.ref))
+			sink.ref = nil
 		}
 	}
 

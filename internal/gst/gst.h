@@ -7,21 +7,14 @@
 #include <glib.h>
 #include <gst/gst.h>
 
-extern const char * const HYPCAST_SINK_NAME_RAW;
-extern const char * const HYPCAST_SINK_NAME_VIDEO;
-extern const char * const HYPCAST_SINK_NAME_AUDIO;
-
-typedef unsigned int HypcastPID;
-typedef unsigned int HypcastSinkType;
-
 typedef struct HypcastSinkRef {
-  HypcastPID pid;
-  HypcastSinkType sink_type;
+  unsigned int pid;
+  unsigned int index;
 } HypcastSinkRef;
 
 extern GstFlowReturn hypcastSinkSample(HypcastSinkRef *, GstSample *);
 
-void hypcast_define_sink(GstElement *, char *, HypcastSinkRef *);
+void hypcast_connect_sink(GstElement *, HypcastSinkRef *);
 GstFlowReturn hypcast_sink_sample(GstElement *, gpointer);
 
 #endif

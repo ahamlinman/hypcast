@@ -153,8 +153,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return err
 	}
 
-	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(vt))
-	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(at))
+	t.pipeline.SetSink(sinkNameVideo, createTrackSink(vt))
+	t.pipeline.SetSink(sinkNameAudio, createTrackSink(at))
 
 	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
@@ -207,9 +207,14 @@ var pipelineModulations = map[atsc.Modulation]string{
 	atsc.ModulationQAM256: "qam-256",
 }
 
-// appsink elements and their names must match up with sink definitions in the
-// gst package. TODO: Refactor so names are defined only in this package.
-//
+// These match up with the names of appsink elements in the pipeline
+// description below.
+const (
+	sinkNameRaw   = "raw"
+	sinkNameVideo = "video"
+	sinkNameAudio = "audio"
+)
+
 // TODO:
 // https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
 // Without drop-allocation the pipeline stalls. I still don't *really*
