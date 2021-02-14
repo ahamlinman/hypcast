@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
-	"github.com/pion/webrtc/v2"
+	"github.com/pion/webrtc/v3"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 	"github.com/ahamlinman/hypcast/internal/watch"
@@ -16,11 +16,28 @@ import (
 var webrtcAPI *webrtc.API
 
 func init() {
-	var me webrtc.MediaEngine
-	me.RegisterCodec(tuner.VideoCodec)
-	me.RegisterCodec(tuner.AudioCodec)
+	var (
+		me  webrtc.MediaEngine
+		err error
+	)
 
-	webrtcAPI = webrtc.NewAPI(webrtc.WithMediaEngine(me))
+	err = me.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: tuner.VideoCodecCapability,
+		PayloadType:        tuner.VideoPayloadType,
+	}, webrtc.RTPCodecTypeVideo)
+	if err != nil {
+		panic(err)
+	}
+
+	err = me.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: tuner.AudioCodecCapability,
+		PayloadType:        tuner.AudioPayloadType,
+	}, webrtc.RTPCodecTypeAudio)
+	if err != nil {
+		panic(err)
+	}
+
+	webrtcAPI = webrtc.NewAPI(webrtc.WithMediaEngine(&me))
 }
 
 type webrtcHandler struct {
@@ -62,6 +79,13 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer wh.pc.Close()
+
+	// TODO: Don't try to negotiate with the client before we've defined video and
+	// audio transceivers. This is a hack to reproduce Pion WebRTC v2 behavior.
+	_, err = wh.pc.CreateDataChannel("unused", nil)
+	if err != nil {
+		return
+	}
 
 	wh.wg.Add(1)
 	go func() {
@@ -129,11 +153,15 @@ func (wh *webrtcHandler) renegotiateSession() error {
 		return err
 	}
 
+	// TODO: Trickle ICE
+	gatherComplete := webrtc.GatheringCompletePromise(wh.pc)
+
 	if err := wh.pc.SetLocalDescription(sdp); err != nil {
 		return err
 	}
 
-	msg := struct{ SDP webrtc.SessionDescription }{sdp}
+	<-gatherComplete
+	msg := struct{ SDP webrtc.SessionDescription }{*wh.pc.LocalDescription()}
 	return wh.conn.WriteJSON(msg)
 }
 
@@ -155,7 +183,7 @@ func (wh *webrtcHandler) addTracks(ts tuner.Tracks) error {
 }
 
 func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
-	init := webrtc.RtpTransceiverInit{
+	init := webrtc.RTPTransceiverInit{
 		Direction: webrtc.RTPTransceiverDirectionSendonly,
 	}
 
