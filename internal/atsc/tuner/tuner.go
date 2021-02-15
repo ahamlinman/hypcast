@@ -1,17 +1,19 @@
 package tuner
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/atsc/tuner/gst"
+	"github.com/ahamlinman/hypcast/internal/gst"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
@@ -141,7 +143,7 @@ func (t *Tuner) Tune(channelName string) (err error) {
 
 	t.destroyAnyRunningPipeline()
 
-	t.pipeline, err = gst.NewPipeline(channel)
+	t.pipeline, err = newPipeline(channel)
 	if err != nil {
 		return err
 	}
@@ -151,8 +153,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 		return err
 	}
 
-	t.pipeline.SetSink(gst.SinkTypeVideo, createTrackSink(vt))
-	t.pipeline.SetSink(gst.SinkTypeAudio, createTrackSink(at))
+	t.pipeline.SetSink(sinkNameVideo, createTrackSink(vt))
+	t.pipeline.SetSink(sinkNameAudio, createTrackSink(at))
 
 	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
@@ -171,6 +173,81 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	})
 	return nil
 }
+
+func newPipeline(channel atsc.Channel) (*gst.Pipeline, error) {
+	description, err := createPipelineDescription(channel)
+	if err != nil {
+		return nil, err
+	}
+	return gst.NewPipeline(description)
+}
+
+func createPipelineDescription(channel atsc.Channel) (string, error) {
+	var buf bytes.Buffer
+
+	err := pipelineDescriptionTemplate.Execute(&buf, struct {
+		Modulation string
+		Frequency  uint
+		PID        uint
+	}{
+		Modulation: pipelineModulations[channel.Modulation],
+		Frequency:  channel.Frequency,
+		PID:        channel.ProgramID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("building pipeline template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+var pipelineModulations = map[atsc.Modulation]string{
+	atsc.Modulation8VSB:   "8vsb",
+	atsc.ModulationQAM64:  "qam-64",
+	atsc.ModulationQAM256: "qam-256",
+}
+
+// These match up with the names of appsink elements in the pipeline
+// description below.
+const (
+	sinkNameRaw   = "raw"
+	sinkNameVideo = "video"
+	sinkNameAudio = "audio"
+)
+
+// TODO:
+// https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
+// Without drop-allocation the pipeline stalls. I still don't *really*
+// understand why.
+var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
+	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.Frequency}}
+	! tee name=dvbtee
+	! identity drop-allocation=true
+	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
+	! appsink name=raw max-buffers=32 drop=true
+
+	dvbtee.
+	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
+	! tsdemux name=demux program-number={{.PID}}
+
+	demux.
+	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! decodebin
+	! videoconvert
+	! deinterlace
+	! x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast
+	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
+	! appsink name=video max-buffers=32 drop=true
+
+	demux.
+	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! decodebin
+	! audioconvert
+	! audioresample
+	! audio/x-raw,rate=48000,channels=2
+	! opusenc bitrate=128000
+	! appsink name=audio max-buffers=32 drop=true
+`))
 
 func (t *Tuner) destroyAnyRunningPipeline() error {
 	if t.pipeline == nil {

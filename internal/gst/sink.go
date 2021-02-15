@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 // Signal Handling and the Global Pipeline Map
@@ -31,61 +32,60 @@ import (
 // Sink is a type for functions that receive data streams from a Pipeline.
 type Sink func([]byte, time.Duration)
 
-// SinkType represents the various data streams that can be sent to a Sink.
-type SinkType uint
-
-const (
-	// SinkTypeRaw represents the raw MPEG-TS stream produced by the tuner,
-	// without demuxing or filtering. Program and channel information can be
-	// extracted from this stream with an appropriate demuxer and parser.
-	SinkTypeRaw SinkType = iota
-
-	// SinkTypeVideo represents the H.264-encoded video stream, using the
-	// Constrained Baseline profile to meet WebRTC requirements.
-	SinkTypeVideo
-
-	// SinkTypeAudio represents the Opus-encoded audio stream.
-	SinkTypeAudio
-
-	sinkTypeEnd
-)
-
-// sinkNames matches the appsink element names defined in the pipeline template.
-var sinkNames = map[SinkType]*C.char{
-	SinkTypeRaw:   C.HYPCAST_SINK_NAME_RAW,
-	SinkTypeVideo: C.HYPCAST_SINK_NAME_VIDEO,
-	SinkTypeAudio: C.HYPCAST_SINK_NAME_AUDIO,
+type sinkDef struct {
+	fn  Sink
+	ref *C.HypcastSinkRef
 }
 
-// SetSink sets the Sink function for a particular data stream, as determined by
-// the SinkType.
+// SetSink associates fn with a named appsink element in the pipeline, causing
+// it to be continuously called with new samples while the pipeline is running.
 //
-// SetSink must only be called while the pipeline is stopped. The behavior of
-// setting a sink on a running pipeline is undefined. It is possible to replace
-// an existing sink, but not possible to "unset" a sink. SetSink will panic if
-// called with a nil sink function.
-func (p *Pipeline) SetSink(sinkType SinkType, sink Sink) {
-	if sink == nil {
-		panic("sink cannot be nil")
+// SetSink must only be called while the pipeline is stopped. It is possible to
+// replace the sink function for an element by calling SetSink again with the
+// same name and a new fn. It is not possible to "unset" a sink function for an
+// element.
+//
+// SetSink will panic if name does not correspond to the name of a defined
+// appsink, or if fn is nil.
+func (p *Pipeline) SetSink(name string, fn Sink) {
+	if fn == nil {
+		panic("attempted to set nil Sink function")
 	}
 
-	if p.sinkRefs[sinkType] == nil {
-		sinkRef := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
-		sinkRef.pid = p.pid
-		sinkRef.sink_type = C.HypcastSinkType(sinkType)
-		p.sinkRefs[sinkType] = sinkRef
-
-		C.hypcast_define_sink(p.gstPipeline, sinkNames[sinkType], sinkRef)
+	if i, ok := p.sinkIdx[name]; ok {
+		p.sinks[i].fn = fn
+		return
 	}
 
-	p.sinks[sinkType] = sink
+	index := len(p.sinks)
+
+	ref := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
+	ref.pid = p.pid
+	ref.index = C.uint(index)
+
+	p.sinkIdx[name] = index
+	p.sinks = append(p.sinks, sinkDef{fn: fn, ref: ref})
+
+	var (
+		pipelineBin = (*C.GstBin)(unsafe.Pointer(p.gstPipeline))
+		nameCString = C.CString(name)
+	)
+	defer C.free(unsafe.Pointer(nameCString))
+
+	element := C.gst_bin_get_by_name(pipelineBin, nameCString)
+	if element == nil {
+		panic(fmt.Errorf("unknown sink name %s", name))
+	}
+	defer C.gst_object_unref(C.gpointer(element))
+
+	C.hypcast_connect_sink(element, ref)
 }
 
 // GStreamer calls hypcastSinkSample to pass data from the encoding pipeline
 // into Go handler functions. See gst.c for details.
 //
 //export hypcastSinkSample
-func hypcastSinkSample(sinkRef *C.HypcastSinkRef, sample *C.GstSample) C.GstFlowReturn {
+func hypcastSinkSample(ref *C.HypcastSinkRef, sample *C.GstSample) C.GstFlowReturn {
 	buffer := C.gst_sample_get_buffer(sample)
 	if buffer == nil {
 		C.gst_sample_unref(sample)
@@ -104,34 +104,19 @@ func hypcastSinkSample(sinkRef *C.HypcastSinkRef, sample *C.GstSample) C.GstFlow
 
 	C.gst_sample_unref(sample) // Invalidates sample and buffer
 
-	sink := getSink(sinkRef)
+	var (
+		pipeline = getPipeline(ref.pid)
+		index    = int(ref.index)
+		sink     = pipeline.sinks[index].fn
+	)
 	sink(data, duration)
 	return C.GST_FLOW_OK
 }
 
-func getSink(sinkRef *C.HypcastSinkRef) Sink {
-	pipeline := getPipeline(sinkRef.pid)
-	if pipeline == nil {
-		panic("attempted to sink to nonexistent pipeline")
-	}
-
-	sinkType := SinkType(sinkRef.sink_type)
-	if sinkType >= sinkTypeEnd {
-		panic(fmt.Errorf("invalid sink type %d", sinkType))
-	}
-
-	sink := pipeline.sinks[sinkType]
-	if sink == nil {
-		panic("attempted to sink to unregistered sink type")
-	}
-
-	return sink
-}
-
 var (
 	pipelineLock sync.RWMutex
-	nextPID      C.HypcastPID = 0
-	pipelines                 = make(map[C.HypcastPID]*Pipeline)
+	nextPID      C.uint = 0
+	pipelines           = make(map[C.uint]*Pipeline)
 )
 
 func registerPipeline(p *Pipeline) {
@@ -147,7 +132,7 @@ func registerPipeline(p *Pipeline) {
 		// If you created a new pipeline every second and never destroyed any of
 		// them, even with a 32-bit uint it would take about 136 years to get here.
 		// So if we get here we must have seriously corrupted something.
-		panic("HypcastPID collision")
+		panic("global pipeline ID collision")
 	}
 
 	p.pid = nextPID
@@ -162,7 +147,7 @@ func unregisterPipeline(p *Pipeline) {
 	p.pid = 0
 }
 
-func getPipeline(id C.HypcastPID) *Pipeline {
+func getPipeline(id C.uint) *Pipeline {
 	pipelineLock.RLock()
 	defer pipelineLock.RUnlock()
 
