@@ -9,7 +9,7 @@
 #   discarded after the RUN finishes. Ensure that any final build output exists
 #   outside of that directory.
 
-FROM docker.io/library/golang:1.15-alpine3.13 AS golang
+FROM docker.io/library/golang:1.16-alpine3.13 AS golang
 FROM golang AS server-build
 
 RUN apk add --no-cache \
