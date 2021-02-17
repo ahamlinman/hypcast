@@ -1,7 +1,13 @@
 # syntax = docker.io/docker/dockerfile:1.2
 
-# NOTE: This Dockerfile requires BuildKit. When using `docker build`, set
-# DOCKER_BUILDKIT=1.
+# NOTES
+#
+# - This Dockerfile requires BuildKit. When using `docker build`, set
+#   DOCKER_BUILDKIT=1.
+#
+# - With `RUN --mount=type=bind,rw`, writes to the bind-mounted directory are
+#   discarded after the RUN finishes. Ensure that any final build output exists
+#   outside of that directory.
 
 FROM docker.io/library/golang:1.15-alpine3.13 AS golang
 FROM golang AS server-build
@@ -26,7 +32,7 @@ FROM --platform=$BUILDPLATFORM docker.io/library/node:14-alpine3.13 AS client-bu
 
 ENV BUILD_PATH=/build
 RUN \
-  --mount=type=bind,target=/mnt/hypcast \
+  --mount=type=bind,target=/mnt/hypcast,rw \
   --mount=type=cache,id=hypcast.node_modules,target=/mnt/hypcast/client/node_modules \
   --mount=type=cache,id=hypcast.yarn,target=/usr/local/share/.cache/yarn \
   cd /mnt/hypcast/client && \
