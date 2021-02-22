@@ -17,25 +17,32 @@ import (
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 )
 
-func main() {
-	var (
-		flagAddr = flag.String(
-			"addr", ":9200",
-			"Address for the HTTP server to listen on",
-		)
-		flagChannels = flag.String(
-			"channels", "/etc/hypcast/channels.conf",
-			"Path to the channels.conf file containing the list of available channels",
-		)
-		flagAssets = flag.String(
-			"assets", "",
-			"Path to static assets; if unset, static assets will not be served",
-		)
+var (
+	flagAddr     string
+	flagChannels string
+	flagAssets   string
+)
+
+func init() {
+	flag.StringVar(
+		&flagAddr, "addr", ":9200",
+		"Address for the HTTP server to listen on",
 	)
+	flag.StringVar(
+		&flagChannels, "channels", "/etc/hypcast/channels.conf",
+		"Path to the channels.conf file containing the list of available channels",
+	)
+	flag.StringVar(
+		&flagAssets, "assets", "",
+		"Path to static assets; if unset, static assets will not be served",
+	)
+}
+
+func main() {
 	flag.Parse()
 
-	log.Printf("Using channels from %s", *flagChannels)
-	channels, err := readChannelsConf(*flagChannels)
+	log.Printf("Using channels from %s", flagChannels)
+	channels, err := readChannelsConf(flagChannels)
 	if err != nil {
 		log.Fatalf("Unable to read channels.conf: %v", err)
 	}
@@ -43,14 +50,14 @@ func main() {
 	tuner := tuner.NewTuner(channels)
 
 	http.Handle("/api/", api.NewHandler(tuner))
-	if *flagAssets != "" {
-		log.Printf("Serving assets from %s", *flagAssets)
-		http.Handle("/", http.FileServer(assets.Dir(*flagAssets)))
+	if flagAssets != "" {
+		log.Printf("Serving assets from %s", flagAssets)
+		http.Handle("/", http.FileServer(assets.Dir(flagAssets)))
 	}
 
-	server := http.Server{Addr: *flagAddr}
+	server := http.Server{Addr: flagAddr}
 	go server.ListenAndServe()
-	log.Printf("Started Hypcast server on %s", *flagAddr)
+	log.Printf("Started Hypcast server on %s", flagAddr)
 
 	signalCh := make(chan os.Signal)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
