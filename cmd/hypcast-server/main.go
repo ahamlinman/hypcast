@@ -48,11 +48,13 @@ func main() {
 	}
 
 	tuner := tuner.NewTuner(channels)
-
 	http.Handle("/api/", api.NewHandler(tuner))
+
 	if flagAssets != "" {
 		log.Printf("Serving assets from %s", flagAssets)
-		http.Handle("/", http.FileServer(assets.Dir(flagAssets)))
+		http.Handle("/", http.FileServer(
+			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
+		))
 	}
 
 	server := http.Server{Addr: flagAddr}
