@@ -1,4 +1,5 @@
 /.vscode
+/compile_flags.txt
 /hypcast-server
 
 __debug_bin
