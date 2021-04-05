@@ -301,8 +301,8 @@ func (t *Tuner) createTrackPair() (video, audio *webrtc.TrackLocalStaticSample, 
 	return
 }
 
-func createTrackSink(track *webrtc.TrackLocalStaticSample) gst.Sink {
-	return gst.Sink(func(data []byte, duration time.Duration) {
+func createTrackSink(track *webrtc.TrackLocalStaticSample) gst.SinkFunc {
+	return gst.SinkFunc(func(data []byte, duration time.Duration) {
 		track.WriteSample(media.Sample{
 			Data:     data,
 			Duration: duration,

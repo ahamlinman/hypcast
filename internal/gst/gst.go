@@ -10,11 +10,23 @@ package gst
 import "C"
 import (
 	"errors"
+	"fmt"
+	"sync"
+	"time"
 	"unsafe"
 )
 
 func init() {
 	C.gst_init(nil, nil)
+}
+
+// SinkFunc is a type for functions that receive data from the appsink elements
+// of a Pipeline.
+type SinkFunc func([]byte, time.Duration)
+
+type sinkDef struct {
+	fn  SinkFunc
+	ref *C.HypcastSinkRef
 }
 
 // Pipeline represents a GStreamer pipeline that can provide sample data to Go
@@ -24,8 +36,8 @@ type Pipeline struct {
 
 	pid C.uint
 
-	sinkIdx map[string]int
-	sinks   []sinkDef
+	sinkIndexByName map[string]int
+	sinks           []sinkDef
 }
 
 // NewPipeline creates a GStreamer pipeline based on the syntax used in the
@@ -45,15 +57,16 @@ func NewPipeline(description string) (*Pipeline, error) {
 	// https://developer.gnome.org/gobject/stable/gobject-The-Base-Object-Type.html#floating-ref
 	C.gst_object_ref_sink(C.gpointer(gstPipeline))
 
-	pipeline := &Pipeline{
-		gstPipeline: gstPipeline,
-		sinkIdx:     make(map[string]int),
+	p := &Pipeline{
+		gstPipeline:     gstPipeline,
+		sinkIndexByName: make(map[string]int),
 	}
-	registerPipeline(pipeline)
-	return pipeline, nil
+	p.registerForGlobalAccess()
+	return p, nil
 }
 
-// Start sets the pipeline to the GStreamer PLAYING state.
+// Start attempts to set the GStreamer pipeline to the PLAYING state, in which
+// all elements are processing data and sinks are receiving output.
 func (p *Pipeline) Start() error {
 	if p.gstPipeline == nil {
 		panic("pipeline not initialized")
@@ -66,7 +79,8 @@ func (p *Pipeline) Start() error {
 	return nil
 }
 
-// Stop sets the pipeline to the GStreamer NULL state.
+// Stop attempts to set the pipeline to the NULL state, in which no elements are
+// processing data and sinks are not receiving any output.
 func (p *Pipeline) Stop() error {
 	if p.gstPipeline == nil {
 		panic("pipeline not initialized")
@@ -83,7 +97,7 @@ func (p *Pipeline) Stop() error {
 // associated with it.
 func (p *Pipeline) Close() error {
 	p.Stop()
-	unregisterPipeline(p)
+	p.unregisterFromGlobalAccess()
 
 	// The behavior of multiple calls to Close is undefined, however it definitely
 	// should not corrupt the C heap with double-free errors. To ensure this:
@@ -102,4 +116,128 @@ func (p *Pipeline) Close() error {
 	}
 
 	return nil
+}
+
+// SetSink associates fn with a named appsink element in the pipeline, causing
+// it to be continuously called with new samples while the pipeline is running.
+//
+// SetSink must only be called while the pipeline is stopped. It is possible to
+// replace the sink function for an element by calling SetSink again with the
+// same name and a new fn. It is not possible to "unset" a sink function for an
+// element.
+//
+// SetSink will panic if name does not correspond to the name of a defined
+// appsink, or if fn is nil.
+func (p *Pipeline) SetSink(name string, fn SinkFunc) {
+	if fn == nil {
+		panic("attempted to set nil Sink function")
+	}
+
+	if i, ok := p.sinkIndexByName[name]; ok {
+		p.sinks[i].fn = fn
+		return
+	}
+
+	nextIndex := len(p.sinks)
+
+	ref := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
+	ref.pid = p.pid
+	ref.index = C.uint(nextIndex)
+
+	p.sinks = append(p.sinks, sinkDef{fn: fn, ref: ref})
+	p.sinkIndexByName[name] = nextIndex
+
+	var (
+		pipelineBin = (*C.GstBin)(unsafe.Pointer(p.gstPipeline))
+		nameCString = C.CString(name)
+	)
+	defer C.free(unsafe.Pointer(nameCString))
+
+	element := C.gst_bin_get_by_name(pipelineBin, nameCString)
+	if element == nil {
+		panic(fmt.Errorf("unknown sink name %s", name))
+	}
+	defer C.gst_object_unref(C.gpointer(element))
+
+	C.hypcast_connect_sink(element, ref)
+}
+
+// GStreamer calls hypcastSinkSample to pass data from the encoding pipeline
+// into Go handler functions. See gst.c for details.
+//
+//export hypcastSinkSample
+func hypcastSinkSample(ref *C.HypcastSinkRef, sample *C.GstSample) C.GstFlowReturn {
+	buffer := C.gst_sample_get_buffer(sample)
+	if buffer == nil {
+		C.gst_sample_unref(sample)
+		return C.GST_FLOW_OK
+	}
+
+	const offset = 0
+	var (
+		size = C.gst_buffer_get_size(buffer)
+		data = make([]byte, size)
+	)
+	extracted := C.gst_buffer_extract(buffer, offset, C.gpointer(&data[0]), size)
+	data = data[:extracted]
+
+	duration := time.Duration(buffer.duration)
+
+	C.gst_sample_unref(sample) // Invalidates sample and buffer
+
+	var (
+		pipeline = getPipelineByPID(ref.pid)
+		index    = int(ref.index)
+		sinkFn   = pipeline.sinks[index].fn
+	)
+	sinkFn(data, duration)
+	return C.GST_FLOW_OK
+}
+
+// cgo pointer passing rules prevent GStreamer from retaining direct references
+// to pipelines, so we implement a "big old map" with integer IDs:
+// https://medium.com/wallaroo-labs-engineering/adventures-with-cgo-part-1-the-pointering-19506aedf6b.
+//
+// Note that we don't quite have the performance concerns mentioned in the blog
+// post, as writes to this map are extremely rare compared to reads. Profiling
+// shows the impact of the read lock to be negligible.
+var (
+	pipelineLock sync.RWMutex
+	nextPID      C.uint = 0
+	pipelines           = make(map[C.uint]*Pipeline)
+)
+
+func getPipelineByPID(pid C.uint) *Pipeline {
+	pipelineLock.RLock()
+	defer pipelineLock.RUnlock()
+
+	return pipelines[pid]
+}
+
+func (p *Pipeline) registerForGlobalAccess() {
+	if p.pid != 0 {
+		return
+	}
+
+	pipelineLock.Lock()
+	defer pipelineLock.Unlock()
+
+	nextPID++
+	if _, ok := pipelines[nextPID]; ok {
+		// If you created a new pipeline every second and never destroyed any of
+		// them, even with a 32-bit uint it would take about 136 years to get here.
+		// So if we get here we are probably in a very bad state of some kind.
+		panic("global pipeline ID collision")
+	}
+
+	p.pid = nextPID
+	pipelines[p.pid] = p
+}
+
+func (p *Pipeline) unregisterFromGlobalAccess() {
+	pipelineLock.Lock()
+	defer pipelineLock.Unlock()
+
+	delete(pipelines, p.pid)
+	p.pid = 0
 }
