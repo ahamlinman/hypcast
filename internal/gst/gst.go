@@ -138,6 +138,12 @@ func (p *Pipeline) SetSink(name string, fn SinkFunc) {
 		return
 	}
 
+	element := p.getGstElementByName(name)
+	if element == nil {
+		panic(fmt.Errorf("unknown sink name %s", name))
+	}
+	defer C.gst_object_unref(C.gpointer(element))
+
 	nextIndex := len(p.sinks)
 
 	ref := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
@@ -147,19 +153,15 @@ func (p *Pipeline) SetSink(name string, fn SinkFunc) {
 	p.sinks = append(p.sinks, sinkDef{fn: fn, ref: ref})
 	p.sinkIndexByName[name] = nextIndex
 
-	var (
-		pipelineBin = (*C.GstBin)(unsafe.Pointer(p.gstPipeline))
-		nameCString = C.CString(name)
-	)
+	C.hypcast_connect_sink(element, ref)
+}
+
+func (p *Pipeline) getGstElementByName(name string) *C.GstElement {
+	nameCString := C.CString(name)
 	defer C.free(unsafe.Pointer(nameCString))
 
-	element := C.gst_bin_get_by_name(pipelineBin, nameCString)
-	if element == nil {
-		panic(fmt.Errorf("unknown sink name %s", name))
-	}
-	defer C.gst_object_unref(C.gpointer(element))
-
-	C.hypcast_connect_sink(element, ref)
+	pipelineBin := (*C.GstBin)(unsafe.Pointer(p.gstPipeline))
+	return C.gst_bin_get_by_name(pipelineBin, nameCString)
 }
 
 // GStreamer calls hypcastSinkSample to pass data from the encoding pipeline
