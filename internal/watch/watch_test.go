@@ -46,7 +46,7 @@ func TestValue(t *testing.T) {
 			sum += current
 
 			if sawFinal && current < nWrites {
-				t.Fatal("read a previous state after the expected final state")
+				t.Error("read a previous state after the expected final state")
 			}
 
 			if !sawFinal && current == nWrites {
@@ -260,7 +260,7 @@ func TestCancelFromHandler(t *testing.T) {
 
 	w := v.Watch(func(x interface{}) {
 		if canceled {
-			t.Fatal("handler called after cancellation")
+			t.Error("handler called after cancellation")
 		}
 
 		v.Set("bob")
