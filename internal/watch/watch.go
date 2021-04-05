@@ -101,11 +101,26 @@ type Watch struct {
 	done    chan struct{}    // Unbuffered
 }
 
+// run is meant to be a long-running goroutine that exists for the entire life
+// of the watch.
 func (w *Watch) run() {
 	defer close(w.done)
 	for next := range w.next {
-		w.handler(next)
+		w.dispatch(next)
 	}
+}
+
+// dispatch runs the handler in a new goroutine, insulating it from the main
+// loop. For example, if the main loop ran the handler directly and it called
+// runtime.Goexit, the watch would unexpectedly stop processing new values.
+func (w *Watch) dispatch(x interface{}) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		w.handler(x)
+	}()
+	wg.Wait()
 }
 
 func (w *Watch) update(x interface{}) {

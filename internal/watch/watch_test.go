@@ -211,6 +211,28 @@ func TestSetFromHandler(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
+func TestGoexitFromHandler(t *testing.T) {
+	// A specific test to ensure that exiting the goroutine running the watch does
+	// not terminate the watch itself.
+
+	var (
+		v      = NewValue("alice")
+		notify = make(chan string)
+	)
+
+	w := v.Watch(func(x interface{}) {
+		notify <- x.(string)
+		runtime.Goexit()
+	})
+	assertNextReceive(t, notify, "alice")
+
+	v.Set("bob")
+	assertNextReceive(t, notify, "bob")
+
+	w.Cancel()
+	assertWatchTerminates(t, w)
+}
+
 func TestCancelBlockedWatcher(t *testing.T) {
 	// A specific test for canceling a watch while it is handling a notification.
 
