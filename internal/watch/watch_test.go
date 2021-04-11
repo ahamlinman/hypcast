@@ -422,5 +422,4 @@ func benchmarkSetWithWatchers(b *testing.B, nWatchers int) {
 			v.Set(next)
 		}
 	})
-
 }
