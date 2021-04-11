@@ -45,10 +45,10 @@ func (v *Value) Set(x interface{}) {
 
 // Watch creates a new watch on the value of v.
 //
-// Each active watch executes up to one instance of handle at a time in a new
+// Each active watch executes up to one instance of handler at a time in a new
 // goroutine, first with an initial value of v upon creation of the watch, then
 // with subsequent values of v as it is updated by calls to Set. If updates are
-// made to v while an execution is in flight, handle will be called once more
+// made to v while an execution is in flight, handler will be called once more
 // with the latest value of v following its current execution. Intermediate
 // updates preceding the latest value will be dropped.
 //
@@ -56,17 +56,9 @@ func (v *Value) Set(x interface{}) {
 // associated watches have terminated. A watch is terminated after it has been
 // canceled by a call to Watch.Cancel, and any pending or in-flight handler
 // execution has finished.
-func (v *Value) Watch(handle func(x interface{})) *Watch {
-	w := &Watch{
-		handler:    handle,
-		pending:    make(chan interface{}, 1),
-		unregister: v.unregisterWatch,
-		done:       make(chan struct{}),
-	}
-
+func (v *Value) Watch(handler func(x interface{})) *Watch {
+	w := newWatch(handler, v.unregisterWatch)
 	v.updateAndRegisterWatch(w)
-	go w.run()
-
 	return w
 }
 
@@ -92,40 +84,49 @@ func (v *Value) unregisterWatch(w *Watch) {
 // Watch represents a single watch on a Value. See Value.Watch for details.
 type Watch struct {
 	handler    func(interface{})
-	pending    chan interface{} // Buffered with size 1
 	unregister func(*Watch)
-	done       chan struct{} // Unbuffered
+
+	pending chan interface{}
+	done    chan struct{}
 }
 
-// run should execute in its own goroutine for the life of a watch.
-func (w *Watch) run() {
-	defer close(w.done)
-	for next := range w.pending {
-		w.dispatch(next)
+func newWatch(handler func(interface{}), unregister func(*Watch)) *Watch {
+	w := &Watch{
+		handler:    handler,
+		unregister: unregister,
+		pending:    make(chan interface{}, 1),
+		done:       make(chan struct{}),
 	}
+	go w.run()
+	return w
 }
 
-// dispatch runs the handler in a new goroutine, insulating it from the main
-// loop. For example, if the main loop ran the handler directly and it called
-// runtime.Goexit, the watch would unexpectedly stop processing new values.
-func (w *Watch) dispatch(x interface{}) {
+func (w *Watch) run() {
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		w.handler(x)
-	}()
-	wg.Wait()
+	defer close(w.done)
+
+	for next := range w.pending {
+		wg.Add(1)
+
+		// Insulate the handler from the main loop, e.g. if it calls runtime.Goexit
+		// it should not terminate this loop and break the processing of new values.
+		go func(x interface{}) {
+			defer wg.Done()
+			w.handler(x)
+		}(next)
+
+		wg.Wait()
+	}
 }
 
 func (w *Watch) update(x interface{}) {
 	select {
-	// If there is a pending value and the run loop has not picked it up, replace
-	// it with the latest value.
+	// If the main loop hasn't picked up the previous value yet, drop it and
+	// replace it with the new one.
 	case <-w.pending:
 		w.pending <- x
 
-	// Otherwise, simply provide the next value to trigger a call to the handler.
+	// Otherwise, just put the new value into the slot.
 	case w.pending <- x:
 	}
 }
@@ -134,11 +135,11 @@ func (w *Watch) update(x interface{}) {
 // potentially after a pending or in-flight handler execution has finished.
 func (w *Watch) Cancel() {
 	w.unregister(w)
-	w.clearNext()
+	w.clearPending()
 	close(w.pending)
 }
 
-func (w *Watch) clearNext() {
+func (w *Watch) clearPending() {
 	select {
 	case <-w.pending:
 	default:
