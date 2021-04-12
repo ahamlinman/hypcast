@@ -21,25 +21,30 @@ type FileSystem struct {
 // Open implements http.FileSystem.
 func (fs FileSystem) Open(name string) (http.File, error) {
 	f, err := fs.FileSystem.Open(name)
-	switch {
-	case os.IsNotExist(err) && name != indexPage:
+	if os.IsNotExist(err) && name != indexPage {
 		// Treat this as a single page app route, and attempt to serve the root
 		// index page.
 		return fs.Open(indexPage)
-	case err != nil:
+	}
+	if err != nil {
 		return nil, err
 	}
 
 	if s, _ := f.Stat(); s.IsDir() {
-		// Determine whether the directory contains an index page. If so,
-		// http.FileServer will serve that instead of a directory listing, and we
-		// can return the directory entry that we opened. Otherwise, prevent
-		// http.FileServer from seeing the raw directory.
+		// If the directory contains an index page, http.FileServer will serve it
+		// instead of a directory listing, and we can return the directory entry
+		// that we opened. Otherwise, we should return an error to block clients
+		// from seeing the listing.
 		//
 		// This code is a combination of the following two strategies:
 		// - https://github.com/jordan-wright/unindexed/blob/master/unindexed.go
 		// - https://www.alexedwards.net/blog/disable-http-fileserver-directory-listings
-
+		//
+		// Note that even if we open an index page, we have to return the directory
+		// entry and not "short circuit" to return the file entry for the page
+		// itself. http.FileServer includes redirection logic around the index page
+		// (see its docs), which can send the client into an infinite redirect loop
+		// if we lie to it about what's really at the requested path.
 		index, err := fs.FileSystem.Open(filepath.Join(name, indexPage))
 		if err != nil {
 			f.Close()

@@ -96,7 +96,6 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer wh.watch.Cancel()
 
 	err = <-wh.shutdownErr
-	return
 }
 
 func (wh *webrtcHandler) handleClientSessionAnswers() {

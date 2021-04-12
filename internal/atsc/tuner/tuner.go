@@ -116,7 +116,8 @@ func (t *Tuner) Stop() error {
 	return err
 }
 
-// ErrChannelNotFound is returned when tuning to a channel that does not exist.
+// ErrChannelNotFound is returned when tuning to a channel whose name is not in
+// the tuner's channel list.
 var ErrChannelNotFound error = errors.New("channel not found")
 
 // Tune attempts to start a stream for the named channel.
@@ -186,13 +187,13 @@ func createPipelineDescription(channel atsc.Channel) (string, error) {
 	var buf bytes.Buffer
 
 	err := pipelineDescriptionTemplate.Execute(&buf, struct {
-		Modulation string
-		Frequency  uint
-		PID        uint
+		Modulation  string
+		FrequencyHz uint
+		ProgramID   uint
 	}{
-		Modulation: pipelineModulations[channel.Modulation],
-		Frequency:  channel.Frequency,
-		PID:        channel.ProgramID,
+		Modulation:  pipelineModulations[channel.Modulation],
+		FrequencyHz: channel.FrequencyHz,
+		ProgramID:   channel.ProgramID,
 	})
 	if err != nil {
 		return "", fmt.Errorf("building pipeline template: %w", err)
@@ -207,8 +208,6 @@ var pipelineModulations = map[atsc.Modulation]string{
 	atsc.ModulationQAM256: "qam-256",
 }
 
-// These match up with the names of appsink elements in the pipeline
-// description below.
 const (
 	sinkNameRaw   = "raw"
 	sinkNameVideo = "video"
@@ -220,7 +219,7 @@ const (
 // Without drop-allocation the pipeline stalls. I still don't *really*
 // understand why.
 var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
-	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.Frequency}}
+	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.FrequencyHz}}
 	! tee name=dvbtee
 	! identity drop-allocation=true
 	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
@@ -228,7 +227,7 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 
 	dvbtee.
 	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
-	! tsdemux name=demux program-number={{.PID}}
+	! tsdemux name=demux program-number={{.ProgramID}}
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
@@ -268,7 +267,7 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 // to support 1920x1080 video per
 // https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
 //
-// This needs to match up with the pipeline definition in the gst package.
+// This needs to match up with the GStreamer pipeline definition.
 const videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
 
 var (

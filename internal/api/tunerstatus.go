@@ -54,7 +54,6 @@ func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	defer tsh.watch.Cancel()
 
 	err = <-tsh.shutdownErr
-	return
 }
 
 func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
@@ -67,7 +66,9 @@ func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
 }
 
 func (tsh *tunerStatusHandler) drainClient() {
-	// see https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages
+	// Per https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages,
+	// we have to drain incoming messages ourselves even if we don't care about
+	// them.
 	for {
 		if _, _, err := tsh.conn.NextReader(); err != nil {
 			tsh.shutdown(err)
