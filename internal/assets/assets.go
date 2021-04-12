@@ -1,6 +1,7 @@
 package assets
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ type FileSystem struct {
 // Open implements http.FileSystem.
 func (fs FileSystem) Open(name string) (http.File, error) {
 	f, err := fs.FileSystem.Open(name)
-	if os.IsNotExist(err) && name != indexPage {
+	if errors.Is(err, os.ErrNotExist) && name != indexPage {
 		// Treat this as a single page app route, and attempt to serve the root
 		// index page.
 		return fs.Open(indexPage)
