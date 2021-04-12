@@ -30,6 +30,8 @@ type Channel struct {
 	ProgramID   uint
 }
 
+// String returns the representation of c in the azap-compatible format
+// described by ParseChannelsConf.
 func (c Channel) String() string {
 	return fmt.Sprintf(
 		"%s:%d:%s:%d:%d:%d",
@@ -37,9 +39,10 @@ func (c Channel) String() string {
 	)
 }
 
-// ParseChannelsConf parses Channels from an azap-compatible channels.conf file.
+// ParseChannelsConf parses Channels from an azap-compatible channels.conf file
+// read from r.
 //
-// Each line of the file defines a single channel, and is formatted in 6
+// Each line of the file defines a single channel, and is formatted as 6
 // colon-separated fields corresponding to the fields of Channel as follows:
 //
 //   Name:FrequencyHz:Modulation:VideoPID:AudioPID:ProgramID
