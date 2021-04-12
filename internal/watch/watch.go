@@ -9,13 +9,14 @@ import "sync"
 //
 // The zero value of a Value is valid and has the value nil.
 type Value struct {
+	// Invariant: Every Watch must receive one update call for every value of the
+	// Value from the time it is added to the watchers set to the time it is
+	// removed.
+	//
+	// mu protects this invariant, and prevents data races on value.
+	mu       sync.RWMutex
 	value    interface{}
 	watchers map[*Watch]struct{}
-
-	// mu prevents data races on value, and protects the invariant that every
-	// watch must receive one update for every value from the time it is added to
-	// the watchers set to the time it is removed.
-	mu sync.RWMutex
 }
 
 // NewValue creates a Value whose value is initially set to x.
@@ -120,13 +121,12 @@ func (w *Watch) run() {
 }
 
 func (w *Watch) update(x interface{}) {
+	// It's important that this call not block, so we assume w.pending is buffered
+	// and drop a pending update to free space if necessary.
 	select {
-	// If the main loop hasn't picked up the previous value yet, drop it and
-	// replace it with the new one.
 	case <-w.pending:
 		w.pending <- x
 
-	// Otherwise, just put the new value into the slot.
 	case w.pending <- x:
 	}
 }
