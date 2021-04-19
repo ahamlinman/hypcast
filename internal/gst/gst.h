@@ -1,8 +1,8 @@
 #ifndef HYPCAST_GST_H
 #define HYPCAST_GST_H
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <glib.h>
 #include <gst/gst.h>

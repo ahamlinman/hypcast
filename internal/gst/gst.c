@@ -6,7 +6,7 @@ void hypcast_connect_sink(GstElement *element, HypcastSinkRef *ref) {
 }
 
 GstFlowReturn hypcast_sink_sample(GstElement *object, gpointer user_data) {
-  HypcastSinkRef *sink_ref = (HypcastSinkRef *) user_data;
+  HypcastSinkRef *sink_ref = (HypcastSinkRef *)user_data;
 
   GstSample *sample = NULL;
   g_signal_emit_by_name(object, "pull-sample", &sample);
