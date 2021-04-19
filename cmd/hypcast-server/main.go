@@ -61,7 +61,7 @@ func main() {
 	go server.ListenAndServe()
 	log.Printf("Started Hypcast server on %s", flagAddr)
 
-	signalCh := make(chan os.Signal)
+	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 	<-signalCh
 
