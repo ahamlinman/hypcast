@@ -1,3 +1,5 @@
+// Package tuner implements an ATSC tuner that outputs WebRTC video and audio
+// tracks.
 package tuner
 
 import (

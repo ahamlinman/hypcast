@@ -1,3 +1,4 @@
+// Package api implements the Hypcast HTTP API.
 package api
 
 import (

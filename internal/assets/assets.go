@@ -1,3 +1,5 @@
+// Package assets provides special functionality for serving the Hypcast web
+// frontend.
 package assets
 
 import (
