@@ -26,9 +26,8 @@ RUN \
     -o /hypcast-server \
     ./cmd/hypcast-server
 
-# ---
 
-FROM --platform=$BUILDPLATFORM docker.io/library/node:14-alpine3.13 AS client-build
+FROM --platform=$BUILDPLATFORM docker.io/library/node:16-alpine3.13 AS client-build
 
 ENV BUILD_PATH=/build
 RUN \
@@ -39,7 +38,6 @@ RUN \
   yarn install --production --frozen-lockfile && \
   yarn build
 
-# ---
 
 FROM docker.io/library/alpine:3.13 AS target
 
