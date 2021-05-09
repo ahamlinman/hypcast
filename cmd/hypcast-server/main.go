@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ahamlinman/hypcast/client"
 	"github.com/ahamlinman/hypcast/internal/api"
 	"github.com/ahamlinman/hypcast/internal/assets"
 	"github.com/ahamlinman/hypcast/internal/atsc"
@@ -54,6 +55,11 @@ func main() {
 		log.Printf("Serving assets from %s", flagAssets)
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
+		))
+	} else if client.Build != nil {
+		log.Print("Serving embedded assets")
+		http.Handle("/", http.FileServer(
+			assets.FileSystem{FileSystem: http.FS(client.Build)},
 		))
 	}
 

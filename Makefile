@@ -1,5 +1,5 @@
 hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/build
-	go build -v ./cmd/hypcast-server
+	go build -v -tags embedclient ./cmd/hypcast-server
 
 client/build:
 	$(MAKE) -C client build
