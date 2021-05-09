@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"text/template"
 	"time"
@@ -189,13 +190,15 @@ func createPipelineDescription(channel atsc.Channel) (string, error) {
 	var buf bytes.Buffer
 
 	err := pipelineDescriptionTemplate.Execute(&buf, struct {
-		Modulation  string
-		FrequencyHz uint
-		ProgramID   uint
+		Modulation          string
+		FrequencyHz         uint
+		ProgramID           uint
+		VideoEncodeElements string
 	}{
-		Modulation:  pipelineModulations[channel.Modulation],
-		FrequencyHz: channel.FrequencyHz,
-		ProgramID:   channel.ProgramID,
+		Modulation:          pipelineModulations[channel.Modulation],
+		FrequencyHz:         channel.FrequencyHz,
+		ProgramID:           channel.ProgramID,
+		VideoEncodeElements: videoEncodeElements,
 	})
 	if err != nil {
 		return "", fmt.Errorf("building pipeline template: %w", err)
@@ -215,6 +218,20 @@ const (
 	sinkNameVideo = "video"
 	sinkNameAudio = "audio"
 )
+
+var videoEncodeElements = "x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast"
+
+func init() {
+	// HYPCAST_VIDEO_ENCODE_ELEMENTS is an UNSTABLE environment variable that
+	// overrides the default x264enc pipeline element. It can be used to add
+	// additional elements to the pipeline (chained with the standard "!" syntax),
+	// change x264 encoding parameters, or use a different H.264 encoder (e.g. a
+	// hardware encoder).
+	element, ok := os.LookupEnv("HYPCAST_VIDEO_ENCODE_ELEMENTS")
+	if ok {
+		videoEncodeElements = element
+	}
+}
 
 // TODO:
 // https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
@@ -236,7 +253,7 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	! decodebin
 	! videoconvert
 	! deinterlace
-	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
+	! {{.VideoEncodeElements}}
 	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
 	! appsink name=video max-buffers=32 drop=true
 
