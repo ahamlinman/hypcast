@@ -1,10 +1,13 @@
-hypcast-server: go.mod go.sum $(shell find . -name '*.go')
+hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/build
 	go build -v ./cmd/hypcast-server
+
+client/build:
+	$(MAKE) -C client build
+
+.PHONY: clean
 
 clean:
 	rm -f ./hypcast-server
-
-.PHONY: clean
 
 # Configure clangd to resolve dependencies for C files in the project.
 compile_flags.txt:
