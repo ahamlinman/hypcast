@@ -236,8 +236,8 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	! decodebin
 	! videoconvert
 	! deinterlace
-	! nvh264enc preset=low-latency-hq zerolatency=true rc-mode=cbr-ld-hq bitrate=9600 rc-lookahead=15 gop-size=60 spatial-aq=true
-	! video/x-h264,stream-format=byte-stream,profile=baseline
+	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
+	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
 	! appsink name=video max-buffers=32 drop=true
 
 	demux.
@@ -263,14 +263,14 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 // fmtp is described by https://tools.ietf.org/html/rfc6184.
 //
 // profile-level-id in particular is described in section 8.1 of the RFC. The
-// first 2 octets together indicate the Baseline profile (42h to specify the
-// Baseline profile, 00h as no constraint flags are set). The third octet (28h =
-// 40) specifies level 4.0 (the level number times 10), the lowest to support
-// 1920x1080 video per
+// first 2 octets together indicate the Constrained Baseline profile (42h to
+// specify the Baseline profile, e0h to specify constraint set 1). The third
+// octet (28h = 40) specifies level 4.0 (the level number times 10), the lowest
+// to support 1920x1080 video per
 // https://en.wikipedia.org/wiki/Advanced_Video_Coding#Levels.
 //
 // This needs to match up with the GStreamer pipeline definition.
-const videoCodecFMTP = "profile-level-id=420028;level-asymmetry-allowed=1;packetization-mode=1"
+const videoCodecFMTP = "profile-level-id=42e028;level-asymmetry-allowed=1;packetization-mode=1"
 
 var (
 	// VideoCodecCapability represents the RTP codec settings for the video signal
