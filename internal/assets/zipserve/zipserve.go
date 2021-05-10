@@ -5,6 +5,8 @@ import (
 	"archive/zip"
 	"io"
 	"net/http"
+	"path"
+	"strings"
 )
 
 // Handler serves assets from a ZIP file to HTTP clients.
@@ -35,6 +37,44 @@ func NewHandler(r io.ReaderAt, size int64) (*Handler, error) {
 
 // ServeHTTP implements http.Handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement
-	w.WriteHeader(http.StatusNoContent)
+	filePath := cleanPath(r.URL.Path)
+	file := h.getFileEntry(filePath)
+	if file == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// TODO: serve encoded versions
+
+	serveUnencoded(w, file)
+}
+
+func cleanPath(p string) string {
+	p = path.Clean(p)
+	p = strings.TrimPrefix(p, "/")
+	return p
+}
+
+func (h *Handler) getFileEntry(path string) *zip.File {
+	// TODO: more efficient file location
+	for _, file := range h.zr.File {
+		filePath := cleanPath(file.Name)
+		if path == filePath {
+			return file
+		}
+	}
+
+	return nil
+}
+
+func serveUnencoded(w http.ResponseWriter, file *zip.File) {
+	f, err := file.Open()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+
+	w.WriteHeader(http.StatusOK)
+	io.Copy(w, f)
 }
