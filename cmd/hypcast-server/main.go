@@ -48,7 +48,9 @@ func main() {
 		log.Fatalf("Unable to read channels.conf: %v", err)
 	}
 
-	tuner := tuner.NewTuner(channels)
+	vp := tuner.ParseVideoPipeline(os.Getenv("HYPCAST_VIDEO_PIPELINE"))
+	log.Printf("Using %s video pipeline", vp)
+	tuner := tuner.NewTuner(channels, vp)
 	http.Handle("/api/", api.NewHandler(tuner))
 
 	if flagAssets != "" {
