@@ -11,7 +11,9 @@ synchronized live stream, even as you change channels.
 - Hypcast is a personal project with a limited feature set that meets my
   specific needs. It is made available to the public in the event that it
   might be useful to others, however I provide no guarantees about
-  maintenance, functionality, or future compatibility.
+  maintenance, functionality, or backwards compatibility. For example, flags
+  and environment variables used to configure the server may break at any
+  time.
 - This is version 2 of Hypcast, a complete rewrite of the original project
   using a radically different implementation and providing a completely new
   user interface. The original version of Hypcast remains available in the
@@ -35,7 +37,8 @@ over-the-air channels within the United States:
 w_scan2 -f a -c us -X > channels.conf
 ```
 
-It is recommended that Hypcast be run using the container image published at
+If you're okay with a software-based transcoding pipeline, it's probably
+easiest to run Hypcast using the container image published at
 `ghcr.io/ahamlinman/hypcast:latest`, with the following configuration:
 
 - TV tuner devices passed through with `--device /dev/dvb`
@@ -45,6 +48,13 @@ It is recommended that Hypcast be run using the container image published at
 - Host networking enabled with `--net host`, to allow WebRTC connections to
   the server without NAT traversal (which Hypcast does not support); the
   `-addr` flag can configure the server port if necessary (default `:9200`)
+
+Alternatively, if you want to enable hardware accelerated video processing
+through [VA-API][vaapi] (which the container image does not yet support), you
+can install and configure GStreamer and gstreamer-vaapi on your own system,
+then build and run the Hypcast binary yourself with the environment variable
+`HYPCAST_VIDEO_PIPELINE=vaapi`. See the Makefile for details of how to build
+a Hypcast binary with embedded client assets for convenience.
 
 **Hypcast is not designed to be exposed to the Internet!** It is expected to
 run on a fast local network, or _perhaps_ over a private VPN. Allowing public
@@ -57,6 +67,7 @@ with relevant local laws).
 [linuxtv-atsc]: https://www.linuxtv.org/wiki/index.php/Hardware_device_information
 [linuxtv-scan]: https://www.linuxtv.org/wiki/index.php/Frequency_scan
 [w_scan2]: https://github.com/stefantalpalaru/w_scan2
+[vaapi]: https://01.org/linuxmedia/vaapi
 
 ## Potential Improvements
 
