@@ -47,6 +47,34 @@ type Tracks struct {
 	Audio webrtc.TrackLocal
 }
 
+// VideoPipeline controls which pipeline Hypcast uses to process video.
+type VideoPipeline string
+
+const (
+	// The default pipeline performs software-based video processing. It should
+	// work on a wide variety of machines with little to no additional
+	// configuration.
+	VideoPipelineDefault VideoPipeline = "default"
+
+	// The vaapi pipeline performs hardware accelerated video processing using the
+	// Video Acceleration API (VA-API). It is more performant than the default
+	// pipeline, but requires installation of gstreamer-vaapi plugins and may
+	// require additional configuration to select an appropriate device and
+	// driver. See GStreamer documentation for details.
+	VideoPipelineVAAPI VideoPipeline = "vaapi"
+)
+
+// ParseVideoPipeline selects a VideoPipeline by name. Unknown names will return
+// the default pipeline.
+func ParseVideoPipeline(name string) VideoPipeline {
+	switch {
+	case name == string(VideoPipelineVAAPI):
+		return VideoPipelineVAAPI
+	default:
+		return VideoPipelineDefault
+	}
+}
+
 // Tuner represents an ATSC tuner whose video and audio signals are encoded for
 // use by WebRTC clients, and whose consumers are notified of ongoing state
 // changes.
@@ -56,18 +84,21 @@ type Tuner struct {
 	channels   []atsc.Channel
 	channelMap map[string]atsc.Channel
 
-	pipeline *gst.Pipeline
-	status   *watch.Value
-	tracks   *watch.Value
+	videoPipeline VideoPipeline
+	pipeline      *gst.Pipeline
+
+	status *watch.Value
+	tracks *watch.Value
 }
 
 // NewTuner creates a new Tuner that can tune to any of the provided channels.
-func NewTuner(channels []atsc.Channel) *Tuner {
+func NewTuner(channels []atsc.Channel, videoPipeline VideoPipeline) *Tuner {
 	return &Tuner{
-		channels:   channels,
-		channelMap: makeChannelMap(channels),
-		status:     watch.NewValue(Status{}),
-		tracks:     watch.NewValue(Tracks{}),
+		channels:      channels,
+		channelMap:    makeChannelMap(channels),
+		videoPipeline: videoPipeline,
+		status:        watch.NewValue(Status{}),
+		tracks:        watch.NewValue(Tracks{}),
 	}
 }
 
@@ -146,7 +177,7 @@ func (t *Tuner) Tune(channelName string) (err error) {
 
 	t.destroyAnyRunningPipeline()
 
-	t.pipeline, err = newPipeline(channel)
+	t.pipeline, err = t.newPipeline(channel)
 	if err != nil {
 		return err
 	}
@@ -177,25 +208,27 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	return nil
 }
 
-func newPipeline(channel atsc.Channel) (*gst.Pipeline, error) {
-	description, err := createPipelineDescription(channel)
+func (t *Tuner) newPipeline(channel atsc.Channel) (*gst.Pipeline, error) {
+	description, err := t.createPipelineDescription(channel)
 	if err != nil {
 		return nil, err
 	}
 	return gst.NewPipeline(description)
 }
 
-func createPipelineDescription(channel atsc.Channel) (string, error) {
+func (t *Tuner) createPipelineDescription(channel atsc.Channel) (string, error) {
 	var buf bytes.Buffer
 
 	err := pipelineDescriptionTemplate.Execute(&buf, struct {
-		Modulation  string
-		FrequencyHz uint
-		ProgramID   uint
+		Modulation    string
+		FrequencyHz   uint
+		ProgramID     uint
+		VideoPipeline string
 	}{
-		Modulation:  pipelineModulations[channel.Modulation],
-		FrequencyHz: channel.FrequencyHz,
-		ProgramID:   channel.ProgramID,
+		Modulation:    pipelineModulations[channel.Modulation],
+		FrequencyHz:   channel.FrequencyHz,
+		ProgramID:     channel.ProgramID,
+		VideoPipeline: string(t.videoPipeline),
 	})
 	if err != nil {
 		return "", fmt.Errorf("building pipeline template: %w", err)
@@ -216,8 +249,7 @@ const (
 	sinkNameAudio = "audio"
 )
 
-// TODO:
-// https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
+// TODO: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
 // Without drop-allocation the pipeline stalls. I still don't *really*
 // understand why.
 var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
@@ -233,10 +265,17 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	{{- if eq .VideoPipeline "vaapi" }}
 	! video/mpeg,mpegversion=2
 	! vaapimpeg2dec
-	! vaapipostproc
+	! vaapipostproc deinterlace-mode=auto
 	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
+	{{- else }}
+	! decodebin
+	! videoconvert
+	! deinterlace
+	! x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast
+	{{- end }}
 	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
 	! appsink name=video max-buffers=32 drop=true
 
