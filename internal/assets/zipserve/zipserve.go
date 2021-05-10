@@ -3,12 +3,14 @@ package zipserve
 
 import (
 	"archive/zip"
+	"bufio"
 	"encoding/binary"
 	"io"
 	"log"
 	"mime"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -94,27 +96,63 @@ func (h *Handler) serveGzipEncoded(w http.ResponseWriter, file *zip.File) (handl
 	}
 
 	handled = true
+
+	const (
+		headerSize = 10
+		footerSize = 8
+	)
+	finalLength := headerSize + file.CompressedSize64 + footerSize
+
+	w.Header().Add("Content-Length", strconv.FormatUint(finalLength, 10))
 	w.Header().Add("Content-Encoding", "gzip")
 
-	// gzip header for DEFLATE compression
-	header := [10]byte{0: 0x1f, 1: 0x8b, 2: 0x08}
+	filePath := cleanPath(file.Name)
+	mimeType := mime.TypeByExtension(path.Ext(filePath))
+	if mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	} // otherwise, rely on http.ResponseWriter autodetecting the type from written data
+
+	bw := bufio.NewWriter(w)
+	defer bw.Flush()
+
+	// Generate the header for a gzip member with DEFLATE compression. See
+	// https://datatracker.ietf.org/doc/html/rfc1952 section 2.3.
+	const (
+		// IDentification 1 and 2; the gzip magic bytes
+		id1 = 0x1f
+		id2 = 0x8b
+		// Compression Method; 8 = "deflate"
+		cm = 8
+		// FLaGs; we don't bother with fields like name or comment
+		flg = 0
+		// eXtra FLags; for deflate this indicates whether the compressor used its
+		// fastest or slowest algorithm, which ZIP doesn't tell us
+		xfl = 0
+		// Operating System; 255 = "unknown"
+		os = 255
+	)
+	header := [headerSize]byte{0: id1, 1: id2, 2: cm, 3: flg, 8: xfl, 9: os}
 	binary.LittleEndian.PutUint32(header[4:8], uint32(file.Modified.Unix()))
-	header[9] = 0xff // Unknown OS
-	_, err = w.Write(header[:])
+	_, err = bw.Write(header[:])
 	if err != nil {
 		return
 	}
 
+	// The actual compressed blocks, stolen straight out of the ZIP file.
 	sr := io.NewSectionReader(h.r, offset, int64(file.CompressedSize64))
-	_, err = io.Copy(w, sr)
+	_, err = io.Copy(bw, sr)
 	if err != nil {
 		return
 	}
 
-	var footer [8]byte
+	// Generate the footer, also section 2.3 of the RFC.
+	var footer [footerSize]byte
+	// CRC-32, no special magic here.
 	binary.LittleEndian.PutUint32(footer[:4], file.CRC32)
+	// "Size of the original (uncompressed) input data modulo 2^32." So, I guess
+	// if we serve a file more than 4 GiB we're still cool here.
 	binary.LittleEndian.PutUint32(footer[4:], uint32(file.UncompressedSize64))
-	w.Write(footer[:])
+	bw.Write(footer[:])
 
 	return
 }
@@ -127,9 +165,13 @@ func serveUnencoded(w http.ResponseWriter, file *zip.File) {
 	}
 	defer f.Close()
 
+	w.Header().Set("Content-Length", strconv.FormatUint(file.UncompressedSize64, 10))
+
 	filePath := cleanPath(file.Name)
-	mimeType := mime.TypeByExtension(path.Ext(filePath)) // TODO: content type detection
-	w.Header().Set("Content-Type", mimeType)
+	mimeType := mime.TypeByExtension(path.Ext(filePath))
+	if mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	} // otherwise, rely on http.ResponseWriter autodetecting the type from written data
 
 	// TODO: If-Modified-Since
 	// TODO: ETag
