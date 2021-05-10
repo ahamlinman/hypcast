@@ -1,6 +1,8 @@
 hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/build.zip
 	go build -v -tags embedclientzip ./cmd/hypcast-server
 
+.PHONY: client/build.zip
+
 client/build.zip:
 	$(MAKE) -C client build.zip
 

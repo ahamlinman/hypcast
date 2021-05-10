@@ -4,7 +4,7 @@ build: node_modules tsconfig.json $(shell find public src -type f)
 
 build.zip: build
 	rm -f build.zip
-	zip -r build.zip build
+	cd build; zip -r ../build.zip .
 
 node_modules: package.json yarn.lock
 	yarn install
