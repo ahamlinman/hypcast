@@ -59,12 +59,12 @@ func main() {
 	http.Handle("/api/", api.NewHandler(tuner))
 
 	if flagAssets != "" {
-		log.Printf("Serving assets from %s", flagAssets)
+		log.Printf("Using client assets from %s", flagAssets)
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
 		))
 	} else if client.Build != nil {
-		log.Print("Serving embedded assets")
+		log.Print("Using embedded client assets")
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.FS(client.Build)},
 		))
