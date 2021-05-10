@@ -36,11 +36,11 @@ func init() {
 	)
 	flag.StringVar(
 		&flagAssets, "assets", "",
-		"Path to static assets; if unset, static assets will not be served",
+		"Path to client assets; overrides any embedded assets",
 	)
 	flag.StringVar(
 		&flagVideoPipeline, "video-pipeline", "default",
-		`The video pipeline to use; use "vaapi" for VA-API hardware acceleration`,
+		`Video pipeline implementation; use "vaapi" for VA-API hardware acceleration`,
 	)
 }
 
