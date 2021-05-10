@@ -52,9 +52,9 @@ easiest to run Hypcast using the container image published at
 Alternatively, if you want to enable hardware accelerated video processing
 through [VA-API][vaapi] (which the container image does not yet support), you
 can install and configure GStreamer and gstreamer-vaapi on your own system,
-then build and run the Hypcast binary yourself with the environment variable
-`HYPCAST_VIDEO_PIPELINE=vaapi`. See the Makefile for details of how to build
-a Hypcast binary with embedded client assets for convenience.
+then build and run the Hypcast binary yourself with `-video-pipeline vaapi`.
+See the Makefile for details of how to build a Hypcast binary with embedded
+client assets for convenience.
 
 **Hypcast is not designed to be exposed to the Internet!** It is expected to
 run on a fast local network, or _perhaps_ over a private VPN. Allowing public

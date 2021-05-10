@@ -19,9 +19,10 @@ import (
 )
 
 var (
-	flagAddr     string
-	flagChannels string
-	flagAssets   string
+	flagAddr          string
+	flagChannels      string
+	flagAssets        string
+	flagVideoPipeline string
 )
 
 func init() {
@@ -37,6 +38,10 @@ func init() {
 		&flagAssets, "assets", "",
 		"Path to static assets; if unset, static assets will not be served",
 	)
+	flag.StringVar(
+		&flagVideoPipeline, "video-pipeline", "default",
+		`The video pipeline to use; use "vaapi" for VA-API hardware acceleration`,
+	)
 }
 
 func main() {
@@ -48,7 +53,7 @@ func main() {
 		log.Fatalf("Unable to read channels.conf: %v", err)
 	}
 
-	vp := tuner.ParseVideoPipeline(os.Getenv("HYPCAST_VIDEO_PIPELINE"))
+	vp := tuner.ParseVideoPipeline(flagVideoPipeline)
 	log.Printf("Using %s video pipeline", vp)
 	tuner := tuner.NewTuner(channels, vp)
 	http.Handle("/api/", api.NewHandler(tuner))
