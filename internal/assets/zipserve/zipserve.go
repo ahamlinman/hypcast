@@ -3,6 +3,7 @@ package zipserve
 
 import (
 	"archive/zip"
+	"encoding/binary"
 	"io"
 	"log"
 	"mime"
@@ -47,10 +48,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: serve encoded versions
+	acceptEncoding := r.Header.Get("Accept-Encoding")
+	// TODO: actually parse the header right
+	if strings.Contains(acceptEncoding, "gzip") {
+		handled := h.serveGzipEncoded(w, file)
+		if handled {
+			h.logf("Served as gzip: %s", r.URL.String())
+			return
+		}
+	}
 
-	h.logf("Serving unencoded: %s", r.URL.String())
 	serveUnencoded(w, file)
+	h.logf("Served unencoded: %s", r.URL.String())
 }
 
 func cleanPath(p string) string {
@@ -72,6 +81,42 @@ func (h *Handler) getFileEntry(filePath string) *zip.File {
 	}
 
 	return nil
+}
+
+func (h *Handler) serveGzipEncoded(w http.ResponseWriter, file *zip.File) (handled bool) {
+	if file.Method != zip.Deflate {
+		return
+	}
+
+	offset, err := file.DataOffset()
+	if err != nil {
+		return
+	}
+
+	handled = true
+	w.Header().Add("Content-Encoding", "gzip")
+
+	// gzip header for DEFLATE compression
+	header := [10]byte{0: 0x1f, 1: 0x8b, 2: 0x08}
+	binary.LittleEndian.PutUint32(header[4:8], uint32(file.Modified.Unix()))
+	header[9] = 0xff // Unknown OS
+	_, err = w.Write(header[:])
+	if err != nil {
+		return
+	}
+
+	sr := io.NewSectionReader(h.r, offset, int64(file.CompressedSize64))
+	_, err = io.Copy(w, sr)
+	if err != nil {
+		return
+	}
+
+	var footer [8]byte
+	binary.LittleEndian.PutUint32(footer[:4], file.CRC32)
+	binary.LittleEndian.PutUint32(footer[4:], uint32(file.UncompressedSize64))
+	w.Write(footer[:])
+
+	return
 }
 
 func serveUnencoded(w http.ResponseWriter, file *zip.File) {
