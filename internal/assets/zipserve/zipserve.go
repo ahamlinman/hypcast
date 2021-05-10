@@ -4,6 +4,8 @@ package zipserve
 import (
 	"archive/zip"
 	"io"
+	"log"
+	"mime"
 	"net/http"
 	"path"
 	"strings"
@@ -40,12 +42,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	filePath := cleanPath(r.URL.Path)
 	file := h.getFileEntry(filePath)
 	if file == nil {
+		h.logf("Not found: %s", r.URL.String())
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	// TODO: serve encoded versions
 
+	h.logf("Serving unencoded: %s", r.URL.String())
 	serveUnencoded(w, file)
 }
 
@@ -55,11 +59,14 @@ func cleanPath(p string) string {
 	return p
 }
 
-func (h *Handler) getFileEntry(path string) *zip.File {
+func (h *Handler) getFileEntry(filePath string) *zip.File {
+	// TODO: better way of handling this
+	indexPath := cleanPath(path.Join(filePath, "index.html"))
+
 	// TODO: more efficient file location
 	for _, file := range h.zr.File {
-		filePath := cleanPath(file.Name)
-		if path == filePath {
+		zipPath := cleanPath(file.Name)
+		if zipPath == filePath || zipPath == indexPath {
 			return file
 		}
 	}
@@ -75,6 +82,25 @@ func serveUnencoded(w http.ResponseWriter, file *zip.File) {
 	}
 	defer f.Close()
 
+	filePath := cleanPath(file.Name)
+	mimeType := mime.TypeByExtension(path.Ext(filePath)) // TODO: content type detection
+	w.Header().Set("Content-Type", mimeType)
+
+	// TODO: If-Modified-Since
+	// TODO: ETag
+	// TODO: Range
+	// TODO: HEAD
+
 	w.WriteHeader(http.StatusOK)
 	io.Copy(w, f)
+}
+
+func (h *Handler) logf(format string, v ...interface{}) {
+	joinFmt := "zipserve.Handler(%p): " + format
+
+	joinArgs := make([]interface{}, len(v)+1)
+	joinArgs[0] = h
+	copy(joinArgs[1:], v)
+
+	log.Printf(joinFmt, joinArgs...)
 }
