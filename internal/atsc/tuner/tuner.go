@@ -265,14 +265,12 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
-	! video/mpeg,mpegversion=2
 	{{- if eq .VideoPipeline "vaapi" }}
 	! vaapimpeg2dec
 	! vaapipostproc deinterlace-mode=auto
 	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
 	{{- else }}
 	! mpeg2dec
-	! videoconvert
 	! deinterlace
 	! x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast
 	{{- end }}
