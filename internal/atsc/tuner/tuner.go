@@ -279,7 +279,7 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
-	! decodebin
+	! a52dec
 	! audioconvert
 	! audioresample
 	! audio/x-raw,rate=48000,channels=2
