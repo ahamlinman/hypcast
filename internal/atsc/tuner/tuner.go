@@ -244,23 +244,13 @@ var pipelineModulations = map[atsc.Modulation]string{
 }
 
 const (
-	sinkNameRaw   = "raw"
 	sinkNameVideo = "video"
 	sinkNameAudio = "audio"
 )
 
-// TODO: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/358#note_118032
-// Without drop-allocation the pipeline stalls. I still don't *really*
-// understand why.
 var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.FrequencyHz}}
-	! tee name=dvbtee
-	! identity drop-allocation=true
-	! queue leaky=downstream max-size-time=1000000000 max-size-buffers=0 max-size-bytes=0
-	! appsink name=raw max-buffers=32 drop=true
-
-	dvbtee.
-	! queue leaky=downstream max-size-time=0 max-size-buffers=0 max-size-bytes=0
+	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
 	! tsdemux name=demux program-number={{.ProgramID}}
 
 	demux.
