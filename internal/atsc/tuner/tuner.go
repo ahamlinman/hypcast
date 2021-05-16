@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"text/template"
 	"time"
@@ -190,6 +191,15 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	t.pipeline.SetSink(sinkNameVideo, createTrackSink(vt))
 	t.pipeline.SetSink(sinkNameAudio, createTrackSink(at))
 
+	f, err := os.Create("ayyyycaptions.out")
+	if err != nil {
+		panic(err)
+	}
+
+	t.pipeline.SetSink(sinkNameCaption, gst.SinkFunc(func(data []byte, d time.Duration) {
+		f.Write(data)
+	}))
+
 	log.Printf("Tuner(%p): Starting pipeline", t)
 	err = t.pipeline.Start()
 	if err != nil {
@@ -244,8 +254,9 @@ var pipelineModulations = map[atsc.Modulation]string{
 }
 
 const (
-	sinkNameVideo = "video"
-	sinkNameAudio = "audio"
+	sinkNameVideo   = "videosink"
+	sinkNameAudio   = "audiosink"
+	sinkNameCaption = "captionsink"
 )
 
 var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
@@ -255,17 +266,26 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! mpegvideoparse
 	{{- if eq .VideoPipeline "vaapi" }}
 	! vaapimpeg2dec
+	! ccextractor name=ccextractor
 	! vaapipostproc deinterlace-mode=auto
 	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
 	{{- else }}
 	! mpeg2dec
+	! ccextractor name=ccextractor
 	! deinterlace
 	! x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast
 	{{- end }}
 	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
-	! appsink name=video max-buffers=32 drop=true
+	! appsink name=videosink max-buffers=50 drop=true
+
+	ccextractor.
+	! queue leaky=downstream max-size-time=10000000000 max-size-buffers=0 max-size-bytes=0
+	! ccconverter
+	! closedcaption/x-cea-708,format=cdp
+	! appsink name=captionsink max-buffers=200 drop=true
 
 	demux.
 	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
@@ -274,7 +294,7 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	! audioresample
 	! audio/x-raw,rate=48000,channels=2
 	! opusenc bitrate=128000
-	! appsink name=audio max-buffers=32 drop=true
+	! appsink name=audiosink max-buffers=50 drop=true
 `))
 
 func (t *Tuner) destroyAnyRunningPipeline() error {
