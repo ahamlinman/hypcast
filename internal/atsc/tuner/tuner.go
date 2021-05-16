@@ -244,37 +244,46 @@ var pipelineModulations = map[atsc.Modulation]string{
 }
 
 const (
-	sinkNameVideo = "video"
-	sinkNameAudio = "audio"
+	sinkNameVideo = "videosink"
+	sinkNameAudio = "audiosink"
 )
 
 var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.FrequencyHz}}
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! queue max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
 	! tsdemux name=demux program-number={{.ProgramID}}
 
 	demux.
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
-	{{- if eq .VideoPipeline "vaapi" }}
-	! vaapimpeg2dec
-	! vaapipostproc deinterlace-mode=auto
-	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
-	{{- else }}
+	! queue max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! mpegvideoparse
 	! mpeg2dec
 	! deinterlace
-	! x264enc bitrate=8192 tune=zerolatency speed-preset=ultrafast
+	! ccextractor name=ccextractor
+
+	cc708overlay name=ccoverlay
+	ccextractor.src ! ccoverlay.video_sink
+	ccextractor.caption
+	! queue max-size-time=10000000000 max-size-buffers=0 max-size-bytes=0
+	! ccoverlay.cc_sink
+
+	ccoverlay.
+	! videoconvert
+	{{- if eq .VideoPipeline "vaapi" }}
+	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=2000 quality-level=1 tune=high-compression
+	{{- else }}
+	! x264enc bitrate=8000 tune=zerolatency speed-preset=ultrafast
 	{{- end }}
 	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
-	! appsink name=video max-buffers=32 drop=true
+	! appsink name=videosink max-buffers=200 drop=true
 
 	demux.
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	! queue max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
 	! a52dec
 	! audioconvert
 	! audioresample
 	! audio/x-raw,rate=48000,channels=2
 	! opusenc bitrate=128000
-	! appsink name=audio max-buffers=32 drop=true
+	! appsink name=audiosink max-buffers=200 drop=true
 `))
 
 func (t *Tuner) destroyAnyRunningPipeline() error {
