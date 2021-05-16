@@ -250,11 +250,13 @@ const (
 
 var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	dvbsrc delsys=atsc modulation={{.Modulation}} frequency={{.FrequencyHz}}
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	{{- block "queue-max-time" 2_500_000_000 }}
+	! queue leaky=downstream max-size-time={{.}} max-size-buffers=0 max-size-bytes=0
+	{{- end }}
 	! tsdemux name=demux program-number={{.ProgramID}} latency=500
 
 	demux.
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	{{- template "queue-max-time" 2_500_000_000 }}
 	{{- if eq .VideoPipeline "vaapi" }}
 	! vaapimpeg2dec
 	! vaapipostproc deinterlace-mode=auto
@@ -268,7 +270,7 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	! appsink name=video max-buffers=50 drop=true
 
 	demux.
-	! queue leaky=downstream max-size-time=2500000000 max-size-buffers=0 max-size-bytes=0
+	{{- template "queue-max-time" 2_500_000_000 }}
 	! a52dec
 	! audioconvert
 	! audioresample
