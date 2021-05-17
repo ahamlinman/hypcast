@@ -64,12 +64,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.logf("Served unencoded: %s", r.URL.String())
 }
 
-func cleanPath(p string) string {
-	p = path.Clean(p)
-	p = strings.TrimPrefix(p, "/")
-	return p
-}
-
 func (h *Handler) getFileEntry(filePath string) *zip.File {
 	// TODO: better way of handling this
 	indexPath := cleanPath(path.Join(filePath, "index.html"))
