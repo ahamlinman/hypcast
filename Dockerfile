@@ -9,7 +9,7 @@
 #   discarded after the RUN finishes. Ensure that any final build output exists
 #   outside of that directory.
 
-FROM docker.io/library/golang:1.16-alpine3.13 AS golang
+FROM docker.io/library/golang:1.16-alpine3.14 AS golang
 FROM golang AS server-build
 
 RUN apk add --no-cache \
@@ -27,7 +27,7 @@ RUN \
     ./cmd/hypcast-server
 
 
-FROM --platform=$BUILDPLATFORM docker.io/library/node:16-alpine3.13 AS client-build
+FROM --platform=$BUILDPLATFORM docker.io/library/node:16-alpine AS client-build
 
 ENV BUILD_PATH=/build
 RUN \
@@ -39,7 +39,7 @@ RUN \
   yarn build
 
 
-FROM docker.io/library/alpine:3.13 AS target
+FROM docker.io/library/alpine:3.14 AS target
 
 RUN apk add --no-cache \
       tini \
