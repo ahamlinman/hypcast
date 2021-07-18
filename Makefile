@@ -19,7 +19,7 @@ install: hypcast-server
 	go install -v -tags embedclientzip ./cmd/hypcast-server
 
 clean:
-	rm -f ./hypcast-server
+	rm -f ./hypcast-server ./client/build ./client/build.zip
 
 # Configure clangd to resolve dependencies for C files in the project.
 compile_flags.txt:
