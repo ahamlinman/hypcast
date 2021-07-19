@@ -212,8 +212,8 @@ func TestSetFromHandler(t *testing.T) {
 }
 
 func TestGoexitFromHandler(t *testing.T) {
-	// A specific test to ensure that exiting the goroutine running the watch does
-	// not terminate the watch itself.
+	// A specific test to ensure that terminating the goroutine running the
+	// handler does not terminate the watch itself.
 
 	var (
 		v      = NewValue("alice")
