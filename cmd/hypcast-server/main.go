@@ -63,11 +63,9 @@ func main() {
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
 		))
-	} else if client.Build != nil {
+	} else if client.Handler != nil {
 		log.Print("Using embedded client assets")
-		http.Handle("/", http.FileServer(
-			assets.FileSystem{FileSystem: http.FS(client.Build)},
-		))
+		http.Handle("/", client.Handler)
 	}
 
 	server := http.Server{Addr: flagAddr}
