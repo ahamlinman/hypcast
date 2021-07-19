@@ -9,11 +9,15 @@ import (
 )
 
 type Handler struct {
-	zr *zip.Reader
+	zr  *zip.Reader
+	idx index
 }
 
 func NewHandler(zr *zip.Reader) *Handler {
-	return &Handler{zr}
+	return &Handler{
+		zr:  zr,
+		idx: newIndex(zr.File),
+	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
