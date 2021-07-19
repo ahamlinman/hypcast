@@ -251,7 +251,7 @@ func TestCancelBlockedWatcher(t *testing.T) {
 	// Ensure that we have a handler in flight.
 	block <- struct{}{}
 
-	// Set some new values. We must schedule another call to the watcher following
+	// Set some new values. We must schedule another call to the handler following
 	// the current execution for the value "alice".
 	v.Set("bob")
 	v.Set("carol")
