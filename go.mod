@@ -3,10 +3,13 @@ module github.com/ahamlinman/hypcast
 go 1.16
 
 require (
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2
-	github.com/pion/webrtc/v3 v3.0.31
-	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	github.com/pion/ice/v2 v2.1.12 // indirect
+	github.com/pion/interceptor v0.0.15 // indirect
+	github.com/pion/rtp v1.7.1 // indirect
+	github.com/pion/srtp/v2 v2.0.5 // indirect
+	github.com/pion/webrtc/v3 v3.0.32
+	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
+	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
+	golang.org/x/sys v0.0.0-20210820121016-41cdb8703e55 // indirect
 )
