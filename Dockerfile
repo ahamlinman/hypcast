@@ -1,4 +1,4 @@
-# syntax = docker.io/docker/dockerfile:1.2
+# syntax = docker.io/docker/dockerfile:1.3
 
 # NOTES
 #
@@ -9,7 +9,7 @@
 #   discarded after the RUN finishes. Ensure that any final build output exists
 #   outside of that directory.
 
-FROM docker.io/library/golang:1.16-alpine3.14 AS golang
+FROM docker.io/library/golang:1.17-alpine3.14 AS golang
 FROM golang AS server-build
 
 RUN apk add --no-cache \
