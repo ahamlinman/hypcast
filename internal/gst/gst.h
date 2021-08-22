@@ -8,14 +8,9 @@
 #include <glib.h>
 #include <gst/gst.h>
 
-typedef struct HypcastSinkRef {
-  uintptr_t handle;
-  unsigned int index;
-} HypcastSinkRef;
+extern GstFlowReturn hypcastSinkSample(GstSample *, uintptr_t);
 
-extern GstFlowReturn hypcastSinkSample(HypcastSinkRef *, GstSample *);
-
-void hypcast_connect_sink(GstElement *, HypcastSinkRef *);
+void hypcast_connect_sink(GstElement *, uintptr_t);
 GstFlowReturn hypcast_sink_sample(GstElement *, gpointer);
 
 #endif
