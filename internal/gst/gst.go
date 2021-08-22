@@ -11,7 +11,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
-	"sync"
+	"runtime/cgo"
 	"time"
 	"unsafe"
 )
@@ -32,12 +32,10 @@ type sinkDef struct {
 // Pipeline represents a GStreamer pipeline that can provide sample data to Go
 // programs through appsink elements.
 type Pipeline struct {
-	gstPipeline *C.GstElement
-
-	pid C.uint
-
-	sinkIndexByName map[string]int
+	gstPipeline     *C.GstElement
+	handle          cgo.Handle
 	sinks           []sinkDef
+	sinkIndexByName map[string]int
 }
 
 // NewPipeline creates a GStreamer pipeline based on the syntax used in the
@@ -61,7 +59,7 @@ func NewPipeline(description string) (*Pipeline, error) {
 		gstPipeline:     gstPipeline,
 		sinkIndexByName: make(map[string]int),
 	}
-	p.registerForGlobalAccess()
+	p.handle = cgo.NewHandle(p)
 	return p, nil
 }
 
@@ -97,11 +95,16 @@ func (p *Pipeline) Stop() error {
 // associated with it.
 func (p *Pipeline) Close() error {
 	p.Stop()
-	p.unregisterFromGlobalAccess()
 
-	// The behavior of multiple calls to Close is undefined, however it definitely
-	// should not corrupt the C heap with double-free errors. To ensure this:
-	// check nil-ness before freeing, and nil after freeing.
+	// The behavior of multiple calls to Close isn't strictly defined, however it
+	// probably should not exhibit any form of double-free error, *especially* for
+	// things involving the C heap. As such we always check for non-zero-ness
+	// before freeing and zero out after freeing.
+
+	if p.handle != 0 {
+		p.handle.Delete()
+		p.handle = 0
+	}
 
 	for _, sink := range p.sinks {
 		if sink.ref != nil {
@@ -147,7 +150,7 @@ func (p *Pipeline) SetSink(name string, fn SinkFunc) {
 	nextIndex := len(p.sinks)
 
 	ref := (*C.HypcastSinkRef)(C.malloc(C.sizeof_HypcastSinkRef))
-	ref.pid = p.pid
+	ref.handle = C.uintptr_t(p.handle)
 	ref.index = C.uint(nextIndex)
 
 	p.sinks = append(p.sinks, sinkDef{fn: fn, ref: ref})
@@ -188,58 +191,10 @@ func hypcastSinkSample(ref *C.HypcastSinkRef, sample *C.GstSample) C.GstFlowRetu
 	C.gst_sample_unref(sample) // Invalidates sample and buffer
 
 	var (
-		pipeline = getPipelineByPID(ref.pid)
+		pipeline = cgo.Handle(ref.handle).Value().(*Pipeline)
 		index    = int(ref.index)
 		sinkFn   = pipeline.sinks[index].fn
 	)
 	sinkFn(data, duration)
 	return C.GST_FLOW_OK
-}
-
-// cgo pointer passing rules prevent GStreamer from retaining direct references
-// to pipelines, so we implement a "big old map" with integer IDs:
-// https://medium.com/wallaroo-labs-engineering/adventures-with-cgo-part-1-the-pointering-19506aedf6b.
-//
-// Note that we don't quite have the performance concerns mentioned in the blog
-// post, as writes to this map are extremely rare compared to reads. Profiling
-// shows the impact of the read lock to be negligible.
-var (
-	pipelineLock sync.RWMutex
-	nextPID      C.uint = 0
-	pipelines           = make(map[C.uint]*Pipeline)
-)
-
-func getPipelineByPID(pid C.uint) *Pipeline {
-	pipelineLock.RLock()
-	defer pipelineLock.RUnlock()
-
-	return pipelines[pid]
-}
-
-func (p *Pipeline) registerForGlobalAccess() {
-	if p.pid != 0 {
-		return
-	}
-
-	pipelineLock.Lock()
-	defer pipelineLock.Unlock()
-
-	nextPID++
-	if _, ok := pipelines[nextPID]; ok {
-		// If you created a new pipeline every second and never destroyed any of
-		// them, even with a 32-bit uint it would take about 136 years to get here.
-		// So if we get here we are probably in a very bad state of some kind.
-		panic("global pipeline ID collision")
-	}
-
-	p.pid = nextPID
-	pipelines[p.pid] = p
-}
-
-func (p *Pipeline) unregisterFromGlobalAccess() {
-	pipelineLock.Lock()
-	defer pipelineLock.Unlock()
-
-	delete(pipelines, p.pid)
-	p.pid = 0
 }

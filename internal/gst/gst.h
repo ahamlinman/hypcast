@@ -1,6 +1,7 @@
 #ifndef HYPCAST_GST_H
 #define HYPCAST_GST_H
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,7 +9,7 @@
 #include <gst/gst.h>
 
 typedef struct HypcastSinkRef {
-  unsigned int pid;
+  uintptr_t handle;
   unsigned int index;
 } HypcastSinkRef;
 
