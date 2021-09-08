@@ -10,7 +10,7 @@ export default function useConfig<T>(name: string): undefined | T | Error {
     async function startFetch() {
       try {
         setResult(await fetchConfigWithCache(name));
-      } catch (e) {
+      } catch (e: any) {
         setResult(e);
       }
     }
