@@ -1,9 +1,10 @@
 package atsc
 
 import (
-	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 const validChannelsConf = `KCTS-HD:189000000:8VSB:49:52:3
@@ -77,13 +78,13 @@ func TestParseChannelsConf(t *testing.T) {
 				if !tc.wantErr {
 					t.Fatalf("unexpected error: %v", err)
 				}
-
 				t.Logf("error: %v", err)
 				return
 			}
 
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("unexpected result\ngot:  %v\nwant: %v", got, tc.want)
+			diff := cmp.Diff(tc.want, got)
+			if diff != "" {
+				t.Errorf("unexpected result (-want +got):\n%s", diff)
 			}
 		})
 	}
