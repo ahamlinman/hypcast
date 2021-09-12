@@ -15,7 +15,7 @@ type tunerStatusHandler struct {
 	tuner *tuner.Tuner
 
 	conn        *websocket.Conn
-	watch       *watch.Watch
+	watch       watch.Watch
 	shutdownErr chan error
 	wg          sync.WaitGroup
 }

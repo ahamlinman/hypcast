@@ -87,8 +87,8 @@ type Tuner struct {
 	videoPipeline VideoPipeline
 	pipeline      *gst.Pipeline
 
-	status *watch.Value
-	tracks *watch.Value
+	status *watch.Value[Status]
+	tracks *watch.Value[Tracks]
 }
 
 // NewTuner creates a new Tuner that can tune to any of the provided channels.
@@ -122,19 +122,15 @@ func (t *Tuner) ChannelNames() []string {
 
 // WatchStatus sets up a handler function to continuously receive the status of
 // the tuner as it is updated. See the watch package documentation for details.
-func (t *Tuner) WatchStatus(handler func(Status)) *watch.Watch {
-	return t.status.Watch(func(x interface{}) {
-		handler(x.(Status))
-	})
+func (t *Tuner) WatchStatus(handler func(Status)) watch.Watch {
+	return t.status.Watch(handler)
 }
 
 // WatchTracks sets up a handler function to continuously receive the tuner's
 // WebRTC tracks as they are updated. See the watch package documentation for
 // details.
-func (t *Tuner) WatchTracks(handler func(Tracks)) *watch.Watch {
-	return t.tracks.Watch(func(x interface{}) {
-		handler(x.(Tracks))
-	})
+func (t *Tuner) WatchTracks(handler func(Tracks)) watch.Watch {
+	return t.tracks.Watch(handler)
 }
 
 // Stop ends any active stream and releases the DVB device associated with this
