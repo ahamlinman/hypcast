@@ -51,7 +51,7 @@ type webrtcHandler struct {
 
 	conn        *websocket.Conn
 	pc          *webrtc.PeerConnection
-	watch       *watch.Watch
+	watch       watch.Watch
 	shutdownErr chan error
 	wg          sync.WaitGroup
 }
