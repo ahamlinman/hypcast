@@ -79,17 +79,17 @@ func TestValue(t *testing.T) {
 
 func TestGetZeroValue(t *testing.T) {
 	// A simple test for getting the zero value of a Value.
-	var v Value[interface{}]
+	var v Value[any]
 	if x := v.Get(); x != nil {
 		t.Errorf("zero value of Value contained %v; want nil", x)
 	}
 }
 
 func TestWatchZeroValue(t *testing.T) {
-	var v Value[interface{}]
+	var v Value[any]
 
-	notify := make(chan interface{})
-	w := v.Watch(func(x interface{}) { notify <- x })
+	notify := make(chan any)
+	w := v.Watch(func(x any) { notify <- x })
 
 	select {
 	case x := <-notify:

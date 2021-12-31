@@ -10,11 +10,11 @@ import (
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 )
 
-type rpcParams map[string]interface{}
+type rpcParams map[string]any
 
-type rpcHandlerFunc func(rpcParams) (code int, body interface{})
+type rpcHandlerFunc func(rpcParams) (code int, body any)
 
-func (h *Handler) rpcStop(_ rpcParams) (code int, body interface{}) {
+func (h *Handler) rpcStop(_ rpcParams) (code int, body any) {
 	if err := h.tuner.Stop(); err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -22,7 +22,7 @@ func (h *Handler) rpcStop(_ rpcParams) (code int, body interface{}) {
 	return http.StatusNoContent, nil
 }
 
-func (h *Handler) rpcTune(params rpcParams) (code int, body interface{}) {
+func (h *Handler) rpcTune(params rpcParams) (code int, body any) {
 	channelName, ok := params["ChannelName"].(string)
 	if !ok {
 		return http.StatusBadRequest, errors.New("channel name required")
@@ -49,7 +49,7 @@ func handleRPC(handler rpcHandlerFunc) http.Handler {
 
 		var (
 			code         int
-			body         interface{}
+			body         any
 			params, perr = readRPCParams(r)
 		)
 		if perr == nil {

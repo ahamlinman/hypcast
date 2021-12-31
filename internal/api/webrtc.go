@@ -229,10 +229,10 @@ func (wh *webrtcHandler) waitForCleanup() {
 	wh.wg.Wait()
 }
 
-func (wh *webrtcHandler) logf(format string, v ...interface{}) {
+func (wh *webrtcHandler) logf(format string, v ...any) {
 	joinFmt := "WebRTCHandler(%p): " + format
 
-	joinArgs := make([]interface{}, len(v)+1)
+	joinArgs := make([]any, len(v)+1)
 	joinArgs[0] = wh
 	copy(joinArgs[1:], v)
 

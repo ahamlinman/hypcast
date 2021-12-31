@@ -114,10 +114,10 @@ func (tsh *tunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStat
 	return msg
 }
 
-func (tsh *tunerStatusHandler) logf(format string, v ...interface{}) {
+func (tsh *tunerStatusHandler) logf(format string, v ...any) {
 	joinFmt := "TunerStatusHandler(%p): " + format
 
-	joinArgs := make([]interface{}, len(v)+1)
+	joinArgs := make([]any, len(v)+1)
 	joinArgs[0] = tsh
 	copy(joinArgs[1:], v)
 
