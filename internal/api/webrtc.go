@@ -61,7 +61,6 @@ func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request)
 		tuner:       h.tuner,
 		shutdownErr: make(chan error, 1),
 	}
-
 	wh.ServeHTTP(w, r)
 }
 
