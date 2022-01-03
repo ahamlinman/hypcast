@@ -6,9 +6,8 @@ import (
 	"archive/zip"
 	"bytes"
 	_ "embed"
-	"net/http"
 
-	"github.com/ahamlinman/hypcast/internal/assets"
+	"github.com/ahamlinman/hypcast/internal/zipserve"
 )
 
 //go:embed build.zip
@@ -20,5 +19,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	Handler = http.FileServer(assets.FileSystem{FileSystem: http.FS(zr)})
+	Handler = zipserve.NewHandler(zr)
 }
