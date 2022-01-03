@@ -3,10 +3,12 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 
+	"github.com/ahamlinman/hypcast/internal/api/rpc"
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 )
 
@@ -30,8 +32,8 @@ func NewHandler(tuner *tuner.Tuner) *Handler {
 
 	h.mux.HandleFunc("/api/config/channels", h.handleConfigChannels)
 
-	h.mux.Handle("/api/rpc/stop", handleRPC(h.rpcStop))
-	h.mux.Handle("/api/rpc/tune", handleRPC(h.rpcTune))
+	h.mux.Handle("/api/rpc/stop", rpc.HTTPHandler(h.rpcStop))
+	h.mux.Handle("/api/rpc/tune", rpc.HTTPHandler(h.rpcTune))
 
 	h.mux.HandleFunc("/api/socket/webrtc-peer", h.handleSocketWebRTCPeer)
 	h.mux.HandleFunc("/api/socket/tuner-status", h.handleSocketTunerStatus)
@@ -46,4 +48,27 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleConfigChannels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(h.tuner.ChannelNames())
+}
+
+func (h *Handler) rpcStop(_ struct{}) (code int, body any) {
+	if err := h.tuner.Stop(); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusNoContent, nil
+}
+
+func (h *Handler) rpcTune(params struct{ ChannelName string }) (code int, body any) {
+	if params.ChannelName == "" {
+		return http.StatusBadRequest, errors.New("channel name required")
+	}
+
+	err := h.tuner.Tune(params.ChannelName)
+	switch {
+	case errors.Is(err, tuner.ErrChannelNotFound):
+		return http.StatusBadRequest, err
+	case err != nil:
+		return http.StatusInternalServerError, err
+	}
+
+	return http.StatusNoContent, nil
 }

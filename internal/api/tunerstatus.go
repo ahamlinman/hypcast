@@ -25,7 +25,6 @@ func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request
 		tuner:       h.tuner,
 		shutdownErr: make(chan error, 1),
 	}
-
 	tsh.ServeHTTP(w, r)
 }
 
