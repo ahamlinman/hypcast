@@ -1,42 +1,25 @@
 package zipserve
 
 import (
-	"archive/zip"
+	"errors"
 	"io"
+	"io/fs"
 	"mime"
 	"net/http"
 	"path"
 	"strings"
 )
 
-// Handler serves HTTP requests with the contents of a ZIP archive.
-//
-// When an HTTP client that supports gzip encoding requests an entry that is
-// stored with compression in the archive, Handler will serve the compressed
-// file stream directly to the client. Otherwise, Handler will transparently
-// serve an uncompressed file.
+// Handler serves HTTP requests with the contents of a filesystem, serving
+// pre-compressed content when available to clients that support it.
 type Handler struct {
-	zr    *zip.Reader
-	index map[npath]*zip.File
+	fsys fs.FS
 }
 
 // NewHandler returns a handler that serves HTTP requests with the contents of
-// the archive represented by zr.
-func NewHandler(zr *zip.Reader) *Handler {
-	index := make(map[npath]*zip.File)
-	for _, f := range zr.File {
-		// It is theoretically possible for two archive entries to end up at the
-		// same relative path, in which case we let the latest one win. This should
-		// be exceptionally rare; I'm not sure where it would show up outside of a
-		// specially crafted archive.
-		np := normalizePath(f.Name)
-		index[np] = f
-	}
-
-	return &Handler{
-		zr:    zr,
-		index: index,
-	}
+// fsys.
+func NewHandler(fsys fs.FS) *Handler {
+	return &Handler{fsys}
 }
 
 // ServeHTTP implements http.Handler.
@@ -46,29 +29,26 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: Optimized HEAD requests.
 
 	np := normalizePath(r.URL.Path)
-	f, ok := h.index[np]
-	if !ok {
+	f, err := h.fsys.Open(string(np))
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
 		http.Error(w, "not found", http.StatusNotFound)
 		return
+	case err != nil:
+		http.Error(w, "error opening file", http.StatusInternalServerError)
+		return
 	}
+	defer f.Close()
 
 	// TODO: Content-based MIME type sniffing.
 	if ctype := mime.TypeByExtension(path.Ext(string(np))); ctype != "" {
 		w.Header().Add("Content-Type", ctype)
 	}
 
-	// TODO: Serve compressed content if possible... obviously.
-	fr, err := f.Open()
-	if err != nil {
-		http.Error(w, "unable to open file", http.StatusInternalServerError)
-		return
-	}
-	defer fr.Close()
-
 	// TODO: Caching headers (If-Modified-Since, ETag).
 
 	w.WriteHeader(http.StatusOK)
-	io.Copy(w, fr)
+	io.Copy(w, f)
 }
 
 // npath holds a normalized path: a Clean relative path separated by forward
