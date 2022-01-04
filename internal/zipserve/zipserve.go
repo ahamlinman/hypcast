@@ -40,6 +40,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
+	stat, err := f.Stat()
+	if err != nil {
+		http.Error(w, "error reading file info", http.StatusInternalServerError)
+		return
+	}
+	if stat.IsDir() {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
 	// TODO: Content-based MIME type sniffing.
 	if ctype := mime.TypeByExtension(path.Ext(string(np))); ctype != "" {
 		w.Header().Add("Content-Type", ctype)
