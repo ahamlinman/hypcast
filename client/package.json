@@ -2,7 +2,7 @@
   "name": "hypcast-client",
   "version": "2.0.0",
   "private": true,
-  "dependencies": {
+  "devDependencies": {
     "@types/node": "^16.3.3",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",

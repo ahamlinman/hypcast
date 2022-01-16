@@ -35,7 +35,7 @@ RUN \
   --mount=type=cache,id=hypcast.node_modules,target=/mnt/hypcast/client/node_modules \
   --mount=type=cache,id=hypcast.yarn,target=/usr/local/share/.cache/yarn \
   cd /mnt/hypcast/client && \
-  yarn install --production --frozen-lockfile && \
+  yarn install --frozen-lockfile && \
   yarn build
 
 
