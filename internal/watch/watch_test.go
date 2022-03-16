@@ -3,7 +3,6 @@ package watch
 import (
 	"runtime"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -20,43 +19,33 @@ func TestValue(t *testing.T) {
 		nWatchers = 50
 	)
 
-	var (
-		v = NewValue(int(0))
+	v := NewValue(int(0))
+	var watches [nWatchers]Watch
 
-		handlerGroup sync.WaitGroup
-		setGroup     sync.WaitGroup
-
-		watches [nWatchers]*Watch
-
-		done = make(chan struct{})
-	)
-
+	var handlerGroup sync.WaitGroup
 	handlerGroup.Add(nWatchers)
 	for i := 0; i < nWatchers; i++ {
 		var (
 			sum      int
 			sawFinal bool
 		)
-
-		watches[i] = v.Watch(func(x interface{}) {
-			current := x.(int)
-
+		watches[i] = v.Watch(func(x int) {
 			// This will quickly make the race detector complain if more than one
 			// instance of a handler runs at once.
-			sum += current
+			sum += x
 
-			if sawFinal && current < nWrites {
+			if sawFinal && x < nWrites {
 				t.Error("read a previous state after the expected final state")
 				return
 			}
-
-			if !sawFinal && current == nWrites {
+			if !sawFinal && x == nWrites {
 				handlerGroup.Done()
 				sawFinal = true
 			}
 		})
 	}
 
+	var setGroup sync.WaitGroup
 	setGroup.Add(nWrites - 1)
 	for i := 1; i <= nWrites-1; i++ {
 		// This will quickly make the race detector complain if Set is not properly
@@ -71,6 +60,7 @@ func TestValue(t *testing.T) {
 	// Our final Set, which every handler must see at least once.
 	v.Set(nWrites)
 
+	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		handlerGroup.Wait()
@@ -89,28 +79,23 @@ func TestValue(t *testing.T) {
 
 func TestGetZeroValue(t *testing.T) {
 	// A simple test for getting the zero value of a Value.
-	var v Value
+	var v Value[any]
 	if x := v.Get(); x != nil {
 		t.Errorf("zero value of Value contained %v; want nil", x)
 	}
 }
 
 func TestWatchZeroValue(t *testing.T) {
-	var (
-		v      Value
-		notify = make(chan interface{})
-	)
+	var v Value[any]
 
-	w := v.Watch(func(x interface{}) {
-		notify <- x
-	})
+	notify := make(chan any)
+	w := v.Watch(func(x any) { notify <- x })
 
 	select {
 	case x := <-notify:
 		if x != nil {
 			t.Errorf("watch on zero value of Value got %v; want nil", x)
 		}
-
 	case <-time.After(timeout):
 		t.Fatalf("reached %v timeout before watcher was notified", timeout)
 	}
@@ -125,22 +110,16 @@ func TestBlockedWatcher(t *testing.T) {
 	// receive notifications, and that the blocked watcher will see an additional
 	// notification for any state that was set while it was blocked.
 
-	var (
-		v = NewValue("alice")
+	v := NewValue("alice")
 
-		block           = make(chan struct{})
-		notifyBlocked   = make(chan string)
-		notifyUnblocked = make(chan string)
-	)
-
-	blockedWatcher := v.Watch(func(x interface{}) {
+	block, notifyBlocked := make(chan struct{}), make(chan string)
+	blockedWatcher := v.Watch(func(x string) {
 		<-block
-		notifyBlocked <- x.(string)
+		notifyBlocked <- x
 	})
 
-	unblockedWatcher := v.Watch(func(x interface{}) {
-		notifyUnblocked <- x.(string)
-	})
+	notifyUnblocked := make(chan string)
+	unblockedWatcher := v.Watch(func(x string) { notifyUnblocked <- x })
 
 	// Handle the initial notification to both watchers.
 	block <- struct{}{}
@@ -183,13 +162,11 @@ func TestSetFromHandler(t *testing.T) {
 	// entering a loop of writes and notifications.
 
 	const stopValue = 10
-	var (
-		v    = NewValue(int(0))
-		done = make(chan struct{})
-	)
 
-	w := v.Watch(func(x interface{}) {
-		if i := x.(int); i < stopValue {
+	v := NewValue(int(0))
+	done := make(chan struct{})
+	w := v.Watch(func(x int) {
+		if i := x; i < stopValue {
 			v.Set(i + 1)
 			v.Set(i + 1)
 		} else {
@@ -203,7 +180,7 @@ func TestSetFromHandler(t *testing.T) {
 		t.Fatalf("set loop did not complete after %v", timeout)
 	}
 
-	if got, want := v.Get().(int), stopValue; got != want {
+	if got, want := v.Get(), stopValue; got != want {
 		t.Errorf("unexpected value; got %d, want %d", got, want)
 	}
 
@@ -215,17 +192,14 @@ func TestGoexitFromHandler(t *testing.T) {
 	// A specific test to ensure that terminating the goroutine running the
 	// handler does not terminate the watch itself.
 
-	var (
-		v      = NewValue("alice")
-		notify = make(chan string)
-	)
-
-	w := v.Watch(func(x interface{}) {
-		notify <- x.(string)
+	v := NewValue("alice")
+	notify := make(chan string)
+	w := v.Watch(func(x string) {
+		notify <- x
 		runtime.Goexit()
 	})
-	assertNextReceive(t, notify, "alice")
 
+	assertNextReceive(t, notify, "alice")
 	v.Set("bob")
 	assertNextReceive(t, notify, "bob")
 
@@ -236,16 +210,12 @@ func TestGoexitFromHandler(t *testing.T) {
 func TestCancelBlockedWatcher(t *testing.T) {
 	// A specific test for canceling a watch while it is handling a notification.
 
-	var (
-		v = NewValue("alice")
+	v := NewValue("alice")
 
-		block  = make(chan struct{})
-		notify = make(chan string)
-	)
-
-	w := v.Watch(func(x interface{}) {
+	block, notify := make(chan struct{}), make(chan string)
+	w := v.Watch(func(x string) {
 		<-block
-		notify <- x.(string)
+		notify <- x
 	})
 
 	// Ensure that we have a handler in flight.
@@ -274,21 +244,17 @@ func TestCancelFromHandler(t *testing.T) {
 	// This is a special case of Cancel being called while a handler is blocked,
 	// as the caller of Cancel is the handler itself.
 
-	var (
-		v = NewValue("alice")
+	v := NewValue("alice")
 
-		canceled bool
-		watchCh  = make(chan *Watch)
-	)
-
-	w := v.Watch(func(x interface{}) {
+	var canceled bool
+	watchCh := make(chan Watch)
+	w := v.Watch(func(x string) {
 		if canceled {
 			t.Error("handler called after cancellation")
 			return
 		}
 
 		v.Set("bob")
-
 		w := <-watchCh
 		w.Cancel()
 		canceled = true
@@ -297,7 +263,7 @@ func TestCancelFromHandler(t *testing.T) {
 	watchCh <- w
 	assertWatchTerminates(t, w)
 
-	if got, want := v.Get().(string), "bob"; got != want {
+	if got, want := v.Get(), "bob"; got != want {
 		t.Errorf("unexpected value: got %q, want %q", got, want)
 	}
 }
@@ -306,23 +272,19 @@ func TestWait(t *testing.T) {
 	// A specific test to ensure that Wait properly blocks until the watch has
 	// terminated.
 
-	var (
-		v = NewValue("alice")
+	v := NewValue("alice")
 
-		block  = make(chan struct{})
-		notify = make(chan string)
-		done   = make(chan struct{})
-	)
-
-	w := v.Watch(func(x interface{}) {
+	block, notify := make(chan struct{}), make(chan string)
+	w := v.Watch(func(x string) {
 		<-block
-		notify <- x.(string)
+		notify <- x
 	})
 
 	// Ensure that we have a handler in flight.
 	block <- struct{}{}
 
 	// Start waiting in the background. We should remain blocked.
+	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		w.Wait()
@@ -338,27 +300,26 @@ func TestWait(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
-func assertNextReceive(t *testing.T, ch chan string, want string) {
+func assertNextReceive[T comparable](t *testing.T, ch chan T, want T) {
 	t.Helper()
 
 	select {
 	case got := <-ch:
 		if got != want {
-			t.Fatalf("got %q from channel, want %q", got, want)
+			t.Fatalf("got %v from channel, want %v", got, want)
 		}
-
 	case <-time.After(timeout):
 		t.Fatalf("reached %v timeout before watcher was notified", timeout)
 	}
 }
 
-func assertWatchTerminates(t *testing.T, s *Watch) {
+func assertWatchTerminates(t *testing.T, w Watch) {
 	t.Helper()
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		s.Wait()
+		w.Wait()
 	}()
 
 	select {
@@ -368,7 +329,7 @@ func assertWatchTerminates(t *testing.T, s *Watch) {
 	}
 }
 
-func assertBlocked(t *testing.T, ch chan struct{}) {
+func assertBlocked[T any](t *testing.T, ch chan T) {
 	t.Helper()
 
 	// If any background routines are going to close ch when they should not,
@@ -380,46 +341,4 @@ func assertBlocked(t *testing.T, ch chan struct{}) {
 		t.Fatal("progress was not blocked")
 	default:
 	}
-}
-
-func BenchmarkSet1Watcher(b *testing.B) {
-	benchmarkSetWithWatchers(b, 1)
-}
-
-func BenchmarkSet10Watchers(b *testing.B) {
-	benchmarkSetWithWatchers(b, 10)
-}
-
-func BenchmarkSet100Watchers(b *testing.B) {
-	benchmarkSetWithWatchers(b, 100)
-}
-
-func benchmarkSetWithWatchers(b *testing.B, nWatchers int) {
-	var (
-		n        uint64
-		v        = NewValue(uint64(0))
-		watchers = make([]*Watch, nWatchers)
-	)
-
-	for i := 0; i < nWatchers; i++ {
-		var sum uint64
-		watchers[i] = v.Watch(func(x interface{}) {
-			sum += x.(uint64)
-		})
-	}
-
-	b.Cleanup(func() {
-		for _, w := range watchers {
-			w.Cancel()
-			w.Wait()
-		}
-	})
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			next := atomic.AddUint64(&n, 1)
-			v.Set(next)
-		}
-	})
 }

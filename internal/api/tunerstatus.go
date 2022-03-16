@@ -15,7 +15,7 @@ type tunerStatusHandler struct {
 	tuner *tuner.Tuner
 
 	conn        *websocket.Conn
-	watch       *watch.Watch
+	watch       watch.Watch
 	shutdownErr chan error
 	wg          sync.WaitGroup
 }
@@ -25,7 +25,6 @@ func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request
 		tuner:       h.tuner,
 		shutdownErr: make(chan error, 1),
 	}
-
 	tsh.ServeHTTP(w, r)
 }
 
@@ -114,10 +113,10 @@ func (tsh *tunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStat
 	return msg
 }
 
-func (tsh *tunerStatusHandler) logf(format string, v ...interface{}) {
+func (tsh *tunerStatusHandler) logf(format string, v ...any) {
 	joinFmt := "TunerStatusHandler(%p): " + format
 
-	joinArgs := make([]interface{}, len(v)+1)
+	joinArgs := make([]any, len(v)+1)
 	joinArgs[0] = tsh
 	copy(joinArgs[1:], v)
 

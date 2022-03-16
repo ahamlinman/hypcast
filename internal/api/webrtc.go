@@ -51,7 +51,7 @@ type webrtcHandler struct {
 
 	conn        *websocket.Conn
 	pc          *webrtc.PeerConnection
-	watch       *watch.Watch
+	watch       watch.Watch
 	shutdownErr chan error
 	wg          sync.WaitGroup
 }
@@ -61,7 +61,6 @@ func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request)
 		tuner:       h.tuner,
 		shutdownErr: make(chan error, 1),
 	}
-
 	wh.ServeHTTP(w, r)
 }
 
@@ -229,10 +228,10 @@ func (wh *webrtcHandler) waitForCleanup() {
 	wh.wg.Wait()
 }
 
-func (wh *webrtcHandler) logf(format string, v ...interface{}) {
+func (wh *webrtcHandler) logf(format string, v ...any) {
 	joinFmt := "WebRTCHandler(%p): " + format
 
-	joinArgs := make([]interface{}, len(v)+1)
+	joinArgs := make([]any, len(v)+1)
 	joinArgs[0] = wh
 	copy(joinArgs[1:], v)
 

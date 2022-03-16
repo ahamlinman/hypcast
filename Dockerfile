@@ -9,7 +9,7 @@
 #   discarded after the RUN finishes. Ensure that any final build output exists
 #   outside of that directory.
 
-FROM docker.io/library/golang:1.17-alpine3.14 AS golang
+FROM docker.io/library/golang:1.18-alpine3.15 AS golang
 FROM golang AS server-build
 
 RUN apk add --no-cache \
@@ -39,7 +39,7 @@ RUN \
   yarn build
 
 
-FROM docker.io/library/alpine:3.14 AS target
+FROM docker.io/library/alpine:3.15 AS target
 
 RUN apk add --no-cache \
       tini \
