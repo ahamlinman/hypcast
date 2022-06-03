@@ -1,5 +1,5 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 
 import App from "./App";
 import { WebRTCProvider } from "./WebRTC";
@@ -7,7 +7,13 @@ import { TunerStatusProvider } from "./TunerStatus";
 
 import "./index.scss";
 
-ReactDOM.render(
+const container = document.getElementById("root");
+if (!container) {
+  throw new Error('no element with ID "root"');
+}
+
+const root = createRoot(container);
+root.render(
   <React.StrictMode>
     <WebRTCProvider>
       <TunerStatusProvider>
@@ -15,5 +21,4 @@ ReactDOM.render(
       </TunerStatusProvider>
     </WebRTCProvider>
   </React.StrictMode>,
-  document.getElementById("root"),
 );
