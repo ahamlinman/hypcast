@@ -1,4 +1,4 @@
-# syntax = docker.io/docker/dockerfile:1.3
+# syntax = docker.io/docker/dockerfile:1.4
 
 # NOTES
 #
@@ -9,17 +9,15 @@
 #   discarded after the RUN finishes. Ensure that any final build output exists
 #   outside of that directory.
 
-FROM docker.io/library/golang:1.18-alpine3.15 AS golang
-FROM golang AS server-build
-
-RUN apk add --no-cache \
+FROM docker.io/library/golang:1.18-alpine3.16 AS server-build
+RUN \
+  apk add --no-cache \
       build-base \
       gstreamer-dev
-
 RUN \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
-  --mount=type=cache,id=hypcast.go-build,target=/root/.cache/go-build,from=golang,source=/root/.cache/go-build \
+  --mount=type=cache,id=hypcast.go-build,target=/root/.cache/go-build \
   cd /mnt/hypcast && \
   go build -v \
     -ldflags='-s -w' \
@@ -27,8 +25,7 @@ RUN \
     ./cmd/hypcast-server
 
 
-FROM --platform=$BUILDPLATFORM docker.io/library/node:16-alpine AS client-build
-
+FROM --platform=$BUILDPLATFORM docker.io/library/node:18-alpine AS client-build
 ENV BUILD_PATH=/build
 RUN \
   --mount=type=bind,target=/mnt/hypcast,rw \
@@ -39,7 +36,7 @@ RUN \
   yarn build
 
 
-FROM docker.io/library/alpine:3.15 AS target
+FROM docker.io/library/alpine:3.16 AS target
 
 RUN apk add --no-cache \
       tini \
@@ -52,8 +49,8 @@ RUN apk add --no-cache \
       /opt/hypcast/bin \
       /opt/hypcast/share/www
 
-COPY --from=server-build /hypcast-server /opt/hypcast/bin/hypcast-server
-COPY --from=client-build /build /opt/hypcast/share/www
+COPY --link --from=server-build /hypcast-server /opt/hypcast/bin/hypcast-server
+COPY --link --from=client-build /build /opt/hypcast/share/www
 
 EXPOSE 9200
 ENTRYPOINT [ \
