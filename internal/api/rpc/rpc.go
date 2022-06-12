@@ -49,30 +49,28 @@ func (handler HandlerFunc[T]) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	params, perr := readRPCParams[T](r)
-
 	var (
 		code int
 		body any
 	)
-	if perr == nil {
+	if params, err := readRPCParams[T](r); err == nil {
 		code, body = handler(params)
 	} else {
-		code, body = errorHTTPCode(perr), perr
+		code, body = errorHTTPCode(err), err
 	}
 
 	if berr, ok := body.(error); ok {
 		body = struct{ Error string }{berr.Error()}
 	}
 
-	if body != nil {
-		w.Header().Add("Content-Type", "application/json")
+	if body == nil {
+		w.WriteHeader(code)
+		return
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(code)
-	if body != nil {
-		json.NewEncoder(w).Encode(body)
-	}
+	json.NewEncoder(w).Encode(body)
 }
 
 type httpError struct {
@@ -94,20 +92,20 @@ func readRPCParams[T any](r *http.Request) (T, error) {
 	n, err := body.ReadFrom(io.LimitReader(r.Body, MaxRequestBodySize+1))
 	switch {
 	case err != nil:
-		return zero[T](), errReadingBody
+		return *new(T), errReadingBody
 	case n == 0:
-		return zero[T](), nil
+		return *new(T), nil
 	case n > MaxRequestBodySize:
-		return zero[T](), errBodyTooLarge
+		return *new(T), errBodyTooLarge
 	}
 
 	if r.Header.Get("Content-Type") != "application/json" {
-		return zero[T](), errInvalidBodyType
+		return *new(T), errInvalidBodyType
 	}
 
 	var params T
 	if err := json.Unmarshal(body.Bytes(), &params); err != nil {
-		return zero[T](), errInvalidBody
+		return *new(T), errInvalidBody
 	}
 	return params, err
 }
@@ -119,5 +117,3 @@ func errorHTTPCode(err error) int {
 	}
 	return http.StatusInternalServerError
 }
-
-func zero[T any]() (_ T) { return }
