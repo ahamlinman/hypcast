@@ -1,7 +1,6 @@
 package atsc
 
 import (
-	"bytes"
 	"strings"
 	"testing"
 
@@ -132,7 +131,7 @@ func FuzzParseChannelsConf(f *testing.F) {
 
 func formatChannelsConf(t *testing.T, channels []Channel) string {
 	t.Helper()
-	var buf bytes.Buffer
+	var buf strings.Builder
 	for _, ch := range channels {
 		buf.WriteString(ch.String())
 		buf.WriteRune('\n')
