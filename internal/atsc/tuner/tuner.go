@@ -3,10 +3,10 @@
 package tuner
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -213,7 +213,7 @@ func (t *Tuner) newPipeline(channel atsc.Channel) (*gst.Pipeline, error) {
 }
 
 func (t *Tuner) createPipelineDescription(channel atsc.Channel) (string, error) {
-	var buf bytes.Buffer
+	var buf strings.Builder
 
 	err := pipelineDescriptionTemplate.Execute(&buf, struct {
 		Modulation    string
