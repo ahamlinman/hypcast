@@ -56,6 +56,12 @@ const (
 	// configuration.
 	VideoPipelineDefault VideoPipeline = "default"
 
+	// The low-power pipeline performs software-based video processing with
+	// limits on bitrate, frame rate, and video size. This creates a smoother
+	// viewing experience on servers with limited CPU power, but produces very
+	// low-quality output.
+	VideoPipelineLowPower VideoPipeline = "lowpower"
+
 	// The vaapi pipeline performs hardware accelerated video processing using the
 	// Video Acceleration API (VA-API). It is more performant than the default
 	// pipeline, but requires installation of gstreamer-vaapi plugins and may
@@ -68,10 +74,12 @@ const (
 // the default pipeline.
 func ParseVideoPipeline(name string) VideoPipeline {
 	switch {
-	case name == string(VideoPipelineVAAPI):
-		return VideoPipelineVAAPI
 	default:
 		return VideoPipelineDefault
+	case name == string(VideoPipelineLowPower):
+		return VideoPipelineLowPower
+	case name == string(VideoPipelineVAAPI):
+		return VideoPipelineVAAPI
 	}
 }
 
@@ -260,7 +268,14 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	{{- else }}
 	! mpeg2dec
 	! deinterlace
-	! x264enc bitrate=8000 tune=zerolatency speed-preset=ultrafast
+	{{- if eq .VideoPipeline "lowpower" }}
+	! videorate max-rate=30
+	! videoscale add-borders=true method=nearest-neighbour
+	! video/x-raw,width=640,height=360
+	! x264enc bitrate=2500 vbv-buf-capacity=1000 speed-preset=ultrafast bframes=0 mb-tree=false key-int-max=60 rc-lookahead=30
+	{{- else }}
+	! x264enc bitrate=8000 vbv-buf-capacity=1000 speed-preset=ultrafast tune=zerolatency
+	{{- end }}
 	{{- end }}
 	! video/x-h264,profile=constrained-baseline,stream-format=byte-stream
 	! appsink name=video max-buffers=50 drop=true
