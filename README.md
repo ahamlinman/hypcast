@@ -1,5 +1,7 @@
 # Hypcast
 
+![Screenshot of Hypcast tuned to a channel](/doc/screenshot.png)
+
 Hypcast is a web-based multi-party live television streamer based on
 [GStreamer][gstreamer] and [Pion WebRTC][pion], designed to work with TV
 tuner hardware on Linux hosts. Start it up, click a channel, and stream live
