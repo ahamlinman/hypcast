@@ -83,4 +83,4 @@ with relevant local laws).
   including typical container networking implementations. This would require
   configuring a STUN server.
 - The UI is currently hardcoded to connect over insecure WebSockets.
-- Subtitles are not supported.
+- Closed captions are not supported.

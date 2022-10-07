@@ -44,7 +44,7 @@ func NewPipeline(description string) (*Pipeline, error) {
 		return nil, errors.New(C.GoString(gerror.message))
 	}
 	// gst_parse_launch returns a "floating ref," see here for details:
-	// https://developer.gnome.org/gobject/stable/gobject-The-Base-Object-Type.html#floating-ref
+	// https://docs.gtk.org/gobject/floating-refs.html
 	C.gst_object_ref_sink(C.gpointer(gstPipeline))
 
 	return &Pipeline{
