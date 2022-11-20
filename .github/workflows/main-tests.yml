@@ -14,7 +14,7 @@ jobs:
       with:
         go-version: 1.19
     - name: Install libgstreamer1.0-dev
-      run: sudo apt-get install -y --no-install-recommends libgstreamer1.0-dev
+      run: sudo apt-get install -y libgstreamer1.0-dev
     - name: Run Tests
       run: go test -v -count 2 -race ./...
   client-build:
