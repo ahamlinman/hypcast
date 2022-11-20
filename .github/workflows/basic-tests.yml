@@ -1,0 +1,34 @@
+---
+name: Basic Tests
+on:
+  push:
+    branches: [main]
+jobs:
+  server-test:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+    - name: Test Select Packages
+      run: |
+        go build -v -count 2 -race \
+          ./internal/api/rpc \
+          ./internal/atsc \
+          ./internal/watch
+  client-build:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+    - name: Install Packages
+      run: cd client && yarn install --frozen-lockfile
+    - name: Build Client
+      run: cd client && yarn build
