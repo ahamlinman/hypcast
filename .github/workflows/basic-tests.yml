@@ -15,7 +15,7 @@ jobs:
         go-version: 1.19
     - name: Test Select Packages
       run: |
-        go build -v -count 2 -race \
+        go test -v -count 2 -race \
           ./internal/api/rpc \
           ./internal/atsc \
           ./internal/watch
