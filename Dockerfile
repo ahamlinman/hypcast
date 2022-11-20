@@ -63,17 +63,15 @@ RUN \
 
 
 FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-target
-# Bootstrap the root filesystem for the final image on the target architecture.
-# We can't directly use an Alpine target image since that would require running
-# the target architecture's apk binary, which our host might not support.
+# Bootstrap a distroless-style root filesystem for the final image on the target
+# architecture. We can't directly use an Alpine target image since that would
+# require running the target architecture's apk binary, which our host might not
+# support. We also have to avoid running any build scripts inside of the chroot,
+# (e.g. for Busybox symlinks), as they run in the target architecture's shell
+# (mksysroot takes care of this).
 ARG TARGETARCH TARGETVARIANT
 COPY buildenv.sh /buildenv.sh
 RUN source buildenv.sh && mksysroot \
-      alpine-baselayout \
-      alpine-keys \
-      apk-tools \
-      busybox \
-      libc-utils \
       tini \
       gstreamer \
       gst-plugins-base \

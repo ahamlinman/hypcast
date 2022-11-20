@@ -16,7 +16,7 @@ esac
 mksysroot () {
 	mkdir -p /sysroot/etc/apk
 	cp /etc/apk/repositories /sysroot/etc/apk/
-	apk add -p /sysroot --arch $CARCH --initdb --no-cache --allow-untrusted "$@"
+	apk add -p /sysroot --arch $CARCH --initdb --no-cache --no-scripts --allow-untrusted "$@"
 }
 
 export CC=clang
