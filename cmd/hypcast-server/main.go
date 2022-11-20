@@ -40,7 +40,7 @@ func init() {
 	)
 	flag.StringVar(
 		&flagVideoPipeline, "video-pipeline", "default",
-		`Video pipeline implementation; use "vaapi" for VA-API hardware acceleration`,
+		`Video pipeline implementation (default, lowpower, vaapi)`,
 	)
 }
 
