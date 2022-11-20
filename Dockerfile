@@ -20,7 +20,7 @@ FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-build
 # target platform, which LLVM requires for cross-compilaton.
 ARG TARGETARCH TARGETVARIANT
 COPY buildenv.sh /buildenv.sh
-RUN source buildenv.sh && mksysroot build-base gstreamer-dev
+RUN source buildenv.sh && mksysroot gcc libc-dev gstreamer-dev
 
 
 FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
