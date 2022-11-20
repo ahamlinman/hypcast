@@ -26,7 +26,7 @@ RUN source buildenv.sh && mksysroot build-base gstreamer-dev
 FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
 # Install host tools for cross-compilation and download Go modules, as these are
 # usable across all targets.
-RUN apk add --no-cache git clang lld pkgconf
+RUN apk add --no-cache clang lld pkgconf
 RUN \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
