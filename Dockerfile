@@ -7,8 +7,10 @@
 
 # The Go builder image and Alpine target image should both use the same release
 # of Alpine Linux, to ensure there are no incompatibilities in the final image.
-FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.16 AS base-alpine
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.16 AS base-golang
+# Note that gst-plugins-ugly in Alpine 3.16 disables the mpeg2dec plugin, which
+# Hypcast requires.
+FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.15 AS base-alpine
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.15 AS base-golang
 
 # The Node image for the client UI build is based on Alpine for reduced size,
 # however the Alpine release does not need to match that of the server build.
