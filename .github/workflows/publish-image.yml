@@ -2,7 +2,7 @@
 name: Publish Image
 on:
   workflow_run:
-    workflows: [Basic Tests]
+    workflows: [Main Tests]
     types: [completed]
     branches: [main]
 jobs:
