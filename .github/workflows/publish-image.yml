@@ -28,4 +28,4 @@ jobs:
           linux/arm64
           linux/arm/v7
         cache-from: type=gha
-        cache-to: type=gha
+        cache-to: type=gha,mode=max
