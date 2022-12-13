@@ -15,30 +15,28 @@ import (
 )
 
 type tunerStatusHandler struct {
-	tuner       *tuner.Tuner
-	socket      *websocket.Conn
-	watch       watch.Watch
-	shutdownErr chan error
-	waitGroup   sync.WaitGroup
+	tuner     *tuner.Tuner
+	socket    *websocket.Conn
+	watch     watch.Watch
+	ctx       context.Context
+	shutdown  context.CancelCauseFunc
+	waitGroup sync.WaitGroup
 }
 
 func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
-	tsh := &tunerStatusHandler{
-		tuner:       h.tuner,
-		shutdownErr: make(chan error, 1),
-	}
+	tsh := &tunerStatusHandler{tuner: h.tuner}
+	tsh.ctx, tsh.shutdown = context.WithCancelCause(context.Background())
 	tsh.ServeHTTP(w, r)
 }
 
 func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-
 	tsh.logf("Starting new connection")
 	defer func() {
 		tsh.waitForCleanup()
-		tsh.logf("Finished with error: %v", err)
+		tsh.logf("Finished with error: %v", tsh.ctx.Err())
 	}()
 
+	var err error
 	tsh.socket, err = websocket.Accept(w, r, nil)
 	if err != nil {
 		return
@@ -54,40 +52,31 @@ func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	tsh.watch = tsh.tuner.WatchStatus(tsh.sendNewTunerStatus)
 	defer tsh.watch.Cancel()
 
-	err = <-tsh.shutdownErr
+	<-tsh.ctx.Done()
 }
 
 func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
 	tsh.logf("Received tuner status: %v", s)
-
 	msg := tsh.mapTunerStatusToMessage(s)
-	if err := wsjson.Write(context.TODO(), tsh.socket, msg); err != nil {
+	if err := wsjson.Write(tsh.ctx, tsh.socket, msg); err != nil {
 		tsh.shutdown(err)
 	}
 }
 
-func (tsh *tunerStatusHandler) drainClient() {
+func (tsh *tunerStatusHandler) drainClient() (err error) {
+	defer func() { tsh.shutdown(err) }()
 	for {
-		_, reader, err := tsh.socket.Reader(context.TODO())
+		_, reader, err := tsh.socket.Reader(tsh.ctx)
 		switch {
 		case websocket.CloseStatus(err) == websocket.StatusGoingAway:
-			tsh.shutdown(nil)
-			return
+			return nil
 		case err != nil:
-			tsh.shutdown(err)
-			return
+			return err
+		default:
+			if _, err := io.Copy(io.Discard, reader); err != nil {
+				return err
+			}
 		}
-		if _, err := io.Copy(io.Discard, reader); err != nil {
-			tsh.shutdown(err)
-			return
-		}
-	}
-}
-
-func (tsh *tunerStatusHandler) shutdown(err error) {
-	select {
-	case tsh.shutdownErr <- err:
-	default:
 	}
 }
 
