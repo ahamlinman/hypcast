@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	_ "nhooyr.io/websocket"
 
 	"github.com/ahamlinman/hypcast/internal/api/rpc"
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"

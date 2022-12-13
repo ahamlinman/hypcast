@@ -6,10 +6,12 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/gorilla/websocket v1.5.0
 	github.com/pion/webrtc/v3 v3.1.50
+	nhooyr.io/websocket v1.8.7
 )
 
 require (
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/klauspost/compress v1.10.3 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.1.5 // indirect
 	github.com/pion/ice/v2 v2.2.13 // indirect
