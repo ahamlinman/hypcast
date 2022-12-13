@@ -48,31 +48,29 @@ func init() {
 }
 
 type webrtcHandler struct {
-	tuner       *tuner.Tuner
-	socket      *websocket.Conn
-	rtcPeer     *webrtc.PeerConnection
-	watch       watch.Watch
-	shutdownErr chan error
-	waitGroup   sync.WaitGroup
+	tuner     *tuner.Tuner
+	socket    *websocket.Conn
+	rtcPeer   *webrtc.PeerConnection
+	watch     watch.Watch
+	ctx       context.Context
+	shutdown  context.CancelCauseFunc
+	waitGroup sync.WaitGroup
 }
 
 func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request) {
-	wh := &webrtcHandler{
-		tuner:       h.tuner,
-		shutdownErr: make(chan error, 1),
-	}
+	wh := &webrtcHandler{tuner: h.tuner}
+	wh.ctx, wh.shutdown = context.WithCancelCause(context.Background())
 	wh.ServeHTTP(w, r)
 }
 
 func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-
 	wh.logf("Starting new connection")
 	defer func() {
 		wh.waitForCleanup()
-		wh.logf("Finished with error: %v", err)
+		wh.logf("Finished with error: %v", wh.ctx.Err())
 	}()
 
+	var err error
 	wh.socket, err = websocket.Accept(w, r, nil)
 	if err != nil {
 		return
@@ -94,25 +92,23 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	wh.watch = wh.tuner.WatchTracks(wh.handleTrackUpdate)
 	defer wh.watch.Cancel()
 
-	err = <-wh.shutdownErr
+	<-wh.ctx.Done()
 }
 
-func (wh *webrtcHandler) handleClientSessionAnswers() {
+func (wh *webrtcHandler) handleClientSessionAnswers() (err error) {
+	defer func() { wh.shutdown(err) }()
 	for {
 		var msg struct{ SDP webrtc.SessionDescription }
-		err := wsjson.Read(context.TODO(), wh.socket, &msg)
+		err := wsjson.Read(wh.ctx, wh.socket, &msg)
 		switch {
 		case websocket.CloseStatus(err) == websocket.StatusGoingAway:
-			wh.shutdown(nil)
-			return
+			return nil
 		case err != nil:
-			wh.shutdown(err)
-			return
-		}
-
-		if err := wh.rtcPeer.SetRemoteDescription(msg.SDP); err != nil {
-			wh.shutdown(err)
-			return
+			return err
+		default:
+			if err := wh.rtcPeer.SetRemoteDescription(msg.SDP); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -161,7 +157,7 @@ func (wh *webrtcHandler) renegotiateSession() error {
 
 	<-gatherComplete
 	msg := struct{ SDP webrtc.SessionDescription }{*wh.rtcPeer.LocalDescription()}
-	return wsjson.Write(context.TODO(), wh.socket, msg)
+	return wsjson.Write(wh.ctx, wh.socket, msg)
 }
 
 func (wh *webrtcHandler) removeTracks() error {
@@ -205,13 +201,6 @@ func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
 
 func (wh *webrtcHandler) hasTransceivers() bool {
 	return len(wh.rtcPeer.GetTransceivers()) > 0
-}
-
-func (wh *webrtcHandler) shutdown(err error) {
-	select {
-	case wh.shutdownErr <- err:
-	default:
-	}
 }
 
 func (wh *webrtcHandler) waitForCleanup() {
