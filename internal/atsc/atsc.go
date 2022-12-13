@@ -45,7 +45,7 @@ func (c Channel) String() string {
 // Each line of the file defines a single channel, and is formatted as 6
 // colon-separated fields corresponding to the fields of Channel as follows:
 //
-//   Name:FrequencyHz:Modulation:VideoPID:AudioPID:ProgramID
+//	Name:FrequencyHz:Modulation:VideoPID:AudioPID:ProgramID
 //
 // FrequencyHz, VideoPID, AudioPID, and ProgramID are all represented in decimal
 // form.
@@ -54,7 +54,7 @@ func (c Channel) String() string {
 // generating a compatible file. For example, to scan for terrestrial broadcast
 // channels in the United States of America:
 //
-//   w_scan2 -f a -c us -X > channels.conf
+//	w_scan2 -f a -c us -X > channels.conf
 func ParseChannelsConf(r io.Reader) ([]Channel, error) {
 	var (
 		channels []Channel
@@ -87,14 +87,11 @@ func ParseChannelsConf(r io.Reader) ([]Channel, error) {
 			switch s {
 			case "8VSB", "VSB_8":
 				return Modulation8VSB
-
 			case "QAM_64":
 				return ModulationQAM64
-
 			case "QAM_256":
 				return ModulationQAM256
 			}
-
 			if err == nil {
 				err = fmt.Errorf("channels.conf line %d has unknown modulation %q", line, s)
 			}

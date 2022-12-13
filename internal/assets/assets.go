@@ -33,7 +33,7 @@ func (fs FileSystem) Open(name string) (http.File, error) {
 		return nil, err
 	}
 
-	if s, _ := f.Stat(); s.IsDir() {
+	if stat, _ := f.Stat(); stat.IsDir() {
 		// If the directory contains an index page, http.FileServer will serve it
 		// instead of a directory listing, and we can return the directory entry
 		// that we opened. Otherwise, we should return an error to block clients
