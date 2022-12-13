@@ -1,13 +1,14 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v3"
+	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 	"github.com/ahamlinman/hypcast/internal/watch"
@@ -72,11 +73,11 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		wh.logf("Finished with error: %v", err)
 	}()
 
-	wh.socket, err = websocketUpgrader.Upgrade(w, r, nil)
+	wh.socket, err = websocket.Accept(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer wh.socket.Close()
+	defer wh.socket.Close(websocket.StatusGoingAway, "shut down by server")
 
 	wh.rtcPeer, err = webrtcAPI.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
@@ -98,14 +99,13 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (wh *webrtcHandler) handleClientSessionAnswers() {
 	for {
-		_, r, err := wh.socket.NextReader()
-		if err != nil {
-			wh.shutdown(err)
-			return
-		}
-
 		var msg struct{ SDP webrtc.SessionDescription }
-		if err := json.NewDecoder(r).Decode(&msg); err != nil {
+		err := wsjson.Read(context.TODO(), wh.socket, &msg)
+		switch {
+		case websocket.CloseStatus(err) == websocket.StatusGoingAway:
+			wh.shutdown(nil)
+			return
+		case err != nil:
 			wh.shutdown(err)
 			return
 		}
@@ -161,7 +161,7 @@ func (wh *webrtcHandler) renegotiateSession() error {
 
 	<-gatherComplete
 	msg := struct{ SDP webrtc.SessionDescription }{*wh.rtcPeer.LocalDescription()}
-	return wh.socket.WriteJSON(msg)
+	return wsjson.Write(context.TODO(), wh.socket, msg)
 }
 
 func (wh *webrtcHandler) removeTracks() error {

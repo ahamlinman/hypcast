@@ -6,16 +6,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/ahamlinman/hypcast/internal/api/rpc"
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 )
-
-var websocketUpgrader = &websocket.Upgrader{
-	// TODO: Improve this function for better security
-	CheckOrigin: func(_ *http.Request) bool { return true },
-}
 
 // Handler serves the Hypcast API for a single tuner.
 type Handler struct {
