@@ -1,11 +1,14 @@
 package api
 
 import (
+	"context"
+	"io"
 	"log"
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/websocket"
+	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
 	"github.com/ahamlinman/hypcast/internal/watch"
@@ -36,11 +39,11 @@ func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		tsh.logf("Finished with error: %v", err)
 	}()
 
-	tsh.socket, err = websocketUpgrader.Upgrade(w, r, nil)
+	tsh.socket, err = websocket.Accept(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer tsh.socket.Close()
+	defer tsh.socket.Close(websocket.StatusGoingAway, "shut down by server")
 
 	tsh.waitGroup.Add(1)
 	go func() {
@@ -58,17 +61,23 @@ func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
 	tsh.logf("Received tuner status: %v", s)
 
 	msg := tsh.mapTunerStatusToMessage(s)
-	if err := tsh.socket.WriteJSON(msg); err != nil {
+	if err := wsjson.Write(context.TODO(), tsh.socket, msg); err != nil {
 		tsh.shutdown(err)
 	}
 }
 
 func (tsh *tunerStatusHandler) drainClient() {
-	// Per https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages,
-	// we have to drain incoming messages ourselves even if we don't care about
-	// them.
 	for {
-		if _, _, err := tsh.socket.NextReader(); err != nil {
+		_, reader, err := tsh.socket.Reader(context.TODO())
+		switch {
+		case websocket.CloseStatus(err) == websocket.StatusGoingAway:
+			tsh.shutdown(nil)
+			return
+		case err != nil:
+			tsh.shutdown(err)
+			return
+		}
+		if _, err := io.Copy(io.Discard, reader); err != nil {
 			tsh.shutdown(err)
 			return
 		}
