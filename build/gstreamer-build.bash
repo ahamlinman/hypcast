@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -eu
 
-info () { printf '\033[35m[gstreamer-build.bash] \033[34m%s\033[0m\n' "$*"; }
+info () { printf '\033[35m[gstreamer-build] \033[34m%s\033[0m\n' "$*"; }
 
 source /hypcast-buildenv.sh
 case $CARCH in
 	armv7) export MESONCPU=arm;;
 	    *) export MESONCPU=$CARCH;;
 esac
-export LLVMTARGET="$CARCH-alpine-linux-$CABI"
 info "Building for LLVM target $LLVMTARGET (Meson CPU $MESONCPU)"
 
 # See https://mesonbuild.com/Cross-compilation.html
