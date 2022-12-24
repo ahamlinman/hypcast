@@ -30,9 +30,7 @@ RUN \
 
 
 # These images must all use the same release of Alpine Linux to ensure
-# compatibility. Note that the target-alpine image is only used to retrieve apk
-# signing keys; we cannot run any of the binaries it contains.
-FROM docker.io/library/alpine:3.17 AS target-alpine
+# compatibility.
 FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.17 AS base-alpine
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.17 AS base-golang
 
@@ -44,7 +42,6 @@ FROM --platform=$BUILDPLATFORM base-alpine AS build-sysroot
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
-  --mount=type=bind,from=target-alpine,source=/etc/apk,target=/apk-bootstrap \
   source /hypcast-buildenv.sh && \
   sysroot_init gcc libc-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev
 
@@ -113,7 +110,6 @@ FROM --platform=$BUILDPLATFORM base-alpine AS target-sysroot
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
-  --mount=type=bind,from=target-alpine,source=/etc/apk,target=/apk-bootstrap \
   source /hypcast-buildenv.sh && \
   sysroot_init tini glib a52dec libmpeg2 opus x264-libs
 
