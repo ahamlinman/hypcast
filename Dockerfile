@@ -14,17 +14,17 @@ RUN \
 
 
 # This Dockerfile is designed to produce multi-architecture images without
-# emulating the target architecture on the build host. The images are based on
-# Alpine Linux with a custom build of GStreamer, where all C components are
-# built with LLVM.
+# emulating the target architecture on the build host (which can be very slow).
+# The images are based on Alpine Linux with a custom build of GStreamer, where
+# all C components are built with LLVM.
 #
 # Why a custom GStreamer? Alpine 3.16 and up ship gst-plugins-ugly without the
 # mpeg2dec plugin, which is an absolute requirement for Hypcast. As a bonus, we
-# can reduce the image size by only including plugins we actually need. (We
-# still use Alpine's versions of glib and the various media codecs.)
+# can reduce the image size by only including plugins we actually need. We
+# still use Alpine's versions of glib and the underlying codecs.
 #
 # Why LLVM? Alpine does not ship a full set of gcc-based cross toolchains for
-# every build host architecture (e.g. no x86_64 toolchain for aarch64 hosts).
+# every build host architecture (e.g. no x86_64 toolchain on aarch64 hosts).
 # Even if it did, the consistency of the LLVM-based setup provides greater
 # confidence that a build executed on one architecture will work on others.
 
@@ -38,7 +38,8 @@ FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.17 AS base-
 
 
 # The build sysroot layer provides development headers and important support
-# files for the target platform. Other build layers will mount it as necessary.
+# files for cross-compilation to the target platform. Other build layers will
+# mount it as necessary.
 FROM --platform=$BUILDPLATFORM base-alpine AS build-sysroot
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
