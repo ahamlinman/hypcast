@@ -17,16 +17,6 @@ FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.15 AS base-
 FROM --platform=$BUILDPLATFORM docker.io/library/node:18-alpine AS base-node
 
 
-FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-build
-# Build a "sysroot" directory containing basic libraries and headers for the
-# target platform, which LLVM requires for cross-compilaton.
-ARG TARGETARCH TARGETVARIANT
-COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
-RUN \
-  source /hypcast-buildenv.sh && \
-  mksysroot gcc libc-dev gstreamer-dev
-
-
 FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
 # Install host tools for cross-compilation and download Go modules, as these are
 # usable across all targets.
@@ -38,13 +28,21 @@ RUN \
   cd /mnt/hypcast && go mod download
 
 
+FROM --platform=$BUILDPLATFORM base-alpine AS server-sysroot
+# Build a "sysroot" directory containing basic libraries and headers for the
+# target platform, which LLVM requires for cross-compilaton.
+ARG TARGETARCH TARGETVARIANT
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
+RUN source /hypcast-buildenv.sh && mksysroot gcc libc-dev gstreamer-dev
+
+
 FROM --platform=$BUILDPLATFORM server-build-base AS server-build
 # Build the hypcast-server binary. See hypcast-buildenv.sh for the setup of
 # important Go and cgo-related flags.
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
-  --mount=type=bind,from=sysroot-build,source=/sysroot,target=/sysroot \
+  --mount=type=bind,from=server-sysroot,source=/sysroot,target=/sysroot \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
   --mount=type=cache,id=hypcast.go-build,target=/root/.cache/go-build \
