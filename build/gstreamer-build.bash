@@ -11,16 +11,6 @@ esac
 export LLVMTARGET="$CARCH-alpine-linux-$CABI"
 info "Building for LLVM target $LLVMTARGET (Meson CPU $MESONCPU)"
 
-info "Initializing sysroot"
-sysroot_init \
-	gcc \
-	libc-dev \
-	gstreamer-dev \
-	a52dec-dev \
-	libmpeg2-dev \
-	opus-dev \
-	x264-dev
-
 # See https://mesonbuild.com/Cross-compilation.html
 info "Writing Meson --cross-file"
 cat > meson-cross.txt <<EOF
@@ -81,6 +71,7 @@ info "Starting Meson build"
 meson compile -C output
 
 info "Installing GStreamer to /gstreamer"
-meson install --destdir /gstreamer --strip -C output
+# TODO: Re-add --strip after Alpine is updated.
+meson install --destdir /gstreamer -C output
 
 info "GStreamer build complete"

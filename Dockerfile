@@ -17,6 +17,36 @@ FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.15 AS base-
 FROM --platform=$BUILDPLATFORM docker.io/library/node:18-alpine AS base-node
 
 
+FROM --platform=$BUILDPLATFORM base-alpine AS server-sysroot
+ARG TARGETARCH TARGETVARIANT
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
+RUN \
+  source /hypcast-buildenv.sh && \
+  sysroot_init gcc libc-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev
+
+
+FROM --platform=$BUILDPLATFORM server-sysroot AS gst-sysroot
+ARG TARGETARCH TARGETVARIANT
+RUN source /hypcast-buildenv.sh && sysroot_add gstreamer-dev
+
+
+FROM --platform=$BUILDPLATFORM base-alpine AS gst-build-base
+RUN apk add --no-cache bash git clang lld llvm meson glib-dev flex bison
+ARG GST_VERSION=1.20.5
+RUN git clone -b $GST_VERSION --depth 1 \
+  https://gitlab.freedesktop.org/gstreamer/gstreamer.git /tmp/gstreamer
+WORKDIR /tmp/gstreamer
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
+COPY build/gstreamer-build.bash .
+
+
+FROM --platform=$BUILDPLATFORM gst-build-base AS gst-build
+ARG TARGETARCH TARGETVARIANT
+RUN \
+  --mount=type=bind,from=gst-sysroot,source=/sysroot,target=/sysroot \
+  ./gstreamer-build.bash
+
+
 FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
 # Install host tools for cross-compilation and download Go modules, as these are
 # usable across all targets.
@@ -28,21 +58,14 @@ RUN \
   cd /mnt/hypcast && go mod download
 
 
-FROM --platform=$BUILDPLATFORM base-alpine AS server-sysroot
-# Build a "sysroot" directory containing basic libraries and headers for the
-# target platform, which LLVM requires for cross-compilaton.
-ARG TARGETARCH TARGETVARIANT
-COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
-RUN source /hypcast-buildenv.sh && sysroot_init gcc libc-dev gstreamer-dev
-
-
 FROM --platform=$BUILDPLATFORM server-build-base AS server-build
 # Build the hypcast-server binary. See hypcast-buildenv.sh for the setup of
 # important Go and cgo-related flags.
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
-  --mount=type=bind,from=server-sysroot,source=/sysroot,target=/sysroot \
+  --mount=type=bind,from=server-sysroot,source=/sysroot,target=/sysroot,rw \
+  --mount=type=bind,from=gst-build,source=/gstreamer/usr/local,target=/sysroot/usr/local \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
   --mount=type=cache,id=hypcast.go-build,target=/root/.cache/go-build \
@@ -78,13 +101,7 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init \
-    tini \
-    gstreamer \
-    gst-plugins-base \
-    gst-plugins-good \
-    gst-plugins-bad \
-    gst-plugins-ugly && \
+  sysroot_init tini glib a52dec libmpeg2 opus x264-libs && \
   mkdir -p \
     /sysroot/opt/hypcast/bin \
     /sysroot/opt/hypcast/share/www
@@ -93,6 +110,7 @@ RUN \
 FROM scratch AS target
 
 COPY --link --from=sysroot-target /sysroot /
+COPY --link --from=gst-build /gstreamer /
 COPY --link --from=server-build /hypcast-server /opt/hypcast/bin/hypcast-server
 COPY --link --from=client-build /build /opt/hypcast/share/www
 

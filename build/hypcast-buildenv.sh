@@ -25,6 +25,6 @@ sysroot_init () {
 
 export CC=clang
 export CGO_CFLAGS="--target=$CARCH-alpine-linux-$CABI --sysroot /sysroot"
-export CGO_LDFLAGS="--target=$CARCH-alpine-linux-$CABI --sysroot /sysroot -pie -fuse-ld=lld"
+export CGO_LDFLAGS="-v --target=$CARCH-alpine-linux-$CABI --sysroot /sysroot -pie -fuse-ld=lld"
 export PKG_CONFIG_SYSROOT_DIR=/sysroot
-export PKG_CONFIG_PATH=/sysroot/usr/lib/pkgconfig
+export PKG_CONFIG_PATH=/sysroot/usr/lib/pkgconfig:/sysroot/usr/local/lib/pkgconfig
