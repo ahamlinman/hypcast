@@ -13,10 +13,14 @@ case $TARGETARCH in
 		return 1;;
 esac
 
-mksysroot () {
+sysroot_add () {
+	apk add -p /sysroot --arch $CARCH --no-cache --no-scripts --allow-untrusted "$@"
+}
+
+sysroot_init () {
 	mkdir -p /sysroot/etc/apk
 	cp /etc/apk/repositories /sysroot/etc/apk/
-	apk add -p /sysroot --arch $CARCH --initdb --no-cache --no-scripts --allow-untrusted "$@"
+	sysroot_add --initdb "$@"
 }
 
 export CC=clang

@@ -33,7 +33,7 @@ FROM --platform=$BUILDPLATFORM base-alpine AS server-sysroot
 # target platform, which LLVM requires for cross-compilaton.
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
-RUN source /hypcast-buildenv.sh && mksysroot gcc libc-dev gstreamer-dev
+RUN source /hypcast-buildenv.sh && sysroot_init gcc libc-dev gstreamer-dev
 
 
 FROM --platform=$BUILDPLATFORM server-build-base AS server-build
@@ -73,12 +73,12 @@ FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-target
 # require running the target architecture's apk binary, which our host might not
 # support. We also have to avoid running any build scripts inside of the chroot,
 # (e.g. for Busybox symlinks), as they run in the target architecture's shell
-# (mksysroot takes care of this).
+# (sysroot_init takes care of this).
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  mksysroot \
+  sysroot_init \
     tini \
     gstreamer \
     gst-plugins-base \

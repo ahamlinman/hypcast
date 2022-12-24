@@ -12,7 +12,7 @@ export LLVMTARGET="$CARCH-alpine-linux-$CABI"
 info "Building for LLVM target $LLVMTARGET (Meson CPU $MESONCPU)"
 
 info "Initializing sysroot"
-mksysroot \
+sysroot_init \
 	gcc \
 	libc-dev \
 	gstreamer-dev \
