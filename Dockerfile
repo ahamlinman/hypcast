@@ -77,6 +77,7 @@ RUN \
 # to all target platforms.
 FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
 RUN apk add --no-cache clang lld pkgconf
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
@@ -89,7 +90,6 @@ RUN \
 # hypcast-buildenv.sh for the setup of important environment variables.
 FROM --platform=$BUILDPLATFORM server-build-base AS server-build
 ARG TARGETARCH TARGETVARIANT
-COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   --mount=type=bind,from=build-sysroot,source=/sysroot,target=/sysroot,rw \
   --mount=type=bind,from=gst-build,source=/gstreamer/usr/local,target=/sysroot/usr/local \
