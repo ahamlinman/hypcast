@@ -48,7 +48,7 @@ RUN \
 # The GStreamer build base layer sets up parts of the GStreamer build that are
 # common to all target platforms.
 FROM --platform=$BUILDPLATFORM base-alpine AS gst-build-base
-RUN apk add --no-cache bash git clang lld llvm meson glib-dev flex bison
+RUN apk add --no-cache bash git clang lld llvm pkgconf meson flex bison glib-dev
 ARG GST_VERSION=1.20.5
 RUN git clone -b $GST_VERSION --depth 1 \
   https://gitlab.freedesktop.org/gstreamer/gstreamer.git /tmp/gstreamer
