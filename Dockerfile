@@ -15,17 +15,12 @@ FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.17 AS base-
 FROM --platform=$BUILDPLATFORM docker.io/library/node:18-alpine AS base-node
 
 
-FROM --platform=$BUILDPLATFORM base-alpine AS server-sysroot
+FROM --platform=$BUILDPLATFORM base-alpine AS build-sysroot
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
   sysroot_init gcc libc-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev
-
-
-FROM --platform=$BUILDPLATFORM server-sysroot AS gst-sysroot
-ARG TARGETARCH TARGETVARIANT
-RUN source /hypcast-buildenv.sh && sysroot_add gstreamer-dev
 
 
 FROM --platform=$BUILDPLATFORM base-alpine AS gst-build-base
@@ -41,7 +36,7 @@ COPY build/gstreamer-build.bash .
 FROM --platform=$BUILDPLATFORM gst-build-base AS gst-build
 ARG TARGETARCH TARGETVARIANT
 RUN \
-  --mount=type=bind,from=gst-sysroot,source=/sysroot,target=/sysroot \
+  --mount=type=bind,from=build-sysroot,source=/sysroot,target=/sysroot \
   ./gstreamer-build.bash
 
 
@@ -62,7 +57,7 @@ FROM --platform=$BUILDPLATFORM server-build-base AS server-build
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
-  --mount=type=bind,from=server-sysroot,source=/sysroot,target=/sysroot,rw \
+  --mount=type=bind,from=build-sysroot,source=/sysroot,target=/sysroot,rw \
   --mount=type=bind,from=gst-build,source=/gstreamer/usr/local,target=/sysroot/usr/local \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
@@ -88,7 +83,7 @@ RUN \
   yarn build
 
 
-FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-target
+FROM --platform=$BUILDPLATFORM base-alpine AS target-sysroot
 # Bootstrap a distroless-style root filesystem for the final image on the target
 # architecture. We can't directly use an Alpine target image since that would
 # require running the target architecture's apk binary, which our host might not
@@ -107,7 +102,7 @@ RUN \
 
 FROM scratch AS target
 
-COPY --link --from=sysroot-target /sysroot /
+COPY --link --from=target-sysroot /sysroot /
 COPY --link --from=gst-build /gstreamer /
 COPY --link --from=server-build /hypcast-server /opt/hypcast/bin/hypcast-server
 COPY --link --from=client-build /build /opt/hypcast/share/www
