@@ -71,7 +71,6 @@ info "Starting Meson build"
 meson compile -C output
 
 info "Installing GStreamer to /gstreamer"
-# TODO: Re-add --strip after Alpine is updated.
-meson install --destdir /gstreamer -C output
+meson install --destdir /gstreamer --strip -C output
 
 info "GStreamer build complete"
