@@ -21,8 +21,10 @@ FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-build
 # Build a "sysroot" directory containing basic libraries and headers for the
 # target platform, which LLVM requires for cross-compilaton.
 ARG TARGETARCH TARGETVARIANT
-COPY buildenv.sh /buildenv.sh
-RUN source buildenv.sh && mksysroot gcc libc-dev gstreamer-dev
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
+RUN \
+  source /hypcast-buildenv.sh && \
+  mksysroot gcc libc-dev gstreamer-dev
 
 
 FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
@@ -37,17 +39,17 @@ RUN \
 
 
 FROM --platform=$BUILDPLATFORM server-build-base AS server-build
-# Build the hypcast-server binary. See buildenv.sh for the setup of important
-# Go and cgo-related flags.
+# Build the hypcast-server binary. See hypcast-buildenv.sh for the setup of
+# important Go and cgo-related flags.
 ARG TARGETARCH TARGETVARIANT
-COPY buildenv.sh /buildenv.sh
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   --mount=type=bind,from=sysroot-build,source=/sysroot,target=/sysroot \
   --mount=type=bind,target=/mnt/hypcast \
   --mount=type=cache,id=hypcast.go-pkg,target=/go/pkg \
   --mount=type=cache,id=hypcast.go-build,target=/root/.cache/go-build \
   cd /mnt/hypcast && \
-  source /buildenv.sh && \
+  source /hypcast-buildenv.sh && \
   go build -v \
     -ldflags=-extld=clang -buildmode=pie \
     -o /hypcast-server \
@@ -75,17 +77,19 @@ FROM --platform=$BUILDPLATFORM base-alpine AS sysroot-target
 # (e.g. for Busybox symlinks), as they run in the target architecture's shell
 # (mksysroot takes care of this).
 ARG TARGETARCH TARGETVARIANT
-COPY buildenv.sh /buildenv.sh
-RUN source buildenv.sh && mksysroot \
-      tini \
-      gstreamer \
-      gst-plugins-base \
-      gst-plugins-good \
-      gst-plugins-bad \
-      gst-plugins-ugly && \
-    mkdir -p \
-      /sysroot/opt/hypcast/bin \
-      /sysroot/opt/hypcast/share/www
+COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
+RUN \
+  source /hypcast-buildenv.sh && \
+  mksysroot \
+    tini \
+    gstreamer \
+    gst-plugins-base \
+    gst-plugins-good \
+    gst-plugins-bad \
+    gst-plugins-ugly && \
+  mkdir -p \
+    /sysroot/opt/hypcast/bin \
+    /sysroot/opt/hypcast/share/www
 
 
 FROM scratch AS target
