@@ -110,10 +110,7 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init tini glib a52dec libmpeg2 opus x264-libs && \
-  mkdir -p \
-    /sysroot/opt/hypcast/bin \
-    /sysroot/opt/hypcast/share/www
+  sysroot_init tini glib a52dec libmpeg2 opus x264-libs
 
 
 # The final image simply assembles the results of previous build steps.
