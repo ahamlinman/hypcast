@@ -5,10 +5,10 @@
 FROM --platform=$BUILDPLATFORM docker.io/library/node:18-alpine AS client-build
 ENV BUILD_PATH=/build
 RUN \
-  --mount=type=bind,target=/mnt/hypcast,rw \
-  --mount=type=cache,id=hypcast.node_modules,target=/mnt/hypcast/client/node_modules \
+  --mount=type=bind,source=client,target=/mnt/client,rw \
+  --mount=type=cache,id=hypcast.node_modules,target=/mnt/client/node_modules \
   --mount=type=cache,id=hypcast.yarn,target=/usr/local/share/.cache/yarn \
-  cd /mnt/hypcast/client && \
+  cd /mnt/client && \
   yarn install --frozen-lockfile && \
   yarn build
 
