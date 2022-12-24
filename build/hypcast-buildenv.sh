@@ -17,8 +17,9 @@ export LLVMTARGET="$CARCH-alpine-linux-$CABI"
 
 sysroot_init () {
 	mkdir -p /sysroot/etc/apk
-	cp /etc/apk/repositories /sysroot/etc/apk/
-	apk add -p /sysroot --arch "$CARCH" --initdb --no-cache --no-scripts --allow-untrusted "$@"
+	cp /apk-bootstrap/repositories /sysroot/etc/apk/
+	cp -r /apk-bootstrap/keys /sysroot/etc/apk/keys
+	apk add -p /sysroot --arch "$CARCH" --initdb --no-cache --no-scripts "$@"
 }
 
 export CC=clang
