@@ -51,21 +51,21 @@ type Tracks struct {
 type VideoPipeline string
 
 const (
-	// The default pipeline performs software-based video processing. It should
+	// VideoPipelineDefault performs software-based video processing. It should
 	// work on a wide variety of machines with little to no additional
 	// configuration.
 	VideoPipelineDefault VideoPipeline = "default"
 
-	// The low-power pipeline performs software-based video processing with
-	// limits on bitrate, frame rate, and video size. This creates a smoother
-	// viewing experience on servers with limited CPU power, but produces very
+	// VideoPipelineLowPower performs software-based video processing with limits
+	// on bitrate, frame rate, and video size. This creates a smoother viewing
+	// experience on servers with limited CPU power, but produces very
 	// low-quality output.
 	VideoPipelineLowPower VideoPipeline = "lowpower"
 
-	// The vaapi pipeline performs hardware accelerated video processing using the
-	// Video Acceleration API (VA-API). It is more performant than the default
-	// pipeline, but requires installation of gstreamer-vaapi plugins and may
-	// require additional configuration to select an appropriate device and
+	// VideoPipelineVAAPI performs hardware accelerated video processing using
+	// the Video Acceleration API (VA-API). It is more performant than the
+	// default pipeline, but requires installation of gstreamer-vaapi plugins and
+	// may require additional configuration to select an appropriate device and
 	// driver. See GStreamer documentation for details.
 	VideoPipelineVAAPI VideoPipeline = "vaapi"
 )
