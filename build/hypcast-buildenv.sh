@@ -5,9 +5,6 @@ export CGO_ENABLED=1 GOOS=linux GOARCH="$TARGETARCH"
 case $TARGETARCH in
 	amd64) export CARCH=x86_64 CABI=musl;;
 	arm64) export CARCH=aarch64 CABI=musl;;
-	arm)
-		if [ "${TARGETVARIANT:-_}" != v7 ]; then echo "linux/arm requires v7"; return 1; fi
-		export CARCH=armv7 CABI=musleabihf GOARM=7;;
 	*)
 		echo "unsupported architecture $TARGETARCH"
 		return 1;;

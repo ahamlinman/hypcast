@@ -4,19 +4,15 @@ set -eu
 info () { printf '\033[35m[gstreamer-build] \033[34m%s\033[0m\n' "$*"; }
 
 source /hypcast-buildenv.sh
-case $CARCH in
-	armv7) export MESONCPU=arm;;
-	*)     export MESONCPU=$CARCH;;
-esac
-info "Building for LLVM target $LLVMTARGET (Meson CPU $MESONCPU)"
+info "Building for LLVM target $LLVMTARGET"
 
 # See https://mesonbuild.com/Cross-compilation.html
 info "Writing Meson --cross-file"
 cat > meson-cross.txt <<EOF
 [host_machine]
 system = 'linux'
-cpu_family = '$MESONCPU'
-cpu = '$MESONCPU'
+cpu_family = '$CARCH'
+cpu = '$CARCH'
 endian = 'little'
 
 [constants]
