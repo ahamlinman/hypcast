@@ -19,25 +19,21 @@ cpu_family = '$MESONCPU'
 cpu = '$MESONCPU'
 endian = 'little'
 
+[constants]
+llvm_cross_args = ['--target=$LLVMTARGET', '--sysroot', '/sysroot']
+
 [binaries]
-pkgconfig = 'pkg-config'
-c = 'clang'
+c = ['clang'] + llvm_cross_args
+cpp = ['clang++'] + llvm_cross_args
 c_ld = 'lld'
-cpp = 'clang++'
 cpp_ld = 'lld'
+pkgconfig = 'pkg-config'
 strip = 'llvm-strip'
 
 [properties]
 sys_root = '/sysroot'
 
-[constants]
-llvm_args = ['--target=$LLVMTARGET', '--sysroot', '/sysroot']
-
 [built-in options]
-c_args = llvm_args
-c_link_args = llvm_args
-cpp_args = llvm_args
-cpp_link_args = llvm_args
 pkg_config_path = ['/sysroot/usr/lib/pkgconfig']
 EOF
 
