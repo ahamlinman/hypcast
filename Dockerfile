@@ -96,7 +96,7 @@ RUN \
   cd /mnt/hypcast && \
   source /hypcast-buildenv.sh && \
   go build -v \
-    -ldflags='-extld=clang -s -w' -buildmode=pie \
+    -ldflags="-extld=$CC -s -w" -buildmode=pie \
     -o /hypcast-server \
     ./cmd/hypcast-server
 
