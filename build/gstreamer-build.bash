@@ -6,7 +6,7 @@ info () { printf '\033[35m[gstreamer-build] \033[34m%s\033[0m\n' "$*"; }
 source /hypcast-buildenv.sh
 case $CARCH in
 	armv7) export MESONCPU=arm;;
-	    *) export MESONCPU=$CARCH;;
+	*)     export MESONCPU=$CARCH;;
 esac
 info "Building for LLVM target $LLVMTARGET (Meson CPU $MESONCPU)"
 
@@ -43,28 +43,28 @@ EOF
 
 info "Starting Meson setup"
 meson setup \
-  --cross-file=meson-cross.txt \
-  -Db_staticpic=true \
-  -Db_pie=true \
-  -Dauto_features=disabled \
-  -Dgpl=enabled \
-  -Dbase=enabled \
-  -Dgst-plugins-base:app=enabled \
-  -Dgst-plugins-base:audioconvert=enabled \
-  -Dgst-plugins-base:audioresample=enabled \
-  -Dgst-plugins-base:opus=enabled \
-  -Dgst-plugins-base:videorate=enabled \
-  -Dgst-plugins-base:videoscale=enabled \
-  -Dgood=enabled \
-  -Dgst-plugins-good:deinterlace=enabled \
-  -Dbad=enabled \
-  -Dgst-plugins-bad:dvb=enabled \
-  -Dgst-plugins-bad:mpegtsdemux=enabled \
-  -Dugly=enabled \
-  -Dgst-plugins-ugly:a52dec=enabled \
-  -Dgst-plugins-ugly:mpeg2dec=enabled \
-  -Dgst-plugins-ugly:x264=enabled \
-  output
+	--cross-file=meson-cross.txt \
+	-Db_staticpic=true \
+	-Db_pie=true \
+	-Dauto_features=disabled \
+	-Dgpl=enabled \
+	-Dbase=enabled \
+	-Dgst-plugins-base:app=enabled \
+	-Dgst-plugins-base:audioconvert=enabled \
+	-Dgst-plugins-base:audioresample=enabled \
+	-Dgst-plugins-base:opus=enabled \
+	-Dgst-plugins-base:videorate=enabled \
+	-Dgst-plugins-base:videoscale=enabled \
+	-Dgood=enabled \
+	-Dgst-plugins-good:deinterlace=enabled \
+	-Dbad=enabled \
+	-Dgst-plugins-bad:dvb=enabled \
+	-Dgst-plugins-bad:mpegtsdemux=enabled \
+	-Dugly=enabled \
+	-Dgst-plugins-ugly:a52dec=enabled \
+	-Dgst-plugins-ugly:mpeg2dec=enabled \
+	-Dgst-plugins-ugly:x264=enabled \
+	output
 
 info "Starting Meson build"
 meson compile -C output
