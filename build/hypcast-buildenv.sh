@@ -13,14 +13,17 @@ case $TARGETARCH in
 		return 1;;
 esac
 
-mksysroot () {
-	mkdir -p /sysroot/etc/apk
+export LLVMTARGET="$CARCH-alpine-linux-$CABI"
+
+sysroot_init () {
+	mkdir -p /sysroot/etc/apk/keys
 	cp /etc/apk/repositories /sysroot/etc/apk/
-	apk add -p /sysroot --arch $CARCH --initdb --no-cache --no-scripts --allow-untrusted "$@"
+	cp /usr/share/apk/keys/*.pub /sysroot/etc/apk/keys/
+	apk add -p /sysroot --arch "$CARCH" --initdb --no-cache --no-scripts "$@"
 }
 
 export CC=clang
-export CGO_CFLAGS="--target=$CARCH-alpine-linux-$CABI --sysroot /sysroot"
-export CGO_LDFLAGS="--target=$CARCH-alpine-linux-$CABI --sysroot /sysroot -pie -fuse-ld=lld"
+export CGO_CFLAGS="--target=$LLVMTARGET --sysroot /sysroot"
+export CGO_LDFLAGS="--target=$LLVMTARGET --sysroot /sysroot -pie -fuse-ld=lld"
 export PKG_CONFIG_SYSROOT_DIR=/sysroot
-export PKG_CONFIG_PATH=/sysroot/usr/lib/pkgconfig
+export PKG_CONFIG_PATH=/sysroot/usr/lib/pkgconfig:/sysroot/usr/local/lib/pkgconfig
