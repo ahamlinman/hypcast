@@ -32,7 +32,7 @@ RUN \
 # These images must all use the same release of Alpine Linux to ensure
 # compatibility.
 FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.17 AS base-alpine
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.19-alpine3.17 AS base-golang
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.20-alpine3.17 AS base-golang
 
 
 # The build sysroot layer provides development headers and important support
