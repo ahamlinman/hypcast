@@ -48,11 +48,11 @@ func init() {
 
 type webrtcHandler struct {
 	tuner       *tuner.Tuner
-	conn        *websocket.Conn
-	pc          *webrtc.PeerConnection
+	socket      *websocket.Conn
+	rtcPeer     *webrtc.PeerConnection
 	watch       watch.Watch
 	shutdownErr chan error
-	wg          sync.WaitGroup
+	waitGroup   sync.WaitGroup
 }
 
 func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request) {
@@ -72,21 +72,21 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		wh.logf("Finished with error: %v", err)
 	}()
 
-	wh.conn, err = websocketUpgrader.Upgrade(w, r, nil)
+	wh.socket, err = websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer wh.conn.Close()
+	defer wh.socket.Close()
 
-	wh.pc, err = webrtcAPI.NewPeerConnection(webrtc.Configuration{})
+	wh.rtcPeer, err = webrtcAPI.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		return
 	}
-	defer wh.pc.Close()
+	defer wh.rtcPeer.Close()
 
-	wh.wg.Add(1)
+	wh.waitGroup.Add(1)
 	go func() {
-		defer wh.wg.Done()
+		defer wh.waitGroup.Done()
 		wh.handleClientSessionAnswers()
 	}()
 
@@ -98,7 +98,7 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (wh *webrtcHandler) handleClientSessionAnswers() {
 	for {
-		_, r, err := wh.conn.NextReader()
+		_, r, err := wh.socket.NextReader()
 		if err != nil {
 			wh.shutdown(err)
 			return
@@ -110,7 +110,7 @@ func (wh *webrtcHandler) handleClientSessionAnswers() {
 			return
 		}
 
-		if err := wh.pc.SetRemoteDescription(msg.SDP); err != nil {
+		if err := wh.rtcPeer.SetRemoteDescription(msg.SDP); err != nil {
 			wh.shutdown(err)
 			return
 		}
@@ -146,27 +146,27 @@ func (wh *webrtcHandler) renegotiateSession() error {
 		return nil
 	}
 
-	sdp, err := wh.pc.CreateOffer(nil)
+	sdp, err := wh.rtcPeer.CreateOffer(nil)
 	if err != nil {
 		return err
 	}
 
 	// TODO: Should probably implement trickle ICE, but since Hypcast doesn't
 	// implement STUN support it's not like ICE gathering takes much time.
-	gatherComplete := webrtc.GatheringCompletePromise(wh.pc)
+	gatherComplete := webrtc.GatheringCompletePromise(wh.rtcPeer)
 
-	if err := wh.pc.SetLocalDescription(sdp); err != nil {
+	if err := wh.rtcPeer.SetLocalDescription(sdp); err != nil {
 		return err
 	}
 
 	<-gatherComplete
-	msg := struct{ SDP webrtc.SessionDescription }{*wh.pc.LocalDescription()}
-	return wh.conn.WriteJSON(msg)
+	msg := struct{ SDP webrtc.SessionDescription }{*wh.rtcPeer.LocalDescription()}
+	return wh.socket.WriteJSON(msg)
 }
 
 func (wh *webrtcHandler) removeTracks() error {
-	for _, sender := range wh.pc.GetSenders() {
-		if err := wh.pc.RemoveTrack(sender); err != nil {
+	for _, sender := range wh.rtcPeer.GetSenders() {
+		if err := wh.rtcPeer.RemoveTrack(sender); err != nil {
 			return err
 		}
 	}
@@ -181,10 +181,10 @@ func (wh *webrtcHandler) addTracks(ts tuner.Tracks) error {
 }
 
 func (wh *webrtcHandler) addTracksWithExistingTransceivers(ts tuner.Tracks) error {
-	if _, err := wh.pc.AddTrack(ts.Video); err != nil {
+	if _, err := wh.rtcPeer.AddTrack(ts.Video); err != nil {
 		return err
 	}
-	if _, err := wh.pc.AddTrack(ts.Audio); err != nil {
+	if _, err := wh.rtcPeer.AddTrack(ts.Audio); err != nil {
 		return err
 	}
 	return nil
@@ -194,17 +194,17 @@ func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
 	init := webrtc.RTPTransceiverInit{
 		Direction: webrtc.RTPTransceiverDirectionSendonly,
 	}
-	if _, err := wh.pc.AddTransceiverFromTrack(ts.Video, init); err != nil {
+	if _, err := wh.rtcPeer.AddTransceiverFromTrack(ts.Video, init); err != nil {
 		return err
 	}
-	if _, err := wh.pc.AddTransceiverFromTrack(ts.Audio, init); err != nil {
+	if _, err := wh.rtcPeer.AddTransceiverFromTrack(ts.Audio, init); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (wh *webrtcHandler) hasTransceivers() bool {
-	return len(wh.pc.GetTransceivers()) > 0
+	return len(wh.rtcPeer.GetTransceivers()) > 0
 }
 
 func (wh *webrtcHandler) shutdown(err error) {
@@ -218,7 +218,7 @@ func (wh *webrtcHandler) waitForCleanup() {
 	if wh.watch != nil {
 		wh.watch.Wait()
 	}
-	wh.wg.Wait()
+	wh.waitGroup.Wait()
 }
 
 func (wh *webrtcHandler) logf(format string, v ...any) {

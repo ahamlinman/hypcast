@@ -13,10 +13,10 @@ import (
 
 type tunerStatusHandler struct {
 	tuner       *tuner.Tuner
-	conn        *websocket.Conn
+	socket      *websocket.Conn
 	watch       watch.Watch
 	shutdownErr chan error
-	wg          sync.WaitGroup
+	waitGroup   sync.WaitGroup
 }
 
 func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
@@ -36,15 +36,15 @@ func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		tsh.logf("Finished with error: %v", err)
 	}()
 
-	tsh.conn, err = websocketUpgrader.Upgrade(w, r, nil)
+	tsh.socket, err = websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
-	defer tsh.conn.Close()
+	defer tsh.socket.Close()
 
-	tsh.wg.Add(1)
+	tsh.waitGroup.Add(1)
 	go func() {
-		defer tsh.wg.Done()
+		defer tsh.waitGroup.Done()
 		tsh.drainClient()
 	}()
 
@@ -58,7 +58,7 @@ func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
 	tsh.logf("Received tuner status: %v", s)
 
 	msg := tsh.mapTunerStatusToMessage(s)
-	if err := tsh.conn.WriteJSON(msg); err != nil {
+	if err := tsh.socket.WriteJSON(msg); err != nil {
 		tsh.shutdown(err)
 	}
 }
@@ -68,7 +68,7 @@ func (tsh *tunerStatusHandler) drainClient() {
 	// we have to drain incoming messages ourselves even if we don't care about
 	// them.
 	for {
-		if _, _, err := tsh.conn.NextReader(); err != nil {
+		if _, _, err := tsh.socket.NextReader(); err != nil {
 			tsh.shutdown(err)
 			return
 		}
@@ -86,7 +86,7 @@ func (tsh *tunerStatusHandler) waitForCleanup() {
 	if tsh.watch != nil {
 		tsh.watch.Wait()
 	}
-	tsh.wg.Wait()
+	tsh.waitGroup.Wait()
 }
 
 type tunerStatusMsg struct {
