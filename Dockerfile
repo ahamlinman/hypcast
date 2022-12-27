@@ -21,7 +21,7 @@ RUN \
 # Why a custom GStreamer? Alpine 3.16 and up ship gst-plugins-ugly without the
 # mpeg2dec plugin, which is an absolute requirement for Hypcast. As a bonus, we
 # can reduce the image size by only including plugins we actually need. We
-# still use Alpine's versions of glib and the underlying codecs.
+# still use Alpine's versions of GLib and the underlying codecs.
 #
 # Why LLVM? Alpine does not ship a full set of gcc-based cross toolchains for
 # every build host architecture (e.g. no x86_64 toolchain on aarch64 hosts).
