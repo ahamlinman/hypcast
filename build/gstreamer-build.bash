@@ -35,6 +35,7 @@ EOF
 
 info "Starting Meson setup"
 meson setup \
+	--buildtype=release \
 	--cross-file=meson-cross.txt \
 	-Db_staticpic=true \
 	-Db_pie=true \
