@@ -12,8 +12,7 @@ import (
 )
 
 type tunerStatusHandler struct {
-	tuner *tuner.Tuner
-
+	tuner       *tuner.Tuner
 	conn        *websocket.Conn
 	watch       watch.Watch
 	shutdownErr chan error
@@ -115,10 +114,8 @@ func (tsh *tunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStat
 
 func (tsh *tunerStatusHandler) logf(format string, v ...any) {
 	joinFmt := "TunerStatusHandler(%p): " + format
-
 	joinArgs := make([]any, len(v)+1)
 	joinArgs[0] = tsh
 	copy(joinArgs[1:], v)
-
 	log.Printf(joinFmt, joinArgs...)
 }

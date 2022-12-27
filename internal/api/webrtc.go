@@ -47,8 +47,7 @@ func init() {
 }
 
 type webrtcHandler struct {
-	tuner *tuner.Tuner
-
+	tuner       *tuner.Tuner
 	conn        *websocket.Conn
 	pc          *webrtc.PeerConnection
 	watch       watch.Watch
@@ -120,12 +119,10 @@ func (wh *webrtcHandler) handleClientSessionAnswers() {
 
 func (wh *webrtcHandler) handleTrackUpdate(ts tuner.Tracks) {
 	wh.logf("Received tracks: %v", ts)
-
 	if err := wh.replaceTracks(ts); err != nil {
 		wh.shutdown(err)
 		return
 	}
-
 	if err := wh.renegotiateSession(); err != nil {
 		wh.shutdown(err)
 		return
@@ -136,11 +133,9 @@ func (wh *webrtcHandler) replaceTracks(ts tuner.Tracks) error {
 	if err := wh.removeTracks(); err != nil {
 		return err
 	}
-
 	if ts == (tuner.Tracks{}) {
 		return nil
 	}
-
 	return wh.addTracks(ts)
 }
 
@@ -182,7 +177,6 @@ func (wh *webrtcHandler) addTracks(ts tuner.Tracks) error {
 	if wh.hasTransceivers() {
 		return wh.addTracksWithExistingTransceivers(ts)
 	}
-
 	return wh.addTracksWithNewTransceivers(ts)
 }
 
@@ -200,7 +194,6 @@ func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
 	init := webrtc.RTPTransceiverInit{
 		Direction: webrtc.RTPTransceiverDirectionSendonly,
 	}
-
 	if _, err := wh.pc.AddTransceiverFromTrack(ts.Video, init); err != nil {
 		return err
 	}
@@ -230,10 +223,8 @@ func (wh *webrtcHandler) waitForCleanup() {
 
 func (wh *webrtcHandler) logf(format string, v ...any) {
 	joinFmt := "WebRTCHandler(%p): " + format
-
 	joinArgs := make([]any, len(v)+1)
 	joinArgs[0] = wh
 	copy(joinArgs[1:], v)
-
 	log.Printf(joinFmt, joinArgs...)
 }
