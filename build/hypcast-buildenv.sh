@@ -3,14 +3,14 @@
 export CGO_ENABLED=1 GOOS=linux GOARCH="$TARGETARCH"
 
 case $TARGETARCH in
-	amd64) export CARCH=x86_64 CABI=musl;;
-	arm64) export CARCH=aarch64 CABI=musl;;
+	amd64) export CARCH=x86_64;;
+	arm64) export CARCH=aarch64;;
 	*)
 		echo "unsupported architecture $TARGETARCH"
 		return 1;;
 esac
 
-export LLVMTARGET="$CARCH-alpine-linux-$CABI"
+export LLVMTARGET="$CARCH-alpine-linux-musl"
 
 sysroot_init () {
 	mkdir -p /sysroot/etc/apk/keys
