@@ -41,6 +41,7 @@ meson setup \
 	-Db_pie=true \
 	-Dauto_features=disabled \
 	-Dgpl=enabled \
+	-Dgstreamer:check=enabled \
 	-Dbase=enabled \
 	-Dgst-plugins-base:app=enabled \
 	-Dgst-plugins-base:audioconvert=enabled \
@@ -57,6 +58,8 @@ meson setup \
 	-Dgst-plugins-ugly:a52dec=enabled \
 	-Dgst-plugins-ugly:mpeg2dec=enabled \
 	-Dgst-plugins-ugly:x264=enabled \
+	-Drs=enabled \
+	-Dgst-plugins-rs:closedcaption=enabled \
 	output
 
 info "Starting Meson build"

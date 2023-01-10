@@ -49,7 +49,7 @@ RUN \
 # The GStreamer build base layer sets up parts of the GStreamer build that are
 # common to all target platforms.
 FROM --platform=$BUILDPLATFORM base-alpine AS gst-build-base
-RUN apk add --no-cache bash git clang lld llvm pkgconf meson flex bison glib-dev
+RUN apk add --no-cache bash git clang cargo cargo-c lld llvm pkgconf meson py3-tomli flex bison glib-dev pango-dev
 ARG GST_VERSION=1.22.0
 RUN git clone -b $GST_VERSION --depth 1 \
   https://gitlab.freedesktop.org/gstreamer/gstreamer.git /tmp/gstreamer
@@ -111,7 +111,7 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init tini glib a52dec libmpeg2 opus x264-libs
+  sysroot_init tini glib a52dec libmpeg2 opus x264-libs pango cairo-gobject
 
 
 # The final image simply assembles the results of previous build steps.
