@@ -43,13 +43,13 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init gcc libc-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev
+  sysroot_init gcc libc-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev pango-dev cairo-dev
 
 
 # The GStreamer build base layer sets up parts of the GStreamer build that are
 # common to all target platforms.
 FROM --platform=$BUILDPLATFORM base-alpine AS gst-build-base
-RUN apk add --no-cache bash git clang lld llvm pkgconf meson flex bison glib-dev
+RUN apk add --no-cache bash git clang lld llvm cargo cargo-c pkgconf meson flex bison glib-dev
 ARG GST_VERSION=1.22.0
 RUN git clone -b $GST_VERSION --depth 1 \
   https://gitlab.freedesktop.org/gstreamer/gstreamer.git /tmp/gstreamer
@@ -68,6 +68,28 @@ ARG TARGETARCH TARGETVARIANT
 RUN \
   --mount=type=bind,from=build-sysroot,source=/sysroot,target=/sysroot \
   ./gstreamer-build.bash
+
+
+# The gst-plugins-rs build base layer sets up parts of the Rust plugin build
+# that are common to all target platforms.
+FROM --platform=$BUILDPLATFORM gst-build-base AS gst-plugins-rs-build-base
+ARG GST_PLUGINS_RS_VERSION=gstreamer-1.22.0
+RUN git clone -b $GST_PLUGINS_RS_VERSION --depth 1 \
+  https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git /tmp/gst-plugins-rs
+WORKDIR /tmp/gst-plugins-rs
+RUN cargo fetch
+
+
+# The gst-plugins-rs build layer builds Rust plugins for each target platform.
+FROM --platform=$BUILDPLATFORM gst-plugins-rs-build-base AS gst-plugins-rs-build
+ARG TARGETARCH TARGETVARIANT
+RUN \
+  --mount=type=bind,from=build-sysroot,source=/sysroot,target=/sysroot,rw \
+  --mount=type=bind,from=gst-build,source=/gstreamer/usr/local,target=/sysroot/usr/local \
+  source /hypcast-buildenv.sh && \
+  cargo cinstall -p gst-plugin-closedcaption \
+    --release --library-type cdylib --target $LLVMTARGET \
+    --prefix /usr/local --destdir /gst-plugins-rs
 
 
 # The server build base layer sets up parts of the server build that are common
@@ -111,7 +133,7 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init tini glib a52dec libmpeg2 opus x264-libs
+  sysroot_init tini glib a52dec libmpeg2 opus x264-libs pango cairo-gobject libgcc ttf-inconsolata
 
 
 # The final image simply assembles the results of previous build steps.
@@ -119,6 +141,7 @@ FROM scratch AS target
 
 COPY --link --from=target-sysroot /sysroot /
 COPY --link --from=gst-build /gstreamer /
+COPY --link --from=gst-plugins-rs-build /gst-plugins-rs /
 COPY --link --from=server-build /hypcast-server /opt/hypcast/bin/hypcast-server
 COPY --link --from=client-build /build /opt/hypcast/share/www
 
