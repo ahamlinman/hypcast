@@ -46,8 +46,8 @@ meson setup \
 	-Dgst-plugins-base:audioconvert=enabled \
 	-Dgst-plugins-base:audioresample=enabled \
 	-Dgst-plugins-base:opus=enabled \
+	-Dgst-plugins-base:videoconvertscale=enabled \
 	-Dgst-plugins-base:videorate=enabled \
-	-Dgst-plugins-base:videoscale=enabled \
 	-Dgood=enabled \
 	-Dgst-plugins-good:deinterlace=enabled \
 	-Dbad=enabled \
