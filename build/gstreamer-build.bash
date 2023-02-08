@@ -51,6 +51,7 @@ meson setup \
 	-Dgood=enabled \
 	-Dgst-plugins-good:deinterlace=enabled \
 	-Dbad=enabled \
+	-Dgst-plugins-bad:closedcaption=enabled \
 	-Dgst-plugins-bad:dvb=enabled \
 	-Dgst-plugins-bad:mpegtsdemux=enabled \
 	-Dugly=enabled \

@@ -263,13 +263,15 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	{{- template "queue-max-time" 2_500_000_000 }}
 	{{- if eq .VideoPipeline "vaapi" }}
 	! vaapimpeg2dec
-	! cea608overlay black-background=true
+	! ccextractor
 	! vaapipostproc deinterlace-mode=auto
+	! cea608overlay black-background=true
 	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=1000 quality-level=1 tune=high-compression
 	{{- else }}
 	! mpeg2dec
-	! cea608overlay black-background=true
+	! ccextractor
 	! deinterlace
+	! cea608overlay black-background=true
 	{{- if eq .VideoPipeline "lowpower" }}
 	! videorate max-rate=30
 	! videoscale add-borders=true method=nearest-neighbour
