@@ -54,6 +54,7 @@ meson setup \
 	-Dgst-plugins-bad:closedcaption=enabled \
 	-Dgst-plugins-bad:dvb=enabled \
 	-Dgst-plugins-bad:mpegtsdemux=enabled \
+	-Dgst-plugins-bad:videoparsers=enabled \
 	-Dugly=enabled \
 	-Dgst-plugins-ugly:a52dec=enabled \
 	-Dgst-plugins-ugly:mpeg2dec=enabled \

@@ -268,16 +268,18 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	! cea608overlay black-background=true
 	! vaapih264enc rate-control=cbr bitrate=12000 cpb-length=1000 quality-level=1 tune=high-compression
 	{{- else }}
+	! mpegvideoparse
 	! mpeg2dec
 	! ccextractor
 	! deinterlace
-	! cea608overlay black-background=true
 	{{- if eq .VideoPipeline "lowpower" }}
 	! videorate max-rate=30
 	! videoscale add-borders=true method=nearest-neighbour
 	! video/x-raw,width=640,height=360
-	! x264enc bitrate=2500 vbv-buf-capacity=1000 speed-preset=ultrafast bframes=0 mb-tree=false key-int-max=60 rc-lookahead=30
+	! cea608overlay black-background=true
+	! x264enc bitrate=2000 vbv-buf-capacity=1000 speed-preset=ultrafast bframes=0 mb-tree=false key-int-max=60 rc-lookahead=30
 	{{- else }}
+	! cea608overlay black-background=true
 	! x264enc bitrate=8000 vbv-buf-capacity=1000 speed-preset=ultrafast tune=zerolatency
 	{{- end }}
 	{{- end }}
