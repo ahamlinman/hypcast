@@ -1,8 +1,17 @@
 # syntax = docker.io/docker/dockerfile:1.4
 
+# The Alpine and Go base images must use the same release of Alpine.
+ARG ALPINE_BASE=docker.io/library/alpine:3.17
+ARG GOLANG_BASE=docker.io/library/golang:1.20-alpine3.17
+# The Node.js image does not require any particular OS.
+ARG NODEJS_BASE=docker.io/library/node:18-alpine
+# See https://gstreamer.freedesktop.org/download/.
+ARG GSTREAMER_VERSION=1.22.1
+
+
 # Let's get the client build out of the way, since it's much simpler than
 # everything that follows.
-FROM --platform=$BUILDPLATFORM docker.io/library/node:18-alpine AS client-build
+FROM --platform=$BUILDPLATFORM $NODEJS_BASE AS client-build
 ENV BUILD_PATH=/build
 RUN \
   --mount=type=bind,source=client,target=/mnt/client,rw \
@@ -29,16 +38,10 @@ RUN \
 # confidence that a build executed on one architecture will work on others.
 
 
-# These images must all use the same release of Alpine Linux to ensure
-# compatibility.
-FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.17 AS base-alpine
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.20-alpine3.17 AS base-golang
-
-
 # The build sysroot layer provides development headers and important support
 # files for cross-compilation to the target platform. Other build layers will
 # mount it as necessary.
-FROM --platform=$BUILDPLATFORM base-alpine AS build-sysroot
+FROM --platform=$BUILDPLATFORM $ALPINE_BASE AS build-sysroot
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
@@ -48,10 +51,10 @@ RUN \
 
 # The GStreamer build base layer sets up parts of the GStreamer build that are
 # common to all target platforms.
-FROM --platform=$BUILDPLATFORM base-alpine AS gst-build-base
+FROM --platform=$BUILDPLATFORM $ALPINE_BASE AS gst-build-base
 RUN apk add --no-cache bash git clang lld llvm pkgconf meson flex bison glib-dev
-ARG GST_VERSION=1.22.0
-RUN git clone -b $GST_VERSION --depth 1 \
+ARG GSTREAMER_VERSION
+RUN git clone -b $GSTREAMER_VERSION --depth 1 \
   https://gitlab.freedesktop.org/gstreamer/gstreamer.git /tmp/gstreamer
 WORKDIR /tmp/gstreamer
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
@@ -72,7 +75,7 @@ RUN \
 
 # The server build base layer sets up parts of the server build that are common
 # to all target platforms.
-FROM --platform=$BUILDPLATFORM base-golang AS server-build-base
+FROM --platform=$BUILDPLATFORM $GOLANG_BASE AS server-build-base
 RUN apk add --no-cache clang lld pkgconf
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
@@ -106,7 +109,7 @@ RUN \
 # typical Alpine Linux environment, as we can't run the apk scripts required to
 # fully set up packages like Busybox (apk would try to run them using the
 # target architecture's shell, which requires emulation).
-FROM --platform=$BUILDPLATFORM base-alpine AS target-sysroot
+FROM --platform=$BUILDPLATFORM $ALPINE_BASE AS target-sysroot
 ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
