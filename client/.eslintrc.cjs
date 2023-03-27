@@ -1,7 +1,11 @@
 module.exports = {
-  extends: ["eslint:recommended"],
+  extends: ["eslint:recommended", "plugin:react/recommended"],
+  plugins: ["react"],
   ignorePatterns: ["dist/**"],
   env: { node: true },
+  settings: {
+    react: { version: "detect" },
+  },
   overrides: [
     {
       files: ["src/**"],
