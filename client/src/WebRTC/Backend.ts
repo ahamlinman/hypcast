@@ -6,6 +6,9 @@ export type ConnectionState =
 
 type Message = { SDP: any };
 
+/* eslint-disable @typescript-eslint/adjacent-overload-signatures */
+// In this case, I find it clearer and more maintainable to keep the signatures
+// for a single event next to each other.
 declare interface Backend {
   emit(event: "connectionchange", state: ConnectionState): boolean;
   on(
