@@ -9,7 +9,6 @@
     "@types/react-helmet": "^6.1.0",
     "@vitejs/plugin-react": "^3.1.0",
     "eslint": "^8.36.0",
-    "eslint-config-react-app": "^7.0.1",
     "events": "^3.3.0",
     "prettier": "^2.0.5",
     "react": "^18.1.0",
@@ -23,9 +22,6 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
   },
   "prettier": {
     "trailingComma": "all"
