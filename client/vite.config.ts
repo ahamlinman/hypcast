@@ -4,7 +4,14 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   build: {
-    // Defaults to "dist" if undefined.
-    outDir: process.env.BUILD_PATH,
+    outDir: process.env.BUILD_PATH, // Defaults to "dist" if the environment variable is unset.
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:9200",
+        ws: true,
+      },
+    },
   },
 });
