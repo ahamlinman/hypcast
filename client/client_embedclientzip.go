@@ -8,7 +8,7 @@ import (
 	_ "embed"
 )
 
-//go:embed build.zip
+//go:embed assets.zip
 var buildZip []byte
 
 func init() {

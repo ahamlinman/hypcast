@@ -1,18 +1,8 @@
-hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/build.zip
+hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/assets.zip
 	go build -v -tags embedclientzip ./cmd/hypcast-server
 
-client/build.zip: client/build
-	rm -f client/build.zip
-	cd client/build; zip -r ../build.zip .
-
-client/build: client/node_modules client/tsconfig.json $(shell find client/public client/src -type f)
-	rm -rf client/build
-	cd client; yarn build
-	touch client/build
-
-client/node_modules: client/package.json client/yarn.lock
-	cd client; yarn install
-	touch client/node_modules
+client/assets.zip:
+	$(MAKE) -C client assets.zip
 
 .PHONY: install clean
 
@@ -20,10 +10,10 @@ install: hypcast-server
 	go install -v -tags embedclientzip ./cmd/hypcast-server
 
 clean:
-	rm -rf ./hypcast-server ./client/build ./client/build.zip
+	$(MAKE) -C client clean
+	rm -rf ./hypcast-server
 
 # Configure clangd to resolve dependencies for C files in the project.
+.PHONY: compile_flags.txt
 compile_flags.txt:
 	pkg-config --cflags gstreamer-1.0 | tr ' ' '\n' | sed '/^$$/d' > compile_flags.txt
-
-.PHONY: compile_flags.txt
