@@ -12,7 +12,7 @@ ARG GSTREAMER_VERSION=1.22.1
 # Let's get the client build out of the way, since it's much simpler than
 # everything that follows.
 FROM --platform=$BUILDPLATFORM $NODEJS_BASE AS client-build
-ENV BUILD_PATH=/build
+ENV BUILD_PATH=/dist
 RUN \
   --mount=type=bind,source=client,target=/mnt/client,rw \
   --mount=type=cache,id=hypcast.node_modules,target=/mnt/client/node_modules \
@@ -123,7 +123,7 @@ FROM scratch AS target
 COPY --link --from=target-sysroot /sysroot /
 COPY --link --from=gst-build /gstreamer /
 COPY --link --from=server-build /hypcast-server /opt/hypcast/bin/hypcast-server
-COPY --link --from=client-build /build /opt/hypcast/share/www
+COPY --link --from=client-build /dist /opt/hypcast/share/www
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EXPOSE 9200
