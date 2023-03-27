@@ -1,10 +1,17 @@
 hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/assets.zip
 	go build -v -tags embedclientzip ./cmd/hypcast-server
 
-client/assets.zip:
-	$(MAKE) -C client assets.zip
+client/assets.zip: client/dist
+	rm -f client/assets.zip
+	cd client/dist && zip -r ../assets.zip .
 
-.PHONY: install clean
+client/dist: client/node_modules client/tsconfig.json client/tsconfig.node.json client/vite.config.ts $(shell find client/src -type f)
+	rm -rf client/dist
+	cd client && yarn build
+
+client/node_modules: client/package.json client/yarn.lock
+	cd client && yarn install
+	touch client/node_modules
 
 install: hypcast-server
 	go install -v -tags embedclientzip ./cmd/hypcast-server
