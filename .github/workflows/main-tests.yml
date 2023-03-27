@@ -32,3 +32,7 @@ jobs:
       run: cd client && yarn install --frozen-lockfile
     - name: Build Client
       run: cd client && yarn build
+    - name: Check for Prettier Style
+      run: cd client && yarn prettier --check src
+    - name: Check for ESLint Violations
+      run: cd client && yarn eslint .
