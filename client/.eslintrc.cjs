@@ -22,7 +22,10 @@ module.exports = {
   overrides: [
     {
       files: ["src/**"],
-      env: { browser: true },
+      env: {
+        browser: true,
+        node: false,
+      },
     },
     {
       files: ["**/*.ts?(x)"],
