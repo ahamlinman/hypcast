@@ -1,6 +1,10 @@
 module.exports = {
-  extends: ["eslint:recommended", "plugin:react/recommended"],
-  plugins: ["react"],
+  plugins: ["react", "jsx-a11y"],
+  extends: [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:jsx-a11y/recommended",
+  ],
   ignorePatterns: ["dist/**"],
   env: { node: true },
   settings: {
