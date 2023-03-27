@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;900&display=swap");
 
 $base-darkest: #06060f;
+$foreground: #f6f6f4;
 
 html,
 body,
@@ -17,4 +18,10 @@ body,
 * {
   font-family: Lato, sans-serif;
   box-sizing: border-box;
+}
+
+.NoScript {
+  color: $foreground;
+  margin: 2em;
+  text-align: center;
 }
