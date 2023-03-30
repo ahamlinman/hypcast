@@ -10,9 +10,17 @@ $accent: #f26df9;
 
 $foreground: #f6f6f4;
 
+$transition-duration: 100ms;
+
 $mobile-break: 639px;
 @mixin if-mobile {
   @media screen and (max-width: $mobile-break) {
+    @content;
+  }
+}
+
+@mixin if-motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
     @content;
   }
 }
@@ -86,9 +94,12 @@ $mobile-break: 639px;
     height: $size;
     border-radius: $size;
 
-    background-color: $foreground;
-
     cursor: pointer;
+
+    background-color: $foreground;
+    @include if-motion-safe {
+      transition: background-color $transition-duration;
+    }
 
     &--Active {
       background-color: $accent;
@@ -128,6 +139,9 @@ $mobile-break: 639px;
       margin-right: 6px;
 
       background-color: $foreground;
+      @include if-motion-safe {
+        transition: background-color $transition-duration;
+      }
 
       &--Active {
         background-color: $accent;
@@ -148,6 +162,8 @@ $mobile-break: 639px;
     display: block;
     width: 100%;
 
+    cursor: pointer;
+
     font-size: 1em;
     padding: 12px;
 
@@ -159,11 +175,15 @@ $mobile-break: 639px;
 
     color: $foreground;
     background-color: $base-reallydark;
+    @include if-motion-safe {
+      transition: background-color ease-out $transition-duration;
+    }
     &:hover {
       background-color: $base-darker;
+      @include if-motion-safe {
+        transition-timing-function: step-start;
+      }
     }
-
-    cursor: pointer;
 
     &--Active {
       font-weight: 900;
