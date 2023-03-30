@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:9200",
+        target: process.env.HYPCAST_SERVER ?? "http://localhost:9200",
         ws: true,
       },
     },
