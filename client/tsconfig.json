@@ -1,11 +1,9 @@
 {
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }],
   "compilerOptions": {
     "target": "esnext",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": false,
@@ -20,7 +18,5 @@
     "jsx": "react-jsx",
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true
-  },
-  "include": ["src"],
-  "references": [{"path": "./tsconfig.node.json"}]
+  }
 }
