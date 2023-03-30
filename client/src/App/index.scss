@@ -1,7 +1,10 @@
+// https://coolors.co/5158bb-f26df9
+
 $base: #5158bb;
 $base-dark: #282c67;
-$base-darker: #17193b;
-$base-darkest: #06060f;
+$base-darker: #222658;
+$base-reallydark: #17193b;
+$base-background: #06060f;
 
 $accent: #f26df9;
 
@@ -85,6 +88,8 @@ $mobile-break: 639px;
 
     background-color: $foreground;
 
+    cursor: pointer;
+
     &--Active {
       background-color: $accent;
     }
@@ -92,7 +97,7 @@ $mobile-break: 639px;
     &__Icon {
       width: 20px;
       height: 31px;
-      fill: $base-darker;
+      fill: $base-reallydark;
     }
   }
 
@@ -153,11 +158,20 @@ $mobile-break: 639px;
     }
 
     color: $foreground;
-    background-color: $base-darker;
+    background-color: $base-reallydark;
+    &:hover {
+      background-color: $base-darker;
+    }
+
+    cursor: pointer;
 
     &--Active {
-      background-color: $base-dark;
       font-weight: 900;
+
+      background-color: $base-dark;
+      &:hover {
+        background-color: $base-dark;
+      }
     }
   }
 }
@@ -169,7 +183,7 @@ $mobile-break: 639px;
   justify-content: center;
   align-items: center;
 
-  background-color: $base-darkest;
+  background-color: $base-background;
 
   overflow: hidden;
 
