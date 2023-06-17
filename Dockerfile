@@ -4,7 +4,7 @@
 ARG ALPINE_BASE=docker.io/library/alpine:3.18
 ARG GOLANG_BASE=docker.io/library/golang:1.20-alpine3.18
 # The Node.js image does not require any particular OS.
-ARG NODEJS_BASE=docker.io/library/node:20-alpine
+ARG NODEJS_BASE=docker.io/library/node:18-alpine
 # See https://gstreamer.freedesktop.org/download/.
 ARG GSTREAMER_VERSION=1.22.3
 
