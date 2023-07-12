@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/gorilla/websocket v1.5.0
-	github.com/pion/webrtc/v3 v3.2.11
+	github.com/pion/webrtc/v3 v3.2.12
 )
 
 require (
