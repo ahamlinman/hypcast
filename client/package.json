@@ -29,5 +29,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
+  },
+  "prettier": {
+    "trailingComma": "all"
   }
 }
