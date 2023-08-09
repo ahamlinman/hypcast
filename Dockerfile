@@ -2,7 +2,7 @@
 
 # The Alpine and Go base images must use the same release of Alpine.
 ARG ALPINE_BASE=docker.io/library/alpine:3.18
-ARG GOLANG_BASE=docker.io/library/golang:1.20-alpine3.18
+ARG GOLANG_BASE=docker.io/library/golang:1.21-alpine3.18
 # The Node.js image does not require any particular OS.
 ARG NODEJS_BASE=docker.io/library/node:18-alpine
 # See https://gstreamer.freedesktop.org/download/.
@@ -50,7 +50,8 @@ RUN \
 
 
 # The GStreamer build base layer sets up parts of the GStreamer build that are
-# common to all target platforms.
+# common to all target platforms. (TODO: Can we not clone GStreamer from Git?
+# Does Cerbero support the level of build customization we're looking for?)
 FROM --platform=$BUILDPLATFORM $ALPINE_BASE AS gst-build-base
 RUN apk add --no-cache bash git clang lld llvm pkgconf meson flex bison glib-dev
 ARG GSTREAMER_VERSION
