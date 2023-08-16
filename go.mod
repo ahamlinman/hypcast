@@ -5,12 +5,14 @@ go 1.18
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/gorilla/websocket v1.5.0
+	github.com/lpar/gzipped/v2 v2.1.0
 	github.com/pion/webrtc/v3 v3.2.14
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/kevinpollet/nego v0.0.0-20200324111829-b3061ca9dd9d // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/ice/v2 v2.3.10 // indirect

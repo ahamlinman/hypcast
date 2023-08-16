@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io/fs"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -58,16 +59,17 @@ func main() {
 	tuner := tuner.NewTuner(channels, vp)
 	http.Handle("/api/", api.NewHandler(tuner))
 
+	var assetsFS fs.FS
 	if flagAssets != "" {
 		log.Printf("Using client assets from %s", flagAssets)
-		http.Handle("/", http.FileServer(
-			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
-		))
+		assetsFS = os.DirFS(flagAssets)
 	} else if client.Build != nil {
 		log.Print("Using embedded client assets")
-		http.Handle("/", http.FileServer(
-			assets.FileSystem{FileSystem: http.FS(client.Build)},
-		))
+		assetsFS = client.Build
+	}
+	if assetsFS != nil {
+		http.Handle("/assets", assets.Handler(assetsFS))
+		http.Handle("/", http.FileServer(http.FS(assets.SPA{FS: assetsFS})))
 	}
 
 	server := http.Server{Addr: flagAddr}
