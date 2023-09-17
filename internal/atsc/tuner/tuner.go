@@ -269,8 +269,10 @@ var pipelineDescriptionTemplate = template.Must(template.New("").Parse(`
 	! mpeg2dec
 	! deinterlace
 	{{- if eq .VideoPipeline "lowpower" }}
+	{{- template "queue-max-time" 2_500_000_000 }}
 	! videorate max-rate=30
 	! videoscale add-borders=true method=nearest-neighbour
+	{{- template "queue-max-time" 2_500_000_000 }}
 	! video/x-raw,width=640,height=360
 	! x264enc bitrate=2500 vbv-buf-capacity=1000 speed-preset=ultrafast bframes=0 mb-tree=false key-int-max=60 rc-lookahead=30
 	{{- else }}
