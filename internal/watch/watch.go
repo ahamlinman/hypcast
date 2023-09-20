@@ -96,63 +96,81 @@ type Watch interface {
 // parameter, we hide the watch's concrete type via an interface to reduce noise
 // for clients.
 type watch[T any] struct {
-	handler    func(T)
+	state      chan watchState[T]
+	handle     func(T)
 	unregister func(*watch[T])
-	pending    chan T
-	done       chan struct{}
 }
 
-func newWatch[T any](handler func(T), unregister func(*watch[T])) *watch[T] {
+type watchState[T any] struct {
+	pending bool
+	next    T
+	running bool
+	closing bool
+	done    chan struct{}
+}
+
+func newWatch[T any](handle func(T), unregister func(*watch[T])) *watch[T] {
 	w := &watch[T]{
-		handler:    handler,
+		state:      make(chan watchState[T], 1),
+		handle:     handle,
 		unregister: unregister,
-		pending:    make(chan T, 1),
-		done:       make(chan struct{}),
 	}
-	go w.run()
+	w.state <- watchState[T]{}
 	return w
+}
+
+func (w *watch[T]) update(x T) {
+	state := <-w.state
+	state.pending = true
+	state.next = x
+	if !state.running {
+		state.running = true
+		state.done = make(chan struct{})
+		go w.run()
+	}
+	w.state <- state
 }
 
 func (w *watch[T]) run() {
 	var wg sync.WaitGroup
-	defer close(w.done)
+	for {
+		state := <-w.state
+		if !state.pending || state.closing {
+			close(state.done)
+			state.running = false
+			w.state <- state
+			return
+		}
 
-	for next := range w.pending {
-		x := next
-		wg.Add(1)
+		x := state.next
+		state.pending = false
+		w.state <- state
+
 		// Insulate the handler from the main loop, e.g. if it calls runtime.Goexit
 		// it should not terminate this loop and break the processing of new values.
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			w.handler(x)
+			w.handle(x)
 		}()
 		wg.Wait()
 	}
 }
 
-func (w *watch[T]) update(x T) {
-	// It's important that this call not block, so we assume w.pending is buffered
-	// and drop a pending update to free space if necessary.
-	select {
-	case <-w.pending:
-		w.pending <- x
-	case w.pending <- x:
-	}
-}
-
 func (w *watch[T]) Cancel() {
 	w.unregister(w)
-	w.clearPending()
-	close(w.pending)
-}
-
-func (w *watch[T]) clearPending() {
-	select {
-	case <-w.pending:
-	default:
-	}
+	state := <-w.state
+	state.closing = true
+	w.state <- state
 }
 
 func (w *watch[T]) Wait() {
-	<-w.done
+	state := <-w.state
+	if !state.running {
+		w.state <- state
+		return
+	}
+	done := state.done
+	w.state <- state
+	<-done
 }
