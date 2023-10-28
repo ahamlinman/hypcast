@@ -329,12 +329,17 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 	}
 }
 
-func assertBlocked[T any](t *testing.T, ch chan T) {
+func assertBlocked(t *testing.T, ch <-chan struct{}) {
 	t.Helper()
 
 	// If any background routines are going to close ch when they should not,
-	// let's help them along a bit.
-	runtime.Gosched()
+	// let's make a best effort to help them along.
+	gomaxprocs := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(gomaxprocs)
+	n := runtime.NumGoroutine()
+	for i := 0; i < n; i++ {
+		runtime.Gosched()
+	}
 
 	select {
 	case <-ch:
