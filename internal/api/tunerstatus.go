@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"sync"
@@ -12,30 +13,32 @@ import (
 )
 
 type tunerStatusHandler struct {
-	tuner       *tuner.Tuner
-	socket      *websocket.Conn
-	watch       watch.Watch
-	shutdownErr chan error
-	waitGroup   sync.WaitGroup
+	tuner     *tuner.Tuner
+	socket    *websocket.Conn
+	watch     watch.Watch
+	ctx       context.Context
+	shutdown  context.CancelCauseFunc
+	waitGroup sync.WaitGroup
 }
 
 func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
+	ctx, shutdown := context.WithCancelCause(r.Context())
 	tsh := &tunerStatusHandler{
-		tuner:       h.tuner,
-		shutdownErr: make(chan error, 1),
+		tuner:    h.tuner,
+		ctx:      ctx,
+		shutdown: shutdown,
 	}
 	tsh.ServeHTTP(w, r)
 }
 
 func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-
 	tsh.logf("Starting new connection")
 	defer func() {
 		tsh.waitForCleanup()
-		tsh.logf("Finished with error: %v", err)
+		tsh.logf("Connection done: %v", context.Cause(tsh.ctx))
 	}()
 
+	var err error
 	tsh.socket, err = websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -51,7 +54,7 @@ func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	tsh.watch = tsh.tuner.WatchStatus(tsh.sendNewTunerStatus)
 	defer tsh.watch.Cancel()
 
-	err = <-tsh.shutdownErr
+	<-tsh.ctx.Done()
 }
 
 func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
@@ -72,13 +75,6 @@ func (tsh *tunerStatusHandler) drainClient() {
 			tsh.shutdown(err)
 			return
 		}
-	}
-}
-
-func (tsh *tunerStatusHandler) shutdown(err error) {
-	select {
-	case tsh.shutdownErr <- err:
-	default:
 	}
 }
 

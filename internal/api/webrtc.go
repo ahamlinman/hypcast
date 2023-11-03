@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -47,31 +48,33 @@ func init() {
 }
 
 type webrtcHandler struct {
-	tuner       *tuner.Tuner
-	socket      *websocket.Conn
-	rtcPeer     *webrtc.PeerConnection
-	watch       watch.Watch
-	shutdownErr chan error
-	waitGroup   sync.WaitGroup
+	tuner     *tuner.Tuner
+	socket    *websocket.Conn
+	rtcPeer   *webrtc.PeerConnection
+	watch     watch.Watch
+	ctx       context.Context
+	shutdown  context.CancelCauseFunc
+	waitGroup sync.WaitGroup
 }
 
 func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request) {
+	ctx, shutdown := context.WithCancelCause(r.Context())
 	wh := &webrtcHandler{
-		tuner:       h.tuner,
-		shutdownErr: make(chan error, 1),
+		tuner:    h.tuner,
+		ctx:      ctx,
+		shutdown: shutdown,
 	}
 	wh.ServeHTTP(w, r)
 }
 
 func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-
 	wh.logf("Starting new connection")
 	defer func() {
 		wh.waitForCleanup()
-		wh.logf("Finished with error: %v", err)
+		wh.logf("Connection done: %v", context.Cause(wh.ctx))
 	}()
 
+	var err error
 	wh.socket, err = websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -93,7 +96,7 @@ func (wh *webrtcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	wh.watch = wh.tuner.WatchTracks(wh.handleTrackUpdate)
 	defer wh.watch.Cancel()
 
-	err = <-wh.shutdownErr
+	<-wh.ctx.Done()
 }
 
 func (wh *webrtcHandler) handleClientSessionAnswers() {
@@ -205,13 +208,6 @@ func (wh *webrtcHandler) addTracksWithNewTransceivers(ts tuner.Tracks) error {
 
 func (wh *webrtcHandler) hasTransceivers() bool {
 	return len(wh.rtcPeer.GetTransceivers()) > 0
-}
-
-func (wh *webrtcHandler) shutdown(err error) {
-	select {
-	case wh.shutdownErr <- err:
-	default:
-	}
 }
 
 func (wh *webrtcHandler) waitForCleanup() {
