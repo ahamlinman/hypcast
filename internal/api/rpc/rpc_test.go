@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/iotest"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -24,7 +25,6 @@ func Example() {
 			if params.Enabled == nil {
 				return http.StatusBadRequest, errors.New(`missing "Enabled" parameter`)
 			}
-
 			setEnabled(*params.Enabled)
 			return http.StatusNoContent, nil
 		}))
@@ -54,7 +54,7 @@ func TestRPC(t *testing.T) {
 	testCases := []struct {
 		Description string
 		Method      string
-		Body        string
+		Body        io.Reader
 		Headers     http.Header
 		WantCode    int
 		WantHeaders http.Header
@@ -65,28 +65,34 @@ func TestRPC(t *testing.T) {
 		},
 		{
 			Description: "body with maximum length",
-			Body:        `{"Message":"123456789012345678"}`,
+			Body:        strings.NewReader(`{"Message":"123456789012345678"}`),
 			Headers:     jsonHeaders,
 			WantCode:    http.StatusNoContent,
 		},
 		{
 			Description: "body too long by 1 character",
-			Body:        `{"Message":"1234567890123456789"}`,
+			Body:        strings.NewReader(`{"Message":"1234567890123456789"}`),
 			Headers:     jsonHeaders,
 			WantCode:    http.StatusRequestEntityTooLarge,
 			WantHeaders: jsonHeaders,
 		},
 		{
 			Description: "missing Content-Type header",
-			Body:        `{"Valid":false}`,
+			Body:        strings.NewReader(`{"Valid":false}`),
 			WantCode:    http.StatusUnsupportedMediaType,
 			WantHeaders: jsonHeaders,
 		},
 		{
 			Description: "invalid JSON body",
-			Body:        `{{{]]]`,
+			Body:        strings.NewReader(`{{{]]]`),
 			Headers:     jsonHeaders,
 			WantCode:    http.StatusBadRequest,
+			WantHeaders: jsonHeaders,
+		},
+		{
+			Description: "error reading body",
+			Body:        iotest.ErrReader(errors.New("test error")),
+			WantCode:    http.StatusInternalServerError,
 			WantHeaders: jsonHeaders,
 		},
 		{
@@ -104,7 +110,7 @@ func TestRPC(t *testing.T) {
 				method = http.MethodPost
 			}
 
-			req := httptest.NewRequest(method, "/", strings.NewReader(tc.Body))
+			req := httptest.NewRequest(method, "/", tc.Body)
 			req.Header = tc.Headers
 
 			resp := httptest.NewRecorder()

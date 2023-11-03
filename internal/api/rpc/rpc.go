@@ -12,7 +12,7 @@
 package rpc
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"errors"
 	"io"
@@ -84,28 +84,37 @@ var (
 	errReadingBody     = httpError{http.StatusInternalServerError, "unable to read RPC body"}
 	errBodyTooLarge    = httpError{http.StatusRequestEntityTooLarge, "RPC body exceeded maximum size"}
 	errInvalidBodyType = httpError{http.StatusUnsupportedMediaType, "must have Content-Type: application/json"}
-	errInvalidBody     = httpError{http.StatusBadRequest, "unable to decode RPC body"}
+	errInvalidBody     = httpError{http.StatusBadRequest, "RPC body is not valid JSON"}
 )
 
-func readRPCParams[T any](r *http.Request) (T, error) {
-	var body bytes.Buffer
-	n, err := body.ReadFrom(io.LimitReader(r.Body, MaxRequestBodySize+1))
+func readRPCParams[T any](req *http.Request) (T, error) {
+	br := bufio.NewReader(req.Body)
+	peek, err := br.Peek(1)
 	switch {
+	case len(peek) == 0 && errors.Is(err, io.EOF):
+		return *new(T), nil
 	case err != nil:
 		return *new(T), errReadingBody
-	case n == 0:
-		return *new(T), nil
-	case n > MaxRequestBodySize:
-		return *new(T), errBodyTooLarge
 	}
 
-	if r.Header.Get("Content-Type") != "application/json" {
+	if req.Header.Get("Content-Type") != "application/json" {
 		return *new(T), errInvalidBodyType
 	}
 
-	var params T
-	if err := json.Unmarshal(body.Bytes(), &params); err != nil {
-		return *new(T), errInvalidBody
+	var (
+		params    T
+		syntaxErr *json.SyntaxError
+		lr        = io.LimitReader(br, MaxRequestBodySize).(*io.LimitedReader)
+	)
+
+	err = json.NewDecoder(lr).Decode(&params)
+	switch {
+	case lr.N <= 0 && errors.Is(err, io.ErrUnexpectedEOF):
+		err = errBodyTooLarge
+	case errors.As(err, &syntaxErr):
+		err = errInvalidBody
+	case err != nil:
+		err = errReadingBody
 	}
 	return params, err
 }
