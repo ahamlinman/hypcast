@@ -23,7 +23,7 @@
     "react-helmet": "^6.1.0",
     "sass": "^1.30.0",
     "typescript": "^5.0.2",
-    "vite": "^4.2.1"
+    "vite": "^5.0.0"
   },
   "scripts": {
     "dev": "vite",
