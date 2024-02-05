@@ -8,11 +8,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install Go
       uses: actions/setup-go@v3
       with:
-        go-version: "1.20"
+        go-version: "1.21"
     - name: Install libgstreamer1.0-dev
       run: |
         sudo apt-get install -y libunwind-dev
@@ -23,11 +23,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install Node
       uses: actions/setup-node@v3
       with:
-        node-version: 18.x
+        node-version: 20.x
     - name: Install Packages
       run: cd client && yarn install --frozen-lockfile
     - name: Build Client
