@@ -6,7 +6,7 @@ ARG GOLANG_BASE=docker.io/library/golang:1.22-alpine3.19
 # The Node.js image does not require any particular OS.
 ARG NODEJS_BASE=docker.io/library/node:20-alpine
 # See https://gstreamer.freedesktop.org/download/.
-ARG GSTREAMER_VERSION=1.22.10
+ARG GSTREAMER_VERSION=1.24.0
 
 
 # Let's get the client build out of the way, since it's much simpler than
@@ -46,7 +46,7 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init gcc libc-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev
+  sysroot_init gcc libc-dev libstdc++-dev glib-dev a52dec-dev libmpeg2-dev opus-dev x264-dev
 
 
 # The GStreamer build base layer sets up parts of the GStreamer build that are
@@ -115,7 +115,7 @@ ARG TARGETARCH TARGETVARIANT
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 RUN \
   source /hypcast-buildenv.sh && \
-  sysroot_init tini glib a52dec libmpeg2 opus x264-libs
+  sysroot_init tini libstdc++ glib a52dec libmpeg2 opus x264-libs
 
 
 # The final image simply assembles the results of previous build steps.
