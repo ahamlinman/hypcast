@@ -41,6 +41,7 @@ meson setup \
 	-Db_pie=true \
 	-Dauto_features=disabled \
 	-Dgpl=enabled \
+	-Dtools=enabled \
 	-Dbase=enabled \
 	-Dgst-plugins-base:app=enabled \
 	-Dgst-plugins-base:audioconvert=enabled \
