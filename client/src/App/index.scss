@@ -19,12 +19,6 @@ $mobile-break: 639px;
   }
 }
 
-@mixin if-motion-safe {
-  @media (prefers-reduced-motion: no-preference) {
-    @content;
-  }
-}
-
 .AppContainer {
   width: 100%;
   height: 100%;
@@ -97,9 +91,7 @@ $mobile-break: 639px;
     cursor: pointer;
 
     background-color: $foreground;
-    @include if-motion-safe {
-      transition: background-color $transition-duration;
-    }
+    transition: background-color $transition-duration;
 
     &--Active {
       background-color: $accent;
@@ -139,9 +131,7 @@ $mobile-break: 639px;
       margin-right: 6px;
 
       background-color: $foreground;
-      @include if-motion-safe {
-        transition: background-color $transition-duration;
-      }
+      transition: background-color $transition-duration;
 
       &--Active {
         background-color: $accent;
@@ -175,14 +165,10 @@ $mobile-break: 639px;
 
     color: $foreground;
     background-color: $base-reallydark;
-    @include if-motion-safe {
-      transition: background-color ease-out $transition-duration;
-    }
+    transition: background-color ease-out $transition-duration;
     &:hover {
       background-color: $base-darker;
-      @include if-motion-safe {
-        transition-timing-function: step-start;
-      }
+      transition-timing-function: step-start;
     }
 
     &--Active {
