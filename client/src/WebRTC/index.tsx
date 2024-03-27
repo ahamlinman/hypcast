@@ -12,7 +12,7 @@ const Context = React.createContext<null | State>(null);
 export const useWebRTC = (): State => {
   const state = React.useContext(Context);
   if (state === null) {
-    throw new Error("useWebRTC must be called from within a <WebRTCProvider>");
+    throw new Error("useWebRTC must be used within <WebRTCProvider>");
   }
   return state;
 };
