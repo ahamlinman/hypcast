@@ -14,20 +14,18 @@ export default function App() {
   const webRTC = useWebRTC();
   const tunerStatus = useTunerStatus();
 
+  const selectedChannel =
+    tunerStatus.Connection === "Connected" && tunerStatus.State !== "Stopped"
+      ? tunerStatus.ChannelName
+      : undefined;
+
   return (
     <div className="AppContainer">
       <Title />
       <Header />
       <ChannelSelector
-        selected={
-          tunerStatus.Connection === "Connected" &&
-          tunerStatus.State !== "Stopped"
-            ? tunerStatus.ChannelName
-            : undefined
-        }
-        onTune={(ChannelName) =>
-          rpc("tune", { ChannelName }).catch(console.error)
-        }
+        selected={selectedChannel}
+        onTune={(ch) => rpc("tune", { ChannelName: ch }).catch(console.error)}
       />
       <VideoPlayer stream={webRTC.MediaStream} />
     </div>

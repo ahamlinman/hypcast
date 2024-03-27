@@ -7,7 +7,7 @@ export default function ChannelSelector({
   onTune,
 }: {
   selected?: string;
-  onTune: (ch: string) => Promise<void>;
+  onTune: (ch: string) => void;
 }) {
   const channelNames = useConfig<string[]>("channels");
 
@@ -18,9 +18,7 @@ export default function ChannelSelector({
           key={ch}
           name={ch}
           active={ch === selected}
-          onClick={() => {
-            onTune(ch).catch((e) => console.error("Tune request failed", e));
-          }}
+          onClick={() => onTune(ch)}
         />
       ))}
     </aside>
