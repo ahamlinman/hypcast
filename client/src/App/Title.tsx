@@ -6,14 +6,14 @@ import { useTunerStatus } from "../TunerStatus";
 export default function Title() {
   const tunerStatus = useTunerStatus();
 
+  const titleText =
+    tunerStatus.Connection === "Connected" && tunerStatus.State !== "Stopped"
+      ? `${tunerStatus.ChannelName} | Hypcast`
+      : "Hypcast";
+
   return (
     <Helmet>
-      <title>
-        {tunerStatus.Connection === "Connected" &&
-        tunerStatus.State !== "Stopped"
-          ? `${tunerStatus.ChannelName} | Hypcast`
-          : "Hypcast"}
-      </title>
+      <title>{titleText}</title>
     </Helmet>
   );
 }

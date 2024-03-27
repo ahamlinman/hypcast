@@ -8,13 +8,10 @@ export default function VideoPlayer({
   const videoElement = React.useRef<null | HTMLVideoElement>(null);
 
   React.useEffect(() => {
-    if (videoElement.current === null) {
-      return;
+    if (videoElement.current !== null) {
+      videoElement.current.srcObject = stream ?? null;
     }
-    videoElement.current.srcObject = stream || null;
   }, [stream]);
-
-  const show = stream !== undefined;
 
   /* eslint-disable jsx-a11y/media-has-caption */
   // Lack of closed caption support is a longstanding deficiency in Hypcast.
@@ -27,7 +24,7 @@ export default function VideoPlayer({
   return (
     <main className="VideoPlayer">
       <video
-        style={{ display: show ? undefined : "none" }}
+        style={{ display: stream === undefined ? "none" : undefined }}
         ref={videoElement}
         autoPlay
         controls
