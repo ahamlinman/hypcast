@@ -15,7 +15,6 @@ export default function ChannelSelector({
     if (selected === undefined) {
       throw new Error("tried to tune before channels loaded");
     }
-
     try {
       await onTune(selected);
     } catch (e) {
@@ -23,11 +22,7 @@ export default function ChannelSelector({
     }
   };
 
-  if (!(channelNames instanceof Array)) {
-    return null;
-  }
-
-  return (
+  return channelNames instanceof Array ? (
     <aside className="ChannelSelector">
       {channelNames.map((ch) => (
         <Channel
@@ -40,7 +35,7 @@ export default function ChannelSelector({
         />
       ))}
     </aside>
-  );
+  ) : null;
 }
 
 function Channel({

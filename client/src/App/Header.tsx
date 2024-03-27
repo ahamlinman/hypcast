@@ -57,7 +57,10 @@ function StatusIndicator() {
   const webRTC = useWebRTC();
   const tunerStatus = useTunerStatus();
 
-  const indicatorActive = isActiveAndPlaying(webRTC, tunerStatus);
+  const indicatorActive =
+    webRTC.Connection.Status === "Connected" &&
+    tunerStatus.Connection === "Connected" &&
+    tunerStatus.State === "Playing";
 
   return (
     <div className="StatusIndicator">
@@ -73,55 +76,29 @@ function StatusIndicator() {
   );
 }
 
-function isActiveAndPlaying(
-  webRTC: WebRTCState,
-  tunerStatus: TunerStatus,
-): boolean {
-  if (webRTC.Connection.Status !== "Connected") {
-    return false;
-  }
-
-  return (
-    tunerStatus.Connection === "Connected" && tunerStatus.State === "Playing"
-  );
-}
-
 function statusString(webRTC: WebRTCState, tunerStatus: TunerStatus): string {
-  const webRTCString = webRTCStatusString(webRTC);
-  if (webRTCString !== undefined) {
-    return webRTCString;
+  if (webRTC.Connection.Status !== "Connected") {
+    return webRTC.Connection.Status;
   }
 
-  return tunerStatusString(tunerStatus);
-}
-
-function webRTCStatusString(state: WebRTCState): string | undefined {
-  if (state.Connection.Status !== "Connected") {
-    return state.Connection.Status;
+  if (tunerStatus.Connection !== "Connected") {
+    return tunerStatus.Connection;
   }
 
-  return undefined;
-}
-
-function tunerStatusString(status: TunerStatus): string {
-  if (status.Connection !== "Connected") {
-    return status.Connection;
-  }
-
-  if (status.State === "Stopped") {
-    if (status.Error !== undefined) {
+  if (tunerStatus.State === "Stopped") {
+    if (tunerStatus.Error !== undefined) {
       return "Failed to Tune";
     }
     return "Powered Off";
   }
 
-  if (status.State === "Starting") {
-    return `Tuning to ${status.ChannelName}`;
+  if (tunerStatus.State === "Starting") {
+    return `Tuning to ${tunerStatus.ChannelName}`;
   }
 
-  if (status.State === "Playing") {
-    return `Watching ${status.ChannelName}`;
+  if (tunerStatus.State === "Playing") {
+    return `Watching ${tunerStatus.ChannelName}`;
   }
 
-  return status.State;
+  return tunerStatus.State;
 }
