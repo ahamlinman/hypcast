@@ -7,40 +7,22 @@ export default function ChannelSelector({
   onTune,
 }: {
   selected?: string;
-  onTune: (ch: string) => Promise<void>;
+  onTune: (ch: string) => void;
 }) {
   const channelNames = useConfig<string[]>("channels");
 
-  const handleTune = async (selected: string) => {
-    if (selected === undefined) {
-      throw new Error("tried to tune before channels loaded");
-    }
-
-    try {
-      await onTune(selected);
-    } catch (e) {
-      console.error("Tune request failed", e);
-    }
-  };
-
-  if (!(channelNames instanceof Array)) {
-    return null;
-  }
-
-  return (
+  return channelNames instanceof Array ? (
     <aside className="ChannelSelector">
       {channelNames.map((ch) => (
         <Channel
           key={ch}
           name={ch}
           active={ch === selected}
-          onClick={() => {
-            handleTune(ch);
-          }}
+          onClick={() => onTune(ch)}
         />
       ))}
     </aside>
-  );
+  ) : null;
 }
 
 function Channel({
