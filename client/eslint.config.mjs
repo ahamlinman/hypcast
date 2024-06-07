@@ -1,7 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import globals from "globals";
 import confusingBrowserGlobals from "confusing-browser-globals";
 
 import js from "@eslint/js";
@@ -40,11 +39,6 @@ export default [
       "react-hooks": fixupPluginRules(reactHooks),
       "jsx-a11y": fixupPluginRules(jsxA11Y),
     },
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-    },
     settings: {
       react: {
         version: "detect",
@@ -52,18 +46,6 @@ export default [
     },
     rules: {
       "no-restricted-globals": ["error"].concat(confusingBrowserGlobals),
-    },
-  },
-
-  {
-    files: ["src/**"],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...Object.fromEntries(
-          Object.entries(globals.node).map(([key]) => [key, "off"]),
-        ),
-      },
     },
   },
 
