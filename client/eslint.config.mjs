@@ -32,7 +32,6 @@ export default [
       "plugin:jsx-a11y/recommended",
     ),
   ),
-
   {
     plugins: {
       react: fixupPluginRules(react),
@@ -50,10 +49,9 @@ export default [
   },
 
   ...compat.extends("plugin:@typescript-eslint/recommended").map((config) => ({
-    ...config,
     files: ["**/*.ts?(x)"],
+    ...config,
   })),
-
   {
     files: ["**/*.ts?(x)"],
     plugins: {
