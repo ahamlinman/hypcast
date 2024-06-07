@@ -13,8 +13,6 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11Y from "eslint-plugin-jsx-a11y";
 import tseslint from "typescript-eslint";
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
 
 const compat = new FlatCompat({
   baseDirectory: path.dirname(fileURLToPath(import.meta.url)),
@@ -35,7 +33,6 @@ export default tseslint.config(
       "plugin:jsx-a11y/recommended",
     ),
   ),
-
   {
     plugins: {
       react: fixupPluginRules(react),
@@ -54,23 +51,12 @@ export default tseslint.config(
     },
   },
 
-  ...compat.extends("plugin:@typescript-eslint/recommended").map((config) => ({
+  ...tseslint.configs.recommended.map((config) => ({
     files: ["**/*.ts?(x)"],
     ...config,
   })),
   {
     files: ["**/*.ts?(x)"],
-    plugins: {
-      "@typescript-eslint": typescriptEslint,
-    },
-    languageOptions: {
-      parser: tsParser,
-      ecmaVersion: 5,
-      sourceType: "script",
-      parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.node.json"],
-      },
-    },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },
