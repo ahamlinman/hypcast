@@ -1,3 +1,5 @@
+// @ts-check
+
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +12,7 @@ import { FlatCompat } from "@eslint/eslintrc";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11Y from "eslint-plugin-jsx-a11y";
+import tseslint from "typescript-eslint";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
@@ -19,7 +22,7 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 });
 
-export default [
+export default tseslint.config(
   {
     ignores: ["dist/**/*"],
   },
@@ -32,10 +35,13 @@ export default [
       "plugin:jsx-a11y/recommended",
     ),
   ),
+
   {
     plugins: {
       react: fixupPluginRules(react),
+      // @ts-ignore
       "react-hooks": fixupPluginRules(reactHooks),
+      // @ts-ignore
       "jsx-a11y": fixupPluginRules(jsxA11Y),
     },
     settings: {
@@ -44,7 +50,7 @@ export default [
       },
     },
     rules: {
-      "no-restricted-globals": ["error"].concat(confusingBrowserGlobals),
+      "no-restricted-globals": ["error", ...confusingBrowserGlobals],
     },
   },
 
@@ -69,4 +75,4 @@ export default [
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
-];
+);
