@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.0
 	github.com/pion/webrtc/v3 v3.2.40
 )
 
