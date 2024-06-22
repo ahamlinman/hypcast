@@ -6,7 +6,7 @@ ARG GOLANG_BASE=docker.io/library/golang:1.22-alpine3.20
 # The Node.js image does not require any particular OS.
 ARG NODEJS_BASE=docker.io/library/node:22-alpine
 # See https://gstreamer.freedesktop.org/news/.
-ARG GSTREAMER_VERSION=1.24.3
+ARG GSTREAMER_VERSION=1.24.5
 
 
 # Let's get the client build out of the way, since it's much simpler than
