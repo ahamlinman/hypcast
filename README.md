@@ -18,8 +18,8 @@ synchronized live stream, even as you change channels.
   time.
 - This is version 2 of Hypcast, a complete rewrite of the original project
   using a radically different implementation and providing a completely new
-  user interface. The original version of Hypcast remains available in the
-  `v1/main` branch, however it is not maintained.
+  user interface. The original version of Hypcast remains available at
+  https://github.com/ahamlinman/hypcast-v1, but is not maintained.
 
 [gstreamer]: https://gstreamer.freedesktop.org/
 [pion]: https://github.com/pion/webrtc
