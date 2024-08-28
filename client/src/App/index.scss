@@ -41,6 +41,11 @@ $mobile-break: 639px;
 }
 
 .Header {
+  background-color: $base;
+  color: $foreground;
+
+  border-bottom: 1px solid $base-dark;
+
   grid-area: Header;
 
   display: grid;
@@ -57,11 +62,6 @@ $mobile-break: 639px;
       "Title StatusIndicator PowerButton"
       / min-content auto 64px;
   }
-
-  background-color: $base;
-  color: $foreground;
-
-  border-bottom: 1px solid $base-dark;
 
   h1 {
     grid-area: Title;
@@ -149,13 +149,18 @@ $mobile-break: 639px;
   scrollbar-color: $base $base-dark;
 
   &__Channel {
+    background-color: $base-reallydark;
+    color: $foreground;
+
+    transition: background-color ease-out $transition-duration;
+
     display: block;
     width: 100%;
 
-    cursor: pointer;
-
     font-size: 1em;
     padding: 12px;
+
+    cursor: pointer;
 
     border: none;
     border-bottom: 1px solid $foreground;
@@ -163,9 +168,6 @@ $mobile-break: 639px;
       border-bottom: none;
     }
 
-    color: $foreground;
-    background-color: $base-reallydark;
-    transition: background-color ease-out $transition-duration;
     &:hover {
       background-color: $base-darker;
       transition-timing-function: step-start;
