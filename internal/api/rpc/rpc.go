@@ -9,6 +9,10 @@
 // do not require parameters. The maximum size of RPC request bodies may be
 // limited to conserve server resources. Requests with parameters must include a
 // Content-Type header with the value "application/json".
+//
+// This framework is not considered acceptable for Internet-facing production
+// use. For example, the Content-Type enforcement described above is the only
+// mitigation against cross-site request forgery attacks.
 package rpc
 
 import (
@@ -49,10 +53,8 @@ func (handler HandlerFunc[T]) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var (
-		code int
-		body any
-	)
+	var code int
+	var body any
 	if params, err := readRPCParams[T](r); err == nil {
 		code, body = handler(params)
 	} else {
