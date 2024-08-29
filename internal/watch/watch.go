@@ -8,12 +8,10 @@ import "sync"
 //
 // The zero value of a Value is valid and stores the zero value of T.
 type Value[T any] struct {
-	// Invariant: Every Watch must receive one update call for every value of the
-	// Value from the time it is added to the watchers set to the time it is
-	// removed.
-	//
-	// mu protects this invariant, and prevents data races on value.
-	mu       sync.RWMutex
+	// mu prevents data races on the value, and protects the invariant that every
+	// Watch receives one update call for every value of the Value from the time
+	// it's added to the watchers set to the time it's removed.
+	mu       sync.Mutex
 	value    T
 	watchers map[*watch[T]]struct{}
 }
@@ -25,8 +23,8 @@ func NewValue[T any](x T) *Value[T] {
 
 // Get returns the current value stored in v.
 func (v *Value[T]) Get() T {
-	v.mu.RLock()
-	defer v.mu.RUnlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
 	return v.value
 }
@@ -57,20 +55,19 @@ func (v *Value[T]) Set(x T) {
 // execution has finished.
 func (v *Value[T]) Watch(handler func(x T)) Watch {
 	w := newWatch(handler, v.unregisterWatch)
-	v.updateAndRegisterWatch(w)
+	v.registerAndUpdateWatch(w)
 	return w
 }
 
-func (v *Value[T]) updateAndRegisterWatch(w *watch[T]) {
+func (v *Value[T]) registerAndUpdateWatch(w *watch[T]) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-
-	w.update(v.value)
 
 	if v.watchers == nil {
 		v.watchers = make(map[*watch[T]]struct{})
 	}
 	v.watchers[w] = struct{}{}
+	w.update(v.value)
 }
 
 func (v *Value[T]) unregisterWatch(w *watch[T]) {
