@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"math/rand/v2"
 	"runtime"
 	"sync"
 	"testing"
@@ -346,4 +347,50 @@ func assertBlocked(t *testing.T, ch <-chan struct{}) {
 		t.Fatal("progress was not blocked")
 	default:
 	}
+}
+
+func BenchmarkSet1Watcher(b *testing.B) {
+	benchmarkSetWithWatchers(b, 1)
+}
+
+func BenchmarkSet10Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 10)
+}
+
+func BenchmarkSet100Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 100)
+}
+
+func BenchmarkSet1000Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 1000)
+}
+
+func benchmarkSetWithWatchers(b *testing.B, nWatchers int) {
+	v := NewValue(uint64(0))
+	watchers := make([]Watch, nWatchers)
+	for i := range watchers {
+		var sum uint64
+		watchers[i] = v.Watch(func(x uint64) { sum += x })
+	}
+
+	b.Cleanup(func() {
+		for _, w := range watchers {
+			w.Cancel()
+			w.Wait()
+		}
+	})
+
+	b.RunParallel(func(pb *testing.PB) {
+		// The choice to set random values is somewhat arbitrary. In practice, the
+		// cost of lock contention probably outweighs any strategy for generating
+		// these values--even setting a constant every time (unless there were ever
+		// an optimization to not trigger watches when the value doesn't change).
+		// Having the setters do work that the handlers can't predict feels vaguely
+		// more realistic, though, and it's not a huge difference either way since
+		// the goal is to compare different watcher implementations (that is, the
+		// work just needs to be the same on both sides of the comparison).
+		for pb.Next() {
+			v.Set(rand.Uint64())
+		}
+	})
 }
