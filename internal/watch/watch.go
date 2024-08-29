@@ -98,61 +98,75 @@ type Watch interface {
 type watch[T any] struct {
 	handler    func(T)
 	unregister func(*watch[T])
-	pending    chan T
-	done       chan struct{}
+
+	mu      sync.Mutex
+	wg      sync.WaitGroup
+	next    T
+	ok      bool // There is a valid value in next.
+	running bool // There is (or will be) a goroutine responsible for handling values.
+	cancel  bool // The WaitGroup must be canceled as soon as running == false.
 }
 
 func newWatch[T any](handler func(T), unregister func(*watch[T])) *watch[T] {
 	w := &watch[T]{
 		handler:    handler,
 		unregister: unregister,
-		pending:    make(chan T, 1),
-		done:       make(chan struct{}),
 	}
-	go w.run()
+	w.wg.Add(1)
 	return w
 }
 
-func (w *watch[T]) run() {
-	var wg sync.WaitGroup
-	defer close(w.done)
-
-	for next := range w.pending {
-		x := next
-		wg.Add(1)
-		// Insulate the handler from the main loop, e.g. if it calls runtime.Goexit
-		// it should not terminate this loop and break the processing of new values.
-		go func() {
-			defer wg.Done()
-			w.handler(x)
-		}()
-		wg.Wait()
+func (w *watch[T]) update(x T) {
+	w.mu.Lock()
+	start := !w.running
+	w.next, w.ok, w.running = x, true, true
+	w.mu.Unlock()
+	if start {
+		go w.run()
 	}
 }
 
-func (w *watch[T]) update(x T) {
-	// It's important that this call not block, so we assume w.pending is buffered
-	// and drop a pending update to free space if necessary.
-	select {
-	case <-w.pending:
-		w.pending <- x
-	case w.pending <- x:
+func (w *watch[T]) run() {
+	var cancel, unwind bool
+	defer func() {
+		if cancel {
+			w.wg.Done()
+		}
+		if unwind {
+			go w.run() // Only possible if w.running == true, so we must maintain the invariant.
+		}
+	}()
+
+	for {
+		w.mu.Lock()
+		cancel = w.cancel
+		next := w.next
+		stop := !w.ok || cancel
+		w.next, w.ok = *new(T), false
+		w.running = !stop
+		w.mu.Unlock()
+
+		if stop {
+			return
+		}
+
+		unwind = true
+		w.handler(next) // May panic or call runtime.Goexit.
+		unwind = false
 	}
 }
 
 func (w *watch[T]) Cancel() {
-	w.unregister(w)
-	w.clearPending()
-	close(w.pending)
-}
-
-func (w *watch[T]) clearPending() {
-	select {
-	case <-w.pending:
-	default:
+	w.unregister(w) // After this, we are guaranteed no new w.update calls.
+	w.mu.Lock()
+	w.cancel = true
+	done := !w.running
+	w.mu.Unlock()
+	if done {
+		w.wg.Done()
 	}
 }
 
 func (w *watch[T]) Wait() {
-	<-w.done
+	w.wg.Wait()
 }
