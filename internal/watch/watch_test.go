@@ -10,7 +10,7 @@ import (
 
 const timeout = 2 * time.Second
 
-func TestValue(t *testing.T) {
+func TestValueStress(t *testing.T) {
 	// A stress test meant to be run with the race detector enabled. This test
 	// ensures that all access to a Value is synchronized, that handlers run
 	// serially, and that handlers are properly notified of the most recent state.
@@ -25,11 +25,9 @@ func TestValue(t *testing.T) {
 
 	var handlerGroup sync.WaitGroup
 	handlerGroup.Add(nWatchers)
-	for i := 0; i < nWatchers; i++ {
-		var (
-			sum      int
-			sawFinal bool
-		)
+	for i := range nWatchers {
+		var sum int
+		var sawFinal bool
 		watches[i] = v.Watch(func(x int) {
 			// This will quickly make the race detector complain if more than one
 			// instance of a handler runs at once.
@@ -51,10 +49,7 @@ func TestValue(t *testing.T) {
 	for i := 1; i <= nWrites-1; i++ {
 		// This will quickly make the race detector complain if Set is not properly
 		// synchronized.
-		go func(i int) {
-			defer setGroup.Done()
-			v.Set(i)
-		}(i)
+		go func() { defer setGroup.Done(); v.Set(i) }()
 	}
 	setGroup.Wait()
 
@@ -69,7 +64,7 @@ func TestValue(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before all watchers saw final state", timeout)
+		t.Fatalf("not all watchers saw final state within %v", timeout)
 	}
 
 	for _, w := range watches {
@@ -98,7 +93,7 @@ func TestWatchZeroValue(t *testing.T) {
 			t.Errorf("watch on zero value of Value got %v; want nil", x)
 		}
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before watcher was notified", timeout)
+		t.Fatalf("watcher not notified within %v", timeout)
 	}
 
 	w.Cancel()
@@ -346,7 +341,7 @@ func assertNextReceive[T comparable](t *testing.T, ch chan T, want T) {
 			t.Fatalf("got %v from channel, want %v", got, want)
 		}
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before watcher was notified", timeout)
+		t.Fatalf("watcher not notified within %v", timeout)
 	}
 }
 
@@ -362,7 +357,7 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		t.Fatalf("watch not terminated after %v", timeout)
+		t.Fatalf("watch still active after %v", timeout)
 	}
 }
 
@@ -416,6 +411,8 @@ func benchmarkSetWithWatchers(b *testing.B, nWatchers int) {
 	b.Cleanup(func() {
 		for _, w := range watchers {
 			w.Cancel()
+		}
+		for _, w := range watchers {
 			w.Wait()
 		}
 	})
