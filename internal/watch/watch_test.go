@@ -208,14 +208,6 @@ func TestGoexitFromHandler(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
-func TestDoubleCancel(t *testing.T) {
-	// This one is simple: calling Cancel twice should not panic.
-	v := NewValue("alice")
-	w := v.Watch(func(x string) {})
-	w.Cancel()
-	w.Cancel()
-}
-
 func TestCancelInactiveHandler(t *testing.T) {
 	// The usual case of canceling a watch, where no handler is active at the time
 	// of cancellation. Once we cancel, no further handler calls should be made.
@@ -230,10 +222,24 @@ func TestCancelInactiveHandler(t *testing.T) {
 	})
 
 	assertNextReceive(t, notify, "alice")
+	forceRuntimeProgress() // Try to ensure the handler has fully terminated.
 
 	w.Cancel()
 	v.Set("bob")
 	assertBlocked(t, notify)
+}
+
+func TestDoubleCancelInactiveHandler(t *testing.T) {
+	// A specific test for calling Cancel twice on an inactive handler, and
+	// ensuring we don't panic.
+
+	v := NewValue("alice")
+	w := v.Watch(func(x string) {})
+	forceRuntimeProgress() // Try to ensure the initial handler has fully terminated.
+
+	w.Cancel()
+	w.Cancel()
+	assertWatchTerminates(t, w)
 }
 
 func TestCancelBlockedWatcher(t *testing.T) {
@@ -269,9 +275,10 @@ func TestCancelBlockedWatcher(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
-func TestCancelFromHandler(t *testing.T) {
+func TestDoubleCancelFromHandler(t *testing.T) {
 	// This is a special case of Cancel being called while a handler is blocked,
-	// as the caller of Cancel is the handler itself.
+	// as the caller of Cancel is the handler itself. We also call Cancel twice,
+	// to make sure multi-cancellation works in the active handler case.
 
 	v := NewValue("alice")
 
@@ -285,6 +292,7 @@ func TestCancelFromHandler(t *testing.T) {
 
 		v.Set("bob")
 		w := <-watchCh
+		w.Cancel()
 		w.Cancel()
 		canceled = true
 	})
@@ -361,19 +369,23 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 func assertBlocked[T any](t *testing.T, ch <-chan T) {
 	t.Helper()
 
-	// If any background routines are going to send on ch when they should not,
-	// let's make a best effort to help them along.
-	gomaxprocs := runtime.GOMAXPROCS(1)
-	defer runtime.GOMAXPROCS(gomaxprocs)
-	n := runtime.NumGoroutine()
-	for i := 0; i < n; i++ {
-		runtime.Gosched()
-	}
-
+	forceRuntimeProgress()
 	select {
 	case <-ch:
 		t.Fatal("progress was not blocked")
 	default:
+	}
+}
+
+// forceRuntimeProgress makes a best-effort attempt to force the Go runtime to
+// make progress on all other goroutines in the system, ideally to the point at
+// which they will next block if not preempted. It works best if no other
+// goroutines are CPU-intensive or change GOMAXPROCS.
+func forceRuntimeProgress() {
+	gomaxprocs := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(gomaxprocs)
+	for range runtime.NumGoroutine() {
+		runtime.Gosched()
 	}
 }
 
