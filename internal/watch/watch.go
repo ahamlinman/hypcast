@@ -156,10 +156,10 @@ func (w *watch[T]) run() {
 func (w *watch[T]) Cancel() {
 	w.unregister(w) // After this, we are guaranteed no new w.update calls.
 	w.mu.Lock()
+	finish := !w.running && !w.cancel
 	w.cancel = true
-	done := !w.running
 	w.mu.Unlock()
-	if done {
+	if finish {
 		w.wg.Done()
 	}
 }

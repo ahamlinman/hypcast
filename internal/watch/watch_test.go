@@ -208,6 +208,14 @@ func TestGoexitFromHandler(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
+func TestDoubleCancel(t *testing.T) {
+	// This one is simple: calling Cancel twice should not panic.
+	v := NewValue("alice")
+	w := v.Watch(func(x string) {})
+	w.Cancel()
+	w.Cancel()
+}
+
 func TestCancelBlockedWatcher(t *testing.T) {
 	// A specific test for canceling a watch while it is handling a notification.
 
