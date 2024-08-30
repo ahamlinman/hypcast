@@ -44,14 +44,14 @@ func (v *Value[T]) Set(x T) {
 //
 // Each active watch executes up to one instance of handler at a time in a new
 // goroutine, first with the value stored in v upon creation of the watch, then
-// with subsequent values stored in v by calls to Set. If the value stored in v
-// changes while a handler execution is in flight, handler will be called once
-// more with the latest value stored in v following its current execution.
-// Intermediate updates preceding the latest value will be dropped.
+// with subsequent values stored in v by calls to [Value.Set]. If the value
+// stored in v changes while a handler execution is in flight, handler will be
+// called once more with the latest value stored in v following its current
+// execution. Intermediate updates preceding the latest value will be dropped.
 //
 // Values are not recovered by the garbage collector until all of their
 // associated watches have terminated. A watch is terminated after it has been
-// canceled by a call to Watch.Cancel, and any pending or in-flight handler
+// canceled by a call to [Watch.Cancel], and any pending or in-flight handler
 // execution has finished.
 func (v *Value[T]) Watch(handler func(x T)) Watch {
 	w := newWatch(handler, v.unregisterWatch)
@@ -77,7 +77,7 @@ func (v *Value[T]) unregisterWatch(w *watch[T]) {
 	delete(v.watchers, w)
 }
 
-// Watch represents a single watch on a Value. See Value.Watch for details.
+// Watch represents a single watch on a Value. See [Value.Watch] for details.
 type Watch interface {
 	// Cancel requests that this watch be terminated as soon as possible,
 	// potentially after a pending or in-flight handler execution has finished.
