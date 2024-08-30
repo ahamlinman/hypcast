@@ -216,6 +216,26 @@ func TestDoubleCancel(t *testing.T) {
 	w.Cancel()
 }
 
+func TestCancelInactiveHandler(t *testing.T) {
+	// The usual case of canceling a watch, where no handler is active at the time
+	// of cancellation. Once we cancel, no further handler calls should be made.
+
+	v := NewValue("alice")
+	notify := make(chan string, 1)
+	w := v.Watch(func(x string) {
+		select {
+		case notify <- x:
+		default:
+		}
+	})
+
+	assertNextReceive(t, notify, "alice")
+
+	w.Cancel()
+	v.Set("bob")
+	assertBlocked(t, notify)
+}
+
 func TestCancelBlockedWatcher(t *testing.T) {
 	// A specific test for canceling a watch while it is handling a notification.
 
@@ -338,10 +358,10 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 	}
 }
 
-func assertBlocked(t *testing.T, ch <-chan struct{}) {
+func assertBlocked[T any](t *testing.T, ch <-chan T) {
 	t.Helper()
 
-	// If any background routines are going to close ch when they should not,
+	// If any background routines are going to send on ch when they should not,
 	// let's make a best effort to help them along.
 	gomaxprocs := runtime.GOMAXPROCS(1)
 	defer runtime.GOMAXPROCS(gomaxprocs)
