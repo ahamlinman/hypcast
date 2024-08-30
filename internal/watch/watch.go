@@ -124,25 +124,25 @@ func (w *watch[T]) update(x T) {
 }
 
 func (w *watch[T]) run() {
-	var cancel, unwind bool
+	var unwind bool
 	defer func() {
-		if cancel {
-			w.wg.Done()
-		}
 		if unwind {
-			go w.run() // Only possible if w.running == true, so we must maintain the invariant.
+			// Only possible if w.running == true, so we must maintain the invariant.
+			go w.run()
 		}
 	}()
 
 	for {
 		w.mu.Lock()
-		cancel = w.cancel
-		next := w.next
+		next, cancel := w.next, w.cancel
 		stop := !w.ok || cancel
-		w.next, w.ok = *new(T), false
 		w.running = !stop
+		w.next, w.ok = *new(T), false
 		w.mu.Unlock()
 
+		if cancel {
+			w.wg.Done()
+		}
 		if stop {
 			return
 		}
