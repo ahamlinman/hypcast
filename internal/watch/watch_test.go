@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"math/rand/v2"
 	"runtime"
 	"sync"
 	"testing"
@@ -9,7 +10,7 @@ import (
 
 const timeout = 2 * time.Second
 
-func TestValue(t *testing.T) {
+func TestValueStress(t *testing.T) {
 	// A stress test meant to be run with the race detector enabled. This test
 	// ensures that all access to a Value is synchronized, that handlers run
 	// serially, and that handlers are properly notified of the most recent state.
@@ -24,11 +25,9 @@ func TestValue(t *testing.T) {
 
 	var handlerGroup sync.WaitGroup
 	handlerGroup.Add(nWatchers)
-	for i := 0; i < nWatchers; i++ {
-		var (
-			sum      int
-			sawFinal bool
-		)
+	for i := range nWatchers {
+		var sum int
+		var sawFinal bool
 		watches[i] = v.Watch(func(x int) {
 			// This will quickly make the race detector complain if more than one
 			// instance of a handler runs at once.
@@ -50,10 +49,7 @@ func TestValue(t *testing.T) {
 	for i := 1; i <= nWrites-1; i++ {
 		// This will quickly make the race detector complain if Set is not properly
 		// synchronized.
-		go func(i int) {
-			defer setGroup.Done()
-			v.Set(i)
-		}(i)
+		go func() { defer setGroup.Done(); v.Set(i) }()
 	}
 	setGroup.Wait()
 
@@ -68,7 +64,7 @@ func TestValue(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before all watchers saw final state", timeout)
+		t.Fatalf("not all watchers saw final state within %v", timeout)
 	}
 
 	for _, w := range watches {
@@ -97,7 +93,7 @@ func TestWatchZeroValue(t *testing.T) {
 			t.Errorf("watch on zero value of Value got %v; want nil", x)
 		}
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before watcher was notified", timeout)
+		t.Fatalf("watcher not notified within %v", timeout)
 	}
 
 	w.Cancel()
@@ -207,6 +203,40 @@ func TestGoexitFromHandler(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
+func TestCancelInactiveHandler(t *testing.T) {
+	// The usual case of canceling a watch, where no handler is active at the time
+	// of cancellation. Once we cancel, no further handler calls should be made.
+
+	v := NewValue("alice")
+	notify := make(chan string, 1)
+	w := v.Watch(func(x string) {
+		select {
+		case notify <- x:
+		default:
+		}
+	})
+
+	assertNextReceive(t, notify, "alice")
+	forceRuntimeProgress() // Try to ensure the handler has fully terminated.
+
+	w.Cancel()
+	v.Set("bob")
+	assertBlocked(t, notify)
+}
+
+func TestDoubleCancelInactiveHandler(t *testing.T) {
+	// A specific test for calling Cancel twice on an inactive handler, and
+	// ensuring we don't panic.
+
+	v := NewValue("alice")
+	w := v.Watch(func(x string) {})
+	forceRuntimeProgress() // Try to ensure the initial handler has fully terminated.
+
+	w.Cancel()
+	w.Cancel()
+	assertWatchTerminates(t, w)
+}
+
 func TestCancelBlockedWatcher(t *testing.T) {
 	// A specific test for canceling a watch while it is handling a notification.
 
@@ -240,9 +270,10 @@ func TestCancelBlockedWatcher(t *testing.T) {
 	assertWatchTerminates(t, w)
 }
 
-func TestCancelFromHandler(t *testing.T) {
+func TestDoubleCancelFromHandler(t *testing.T) {
 	// This is a special case of Cancel being called while a handler is blocked,
-	// as the caller of Cancel is the handler itself.
+	// as the caller of Cancel is the handler itself. We also call Cancel twice,
+	// to make sure multi-cancellation works in the active handler case.
 
 	v := NewValue("alice")
 
@@ -256,6 +287,7 @@ func TestCancelFromHandler(t *testing.T) {
 
 		v.Set("bob")
 		w := <-watchCh
+		w.Cancel()
 		w.Cancel()
 		canceled = true
 	})
@@ -309,7 +341,7 @@ func assertNextReceive[T comparable](t *testing.T, ch chan T, want T) {
 			t.Fatalf("got %v from channel, want %v", got, want)
 		}
 	case <-time.After(timeout):
-		t.Fatalf("reached %v timeout before watcher was notified", timeout)
+		t.Fatalf("watcher not notified within %v", timeout)
 	}
 }
 
@@ -325,25 +357,77 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 	select {
 	case <-done:
 	case <-time.After(timeout):
-		t.Fatalf("watch not terminated after %v", timeout)
+		t.Fatalf("watch still active after %v", timeout)
 	}
 }
 
-func assertBlocked(t *testing.T, ch <-chan struct{}) {
+func assertBlocked[T any](t *testing.T, ch <-chan T) {
 	t.Helper()
 
-	// If any background routines are going to close ch when they should not,
-	// let's make a best effort to help them along.
-	gomaxprocs := runtime.GOMAXPROCS(1)
-	defer runtime.GOMAXPROCS(gomaxprocs)
-	n := runtime.NumGoroutine()
-	for i := 0; i < n; i++ {
-		runtime.Gosched()
-	}
-
+	forceRuntimeProgress()
 	select {
 	case <-ch:
 		t.Fatal("progress was not blocked")
 	default:
 	}
+}
+
+// forceRuntimeProgress makes a best-effort attempt to force the Go runtime to
+// make progress on all other goroutines in the system, ideally to the point at
+// which they will next block if not preempted. It works best if no other
+// goroutines are CPU-intensive or change GOMAXPROCS.
+func forceRuntimeProgress() {
+	gomaxprocs := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(gomaxprocs)
+	for range runtime.NumGoroutine() {
+		runtime.Gosched()
+	}
+}
+
+func BenchmarkSet1Watcher(b *testing.B) {
+	benchmarkSetWithWatchers(b, 1)
+}
+
+func BenchmarkSet10Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 10)
+}
+
+func BenchmarkSet100Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 100)
+}
+
+func BenchmarkSet1000Watchers(b *testing.B) {
+	benchmarkSetWithWatchers(b, 1000)
+}
+
+func benchmarkSetWithWatchers(b *testing.B, nWatchers int) {
+	v := NewValue(uint64(0))
+	watchers := make([]Watch, nWatchers)
+	for i := range watchers {
+		var sum uint64
+		watchers[i] = v.Watch(func(x uint64) { sum += x })
+	}
+
+	b.Cleanup(func() {
+		for _, w := range watchers {
+			w.Cancel()
+		}
+		for _, w := range watchers {
+			w.Wait()
+		}
+	})
+
+	b.RunParallel(func(pb *testing.PB) {
+		// The choice to set random values is somewhat arbitrary. In practice, the
+		// cost of lock contention probably outweighs any strategy for generating
+		// these values--even setting a constant every time (unless there were ever
+		// an optimization to not trigger watches when the value doesn't change).
+		// Having the setters do work that the handlers can't predict feels vaguely
+		// more realistic, though, and it's not a huge difference either way since
+		// the goal is to compare different watcher implementations (that is, the
+		// work just needs to be the same on both sides of the comparison).
+		for pb.Next() {
+			v.Set(rand.Uint64())
+		}
+	})
 }

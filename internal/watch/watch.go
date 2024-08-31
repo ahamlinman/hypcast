@@ -8,12 +8,10 @@ import "sync"
 //
 // The zero value of a Value is valid and stores the zero value of T.
 type Value[T any] struct {
-	// Invariant: Every Watch must receive one update call for every value of the
-	// Value from the time it is added to the watchers set to the time it is
-	// removed.
-	//
-	// mu protects this invariant, and prevents data races on value.
-	mu       sync.RWMutex
+	// mu prevents data races on the value, and protects the invariant that every
+	// Watch receives one update call for every value of the Value from the time
+	// it's added to the watchers set to the time it's removed.
+	mu       sync.Mutex
 	value    T
 	watchers map[*watch[T]]struct{}
 }
@@ -25,8 +23,8 @@ func NewValue[T any](x T) *Value[T] {
 
 // Get returns the current value stored in v.
 func (v *Value[T]) Get() T {
-	v.mu.RLock()
-	defer v.mu.RUnlock()
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
 	return v.value
 }
@@ -46,31 +44,30 @@ func (v *Value[T]) Set(x T) {
 //
 // Each active watch executes up to one instance of handler at a time in a new
 // goroutine, first with the value stored in v upon creation of the watch, then
-// with subsequent values stored in v by calls to Set. If the value stored in v
-// changes while a handler execution is in flight, handler will be called once
-// more with the latest value stored in v following its current execution.
-// Intermediate updates preceding the latest value will be dropped.
+// with subsequent values stored in v by calls to [Value.Set]. If the value
+// stored in v changes while a handler execution is in flight, handler will be
+// called once more with the latest value stored in v following its current
+// execution. Intermediate updates preceding the latest value will be dropped.
 //
 // Values are not recovered by the garbage collector until all of their
 // associated watches have terminated. A watch is terminated after it has been
-// canceled by a call to Watch.Cancel, and any pending or in-flight handler
+// canceled by a call to [Watch.Cancel], and any pending or in-flight handler
 // execution has finished.
 func (v *Value[T]) Watch(handler func(x T)) Watch {
 	w := newWatch(handler, v.unregisterWatch)
-	v.updateAndRegisterWatch(w)
+	v.registerAndUpdateWatch(w)
 	return w
 }
 
-func (v *Value[T]) updateAndRegisterWatch(w *watch[T]) {
+func (v *Value[T]) registerAndUpdateWatch(w *watch[T]) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-
-	w.update(v.value)
 
 	if v.watchers == nil {
 		v.watchers = make(map[*watch[T]]struct{})
 	}
 	v.watchers[w] = struct{}{}
+	w.update(v.value)
 }
 
 func (v *Value[T]) unregisterWatch(w *watch[T]) {
@@ -80,7 +77,7 @@ func (v *Value[T]) unregisterWatch(w *watch[T]) {
 	delete(v.watchers, w)
 }
 
-// Watch represents a single watch on a Value. See Value.Watch for details.
+// Watch represents a single watch on a Value. See [Value.Watch] for details.
 type Watch interface {
 	// Cancel requests that this watch be terminated as soon as possible,
 	// potentially after a pending or in-flight handler execution has finished.
@@ -98,61 +95,75 @@ type Watch interface {
 type watch[T any] struct {
 	handler    func(T)
 	unregister func(*watch[T])
-	pending    chan T
-	done       chan struct{}
+
+	mu      sync.Mutex
+	wg      sync.WaitGroup
+	next    T
+	ok      bool // There is a valid value in next.
+	running bool // There is (or will be) a goroutine responsible for handling values.
+	cancel  bool // The WaitGroup must be canceled as soon as running == false.
 }
 
 func newWatch[T any](handler func(T), unregister func(*watch[T])) *watch[T] {
 	w := &watch[T]{
 		handler:    handler,
 		unregister: unregister,
-		pending:    make(chan T, 1),
-		done:       make(chan struct{}),
 	}
-	go w.run()
+	w.wg.Add(1)
 	return w
 }
 
-func (w *watch[T]) run() {
-	var wg sync.WaitGroup
-	defer close(w.done)
-
-	for next := range w.pending {
-		x := next
-		wg.Add(1)
-		// Insulate the handler from the main loop, e.g. if it calls runtime.Goexit
-		// it should not terminate this loop and break the processing of new values.
-		go func() {
-			defer wg.Done()
-			w.handler(x)
-		}()
-		wg.Wait()
+func (w *watch[T]) update(x T) {
+	w.mu.Lock()
+	start := !w.running
+	w.next, w.ok, w.running = x, true, true
+	w.mu.Unlock()
+	if start {
+		go w.run()
 	}
 }
 
-func (w *watch[T]) update(x T) {
-	// It's important that this call not block, so we assume w.pending is buffered
-	// and drop a pending update to free space if necessary.
-	select {
-	case <-w.pending:
-		w.pending <- x
-	case w.pending <- x:
+func (w *watch[T]) run() {
+	var unwind bool
+	defer func() {
+		if unwind {
+			// Only possible if w.running == true, so we must maintain the invariant.
+			go w.run()
+		}
+	}()
+
+	for {
+		w.mu.Lock()
+		next, cancel := w.next, w.cancel
+		stop := !w.ok || cancel
+		w.running = !stop
+		w.next, w.ok = *new(T), false
+		w.mu.Unlock()
+
+		if cancel {
+			w.wg.Done()
+		}
+		if stop {
+			return
+		}
+
+		unwind = true
+		w.handler(next) // May panic or call runtime.Goexit.
+		unwind = false
 	}
 }
 
 func (w *watch[T]) Cancel() {
-	w.unregister(w)
-	w.clearPending()
-	close(w.pending)
-}
-
-func (w *watch[T]) clearPending() {
-	select {
-	case <-w.pending:
-	default:
+	w.unregister(w) // After this, we are guaranteed no new w.update calls.
+	w.mu.Lock()
+	finish := !w.running && !w.cancel
+	w.cancel = true
+	w.mu.Unlock()
+	if finish {
+		w.wg.Done()
 	}
 }
 
 func (w *watch[T]) Wait() {
-	<-w.done
+	w.wg.Wait()
 }
