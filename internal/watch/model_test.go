@@ -67,5 +67,11 @@ func TestWatchModel(t *testing.T) {
 		return
 	}
 
-	t.Fatalf("found trail files: %v", matches) // TODO: Print the trail.
+	t.Errorf("found trail files: %v", matches)
+	trail := exec.Command("spin", "-t", "-p", "-k", matches[0], "/dev/stdin")
+	trail.Stdin = strings.NewReader(modelFile)
+	trail.Stdout, trail.Stderr = os.Stdout, os.Stderr
+	if err := trail.Run(); err != nil {
+		t.Fatalf("failed to print trail output: %v", err)
+	}
 }
