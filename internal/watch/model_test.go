@@ -62,6 +62,10 @@ func TestWatchModel(t *testing.T) {
 		t.Fatalf("failed to run pan: %v", err)
 	}
 
-	// TODO: Finish this part.
-	t.Fatalf("the test does not yet know how to check for trail files")
+	matches, _ := filepath.Glob("*.trail") // Error-free for well-formed patterns.
+	if len(matches) == 0 {
+		return
+	}
+
+	t.Fatalf("found trail files: %v", matches) // TODO: Print the trail.
 }
