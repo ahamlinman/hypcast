@@ -14,6 +14,27 @@ import (
 //go:embed model.pml
 var modelFile string
 
+// TestWatchModel uses the [Spin] tool to validate the formal Promela model of
+// the Hypcast watch implementation in model.pml.
+//
+// To verify a Promela model, a user will typically:
+//
+//   - Use Spin to create a C program ("pan.c") that evaluates all possible
+//     states in the model.
+//   - Compile this program with the system C compiler, and execute it.
+//   - Look for the presence of a ".trail" file demonstrating an interleaving of
+//     processes that violates the model's assertions.
+//
+// This harness automates this process within the standard Go testing framework,
+// building and executing the model checker in a temporary directory and
+// displaying the details of any generated trail.
+//
+// Use the "modeltest" build tag to include this harness in a test run, and
+// include the "-v" flag to display the model checker's output.
+//
+//	go test -v -tags modeltest [...]
+//
+// [Spin]: https://spinroot.com/
 func TestWatchModel(t *testing.T) {
 	for _, cmd := range []string{"spin", "cc"} {
 		if _, err := exec.LookPath(cmd); err != nil {
@@ -67,7 +88,7 @@ func TestWatchModel(t *testing.T) {
 		return
 	}
 
-	t.Errorf("found trail files: %v", matches)
+	t.Errorf("found %v; run go test -v to see trail output", matches)
 	trail := exec.Command("spin", "-t", "-p", "-k", matches[0], "/dev/stdin")
 	trail.Stdin = strings.NewReader(modelFile)
 	trail.Stdout, trail.Stderr = os.Stdout, os.Stderr
