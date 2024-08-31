@@ -30,12 +30,12 @@ var modelFile string
 // displaying the details of any generated trail.
 //
 // Use the "modeltest" build tag to include this harness in a test run, and
-// include the "-v" flag to display the model checker's output.
+// include the "-v" flag to display the model checker's output. For example:
 //
-//	go test -v -tags modeltest [...]
+//	go test -v -tags modeltest -run Model ./internal/watch
 //
 // [Spin]: https://spinroot.com/
-func TestWatchModel(t *testing.T) {
+func TestModel(t *testing.T) {
 	for _, cmd := range []string{"spin", "cc"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			t.Fatalf("cannot find %v on this system", cmd)
