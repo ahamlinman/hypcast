@@ -56,7 +56,7 @@ func TestModel(t *testing.T) {
 		if err := os.RemoveAll(tmpdir); err == nil {
 			t.Logf("cleaned up %v", tmpdir)
 		} else {
-			t.Logf("failed to clean up %v", tmpdir)
+			t.Logf("failed to clean up %v: %v", tmpdir, err)
 		}
 	}()
 
