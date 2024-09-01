@@ -40,7 +40,6 @@ export default tseslint.config(
       react: fixupPluginRules(react),
       // @ts-ignore
       "react-hooks": fixupPluginRules(reactHooks),
-      // @ts-ignore
       "jsx-a11y": fixupPluginRules(jsxA11Y),
     },
     settings: {
