@@ -25,6 +25,7 @@ export default tseslint.config(
     ignores: ["dist/**/*"],
   },
 
+  // @ts-ignore
   ...fixupConfigRules(
     compat.extends(
       "eslint:recommended",
@@ -35,6 +36,7 @@ export default tseslint.config(
   ),
   {
     plugins: {
+      // @ts-ignore
       react: fixupPluginRules(react),
       // @ts-ignore
       "react-hooks": fixupPluginRules(reactHooks),
