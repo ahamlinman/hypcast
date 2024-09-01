@@ -6,10 +6,6 @@ export type ConnectionState =
 
 type Message = { SDP: any };
 
-/* eslint-disable @typescript-eslint/adjacent-overload-signatures */
-// I find it clearer and more maintainable to keep the signatures for a single
-// event next to each other.
-
 /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 // TODO: I need to figure out what's up with this one.
 
