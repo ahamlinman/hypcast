@@ -48,11 +48,6 @@ export default tseslint.config(
   },
 
   {
-    settings: {
-      react: {
-        version: "detect",
-      },
-    },
     rules: {
       "no-restricted-globals": ["error", ...confusingBrowserGlobals],
     },
