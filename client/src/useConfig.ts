@@ -19,7 +19,7 @@ export default function useConfig<T>(name: string): undefined | T | Error {
   return result;
 }
 
-const FETCH_CACHE = new Map<string, Promise<unknown>>();
+const FETCH_CACHE = new Map<string, Promise<any>>(); // eslint-disable-line @typescript-eslint/no-explicit-any
 
 function fetchConfigWithCache(name: string) {
   const cachedPromise = FETCH_CACHE.get(name);
