@@ -11,7 +11,11 @@ export default function useConfig<T>(name: string): undefined | T | Error {
       try {
         setResult(await fetchConfigWithCache(name));
       } catch (e: unknown) {
-        setResult(e as Error);
+        if (e instanceof Error) {
+          setResult(e);
+        } else {
+          setResult(Error(`${e}`));
+        }
       }
     }
   }, [name]);
