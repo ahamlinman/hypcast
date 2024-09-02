@@ -10,8 +10,8 @@ export default function useConfig<T>(name: string): undefined | T | Error {
     async function startFetch() {
       try {
         setResult(await fetchConfigWithCache(name));
-      } catch (e: any) {
-        setResult(e);
+      } catch (e: unknown) {
+        setResult(e as Error);
       }
     }
   }, [name]);
@@ -19,7 +19,7 @@ export default function useConfig<T>(name: string): undefined | T | Error {
   return result;
 }
 
-const FETCH_CACHE = new Map<string, Promise<any>>();
+const FETCH_CACHE = new Map<string, Promise<unknown>>();
 
 function fetchConfigWithCache(name: string) {
   const cachedPromise = FETCH_CACHE.get(name);

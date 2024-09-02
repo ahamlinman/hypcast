@@ -1,6 +1,6 @@
 const NO_CONTENT = 204;
 
-export default async function rpc(name: string, params?: any) {
+export default async function rpc(name: string, params?: unknown) {
   const response = await fetch(`/api/rpc/${name}`, {
     method: "POST",
     body: params ? JSON.stringify(params) : undefined,

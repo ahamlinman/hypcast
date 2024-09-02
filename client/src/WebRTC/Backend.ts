@@ -4,7 +4,7 @@ export type ConnectionState =
   | { Status: "Disconnected" | "Connecting" | "Connected" }
   | { Status: "Error"; Error: Error };
 
-type Message = { SDP: any };
+type Message = { SDP: RTCSessionDescriptionInit };
 
 /* eslint-disable @typescript-eslint/no-unsafe-declaration-merging */
 // TODO: I need to figure out what's up with this one.
@@ -74,7 +74,7 @@ class Backend extends EventEmitter {
     this.handleRTCOffer(message.SDP);
   }
 
-  private async handleRTCOffer(sdp: any) {
+  private async handleRTCOffer(sdp: RTCSessionDescriptionInit) {
     console.log("Received remote description", sdp);
     this.pc.setRemoteDescription(sdp);
 
