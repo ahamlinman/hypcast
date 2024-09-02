@@ -29,7 +29,6 @@ export default tseslint.config(
   ...fixupConfigRules(
     compat.extends(
       "eslint:recommended",
-      "plugin:react/recommended",
       "plugin:react-hooks/recommended",
       "plugin:jsx-a11y/recommended",
     ),
@@ -37,20 +36,16 @@ export default tseslint.config(
   {
     plugins: {
       // @ts-ignore
-      react: fixupPluginRules(react),
-      // @ts-ignore
       "react-hooks": fixupPluginRules(reactHooks),
       "jsx-a11y": fixupPluginRules(jsxA11Y),
-    },
-    settings: {
-      react: {
-        version: "detect",
-      },
     },
     rules: {
       "no-restricted-globals": ["error", ...confusingBrowserGlobals],
     },
   },
+
+  react.configs.flat.recommended,
+  { settings: { react: { version: "detect" } } },
 
   ...tseslint.configs.recommended.map((config) => ({
     files: ["**/*.ts?(x)"],
