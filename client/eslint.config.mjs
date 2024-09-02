@@ -16,8 +16,6 @@ import tseslint from "typescript-eslint";
 
 const compat = new FlatCompat({
   baseDirectory: path.dirname(fileURLToPath(import.meta.url)),
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all,
 });
 
 export default tseslint.config(
@@ -25,10 +23,18 @@ export default tseslint.config(
     ignores: ["dist/**/*"],
   },
 
-  // @ts-ignore
+  js.configs.recommended,
+
+  react.configs.flat.recommended,
+  { settings: { react: { version: "detect" } } },
+
+  ...tseslint.configs.recommended.map((config) => ({
+    files: ["**/*.ts?(x)"],
+    ...config,
+  })),
+
   ...fixupConfigRules(
     compat.extends(
-      "eslint:recommended",
       "plugin:react-hooks/recommended",
       "plugin:jsx-a11y/recommended",
     ),
@@ -39,16 +45,16 @@ export default tseslint.config(
       "react-hooks": fixupPluginRules(reactHooks),
       "jsx-a11y": fixupPluginRules(jsxA11Y),
     },
+  },
+
+  {
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
     rules: {
       "no-restricted-globals": ["error", ...confusingBrowserGlobals],
     },
   },
-
-  react.configs.flat.recommended,
-  { settings: { react: { version: "detect" } } },
-
-  ...tseslint.configs.recommended.map((config) => ({
-    files: ["**/*.ts?(x)"],
-    ...config,
-  })),
 );
