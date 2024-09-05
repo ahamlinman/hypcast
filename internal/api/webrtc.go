@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"sync"
@@ -27,20 +28,15 @@ func init() {
 	)
 
 	var me webrtc.MediaEngine
-
-	videoParameters := webrtc.RTPCodecParameters{
-		PayloadType:        videoPayloadType,
-		RTPCodecCapability: tuner.VideoCodecCapability,
-	}
-	if err := me.RegisterCodec(videoParameters, webrtc.RTPCodecTypeVideo); err != nil {
-		panic(err)
-	}
-
-	audioParameters := webrtc.RTPCodecParameters{
-		PayloadType:        audioPayloadType,
-		RTPCodecCapability: tuner.AudioCodecCapability,
-	}
-	if err := me.RegisterCodec(audioParameters, webrtc.RTPCodecTypeAudio); err != nil {
+	err := errors.Join(
+		me.RegisterCodec(
+			webrtc.RTPCodecParameters{PayloadType: videoPayloadType, RTPCodecCapability: tuner.VideoCodecCapability},
+			webrtc.RTPCodecTypeVideo),
+		me.RegisterCodec(
+			webrtc.RTPCodecParameters{PayloadType: audioPayloadType, RTPCodecCapability: tuner.AudioCodecCapability},
+			webrtc.RTPCodecTypeAudio),
+	)
+	if err != nil {
 		panic(err)
 	}
 
