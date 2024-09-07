@@ -59,12 +59,12 @@ func main() {
 
 	var assetLogAttr slog.Attr
 	if flagAssets != "" {
-		assetLogAttr = slog.String("assets.path", flagAssets)
+		assetLogAttr = slog.Group("assets", "path", flagAssets)
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
 		))
 	} else if client.Build != nil {
-		assetLogAttr = slog.Bool("assets.embedded", true)
+		assetLogAttr = slog.Group("assets", "embedded", true)
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.FS(client.Build)},
 		))
