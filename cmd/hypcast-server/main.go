@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"log/slog"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -47,24 +47,24 @@ func init() {
 func main() {
 	flag.Parse()
 
-	log.Printf("Using channels from %s", flagChannels)
 	channels, err := readChannelsConf(flagChannels)
 	if err != nil {
-		log.Fatalf("Unable to read channels.conf: %v", err)
+		slog.Error("Failed to load channels", "channels", flagChannels, "error", err)
+		os.Exit(1)
 	}
 
 	vp := tuner.ParseVideoPipeline(flagVideoPipeline)
-	log.Printf("Using %s video pipeline", vp)
 	tuner := tuner.NewTuner(channels, vp)
 	http.Handle("/api/", api.NewHandler(tuner))
 
+	var assetLogAttr slog.Attr
 	if flagAssets != "" {
-		log.Printf("Using client assets from %s", flagAssets)
+		assetLogAttr = slog.Group("assets", "path", flagAssets)
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.Dir(flagAssets)},
 		))
 	} else if client.Build != nil {
-		log.Print("Using embedded client assets")
+		assetLogAttr = slog.Group("assets", "embedded", true)
 		http.Handle("/", http.FileServer(
 			assets.FileSystem{FileSystem: http.FS(client.Build)},
 		))
@@ -72,13 +72,20 @@ func main() {
 
 	server := http.Server{Addr: flagAddr}
 	go server.ListenAndServe()
-	log.Printf("Started Hypcast server on %s", flagAddr)
+	slog.LogAttrs(
+		context.Background(), slog.LevelInfo,
+		"Started Hypcast server",
+		slog.String("addr", flagAddr),
+		slog.String("channels", flagChannels),
+		slog.String("pipeline", string(vp)),
+		assetLogAttr,
+	)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
 	<-signalCh
 
-	log.Print("Shutting down")
+	slog.Info("Shutting down")
 	stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	server.Shutdown(stopCtx)
