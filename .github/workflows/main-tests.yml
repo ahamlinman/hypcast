@@ -12,7 +12,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: "1.22"
+        go-version: "1.23"
     - name: Install libgstreamer1.0-dev
       run: |
         sudo apt-get install -y libunwind-dev
@@ -27,7 +27,7 @@ jobs:
     - name: Install Node
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
+        node-version: 22.x
     - name: Install Packages
       run: cd client && yarn install --frozen-lockfile
     - name: Build Client

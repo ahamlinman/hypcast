@@ -5,6 +5,7 @@ package tuner
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"log/slog"
 	"strings"
 	"sync"
@@ -111,21 +112,23 @@ func NewTuner(channels []atsc.Channel, videoPipeline VideoPipeline) *Tuner {
 }
 
 func makeChannelMap(channels []atsc.Channel) map[string]atsc.Channel {
-	m := make(map[string]atsc.Channel)
-	for _, c := range channels {
-		m[c.Name] = c
+	m := make(map[string]atsc.Channel, len(channels))
+	for _, ch := range channels {
+		m[ch.Name] = ch
 	}
 	return m
 }
 
-// ChannelNames returns the names of channels that are known to this tuner and
-// may be passed to Tune.
-func (t *Tuner) ChannelNames() []string {
-	channelNames := make([]string, len(t.channels))
-	for i, ch := range t.channels {
-		channelNames[i] = ch.Name
+// ChannelNames returns an iterator over the names of channels that may be
+// passed to [Tuner.Tune].
+func (t *Tuner) ChannelNames() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for _, ch := range t.channels {
+			if !yield(ch.Name) {
+				break
+			}
+		}
 	}
-	return channelNames
 }
 
 // WatchStatus sets up a handler function to continuously receive the status of
@@ -201,14 +204,8 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	}
 	slog.Info("Started transcode pipeline")
 
-	t.status.Set(Status{
-		State:       StatePlaying,
-		ChannelName: channelName,
-	})
-	t.tracks.Set(Tracks{
-		Video: vt,
-		Audio: at,
-	})
+	t.status.Set(Status{State: StatePlaying, ChannelName: channelName})
+	t.tracks.Set(Tracks{Video: vt, Audio: at})
 	return nil
 }
 
@@ -296,7 +293,6 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 	if t.pipeline == nil {
 		return nil
 	}
-
 	err := t.pipeline.Close()
 	t.pipeline = nil
 	slog.Info("Destroyed transcode pipeline", "error", err)
@@ -335,13 +331,9 @@ var (
 
 func (t *Tuner) createTrackPair() (video, audio *webrtc.TrackLocalStaticSample, err error) {
 	streamID := fmt.Sprintf("Tuner(%p)", t)
-
-	video, err = webrtc.NewTrackLocalStaticSample(VideoCodecCapability, streamID, streamID)
-	if err != nil {
-		return
-	}
-
-	audio, err = webrtc.NewTrackLocalStaticSample(AudioCodecCapability, streamID, streamID)
+	video, verr := webrtc.NewTrackLocalStaticSample(VideoCodecCapability, streamID, streamID)
+	audio, aerr := webrtc.NewTrackLocalStaticSample(AudioCodecCapability, streamID, streamID)
+	err = errors.Join(verr, aerr)
 	return
 }
 
