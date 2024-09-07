@@ -2,17 +2,17 @@ package api
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"sync"
 
 	"github.com/gorilla/websocket"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
+	"github.com/ahamlinman/hypcast/internal/log"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
-type tunerStatusHandler struct {
+type TunerStatusHandler struct {
 	tuner     *tuner.Tuner
 	socket    *websocket.Conn
 	watch     watch.Watch
@@ -23,7 +23,7 @@ type tunerStatusHandler struct {
 
 func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, shutdown := context.WithCancelCause(r.Context())
-	tsh := &tunerStatusHandler{
+	tsh := &TunerStatusHandler{
 		tuner:    h.tuner,
 		ctx:      ctx,
 		shutdown: shutdown,
@@ -31,11 +31,11 @@ func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request
 	tsh.ServeHTTP(w, r)
 }
 
-func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	tsh.logf("Starting new connection")
+func (tsh *TunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Tprintf(tsh, "Starting new connection")
 	defer func() {
 		tsh.waitForCleanup()
-		tsh.logf("Connection done: %v", context.Cause(tsh.ctx))
+		log.Tprintf(tsh, "Connection done: %v", context.Cause(tsh.ctx))
 	}()
 
 	var err error
@@ -57,8 +57,8 @@ func (tsh *tunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	<-tsh.ctx.Done()
 }
 
-func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
-	tsh.logf("Received tuner status: %v", s)
+func (tsh *TunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
+	log.Tprintf(tsh, "Received tuner status: %v", s)
 
 	msg := tsh.mapTunerStatusToMessage(s)
 	if err := tsh.socket.WriteJSON(msg); err != nil {
@@ -66,7 +66,7 @@ func (tsh *tunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
 	}
 }
 
-func (tsh *tunerStatusHandler) drainClient() {
+func (tsh *TunerStatusHandler) drainClient() {
 	// Per https://pkg.go.dev/github.com/gorilla/websocket#hdr-Control_Messages,
 	// we have to drain incoming messages ourselves even if we don't care about
 	// them.
@@ -78,7 +78,7 @@ func (tsh *tunerStatusHandler) drainClient() {
 	}
 }
 
-func (tsh *tunerStatusHandler) waitForCleanup() {
+func (tsh *TunerStatusHandler) waitForCleanup() {
 	if tsh.watch != nil {
 		tsh.watch.Wait()
 	}
@@ -97,7 +97,7 @@ var tunerStateStrings = map[tuner.State]string{
 	tuner.StatePlaying:  "Playing",
 }
 
-func (tsh *tunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStatusMsg {
+func (tsh *TunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStatusMsg {
 	msg := tunerStatusMsg{
 		State:       tunerStateStrings[s.State],
 		ChannelName: s.ChannelName,
@@ -106,12 +106,4 @@ func (tsh *tunerStatusHandler) mapTunerStatusToMessage(s tuner.Status) tunerStat
 		msg.Error = s.Error.Error()
 	}
 	return msg
-}
-
-func (tsh *tunerStatusHandler) logf(format string, v ...any) {
-	joinFmt := "TunerStatusHandler(%p): " + format
-	joinArgs := make([]any, len(v)+1)
-	joinArgs[0] = tsh
-	copy(joinArgs[1:], v)
-	log.Printf(joinFmt, joinArgs...)
 }
