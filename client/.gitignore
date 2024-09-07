@@ -7,7 +7,6 @@
 /coverage
 
 # production
-/assets.zip
 /dist
 
 # misc
