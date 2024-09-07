@@ -70,25 +70,32 @@ func main() {
 		))
 	}
 
-	server := http.Server{Addr: flagAddr}
-	go server.ListenAndServe()
 	slog.LogAttrs(
 		context.Background(), slog.LevelInfo,
-		"Started Hypcast server",
+		"Starting Hypcast server",
 		slog.String("addr", flagAddr),
 		slog.String("channels", flagChannels),
 		slog.String("pipeline", string(vp)),
 		assetLogAttr,
 	)
+	server := http.Server{Addr: flagAddr}
+	serverErr := make(chan error, 1)
+	go func() { serverErr <- server.ListenAndServe() }()
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
-	<-signalCh
 
-	slog.Info("Shutting down")
-	stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	server.Shutdown(stopCtx)
+	select {
+	case err := <-serverErr:
+		slog.Error("Failed to run Hypcast server", "error", err)
+		os.Exit(1)
+
+	case <-signalCh:
+		slog.Info("Shutting down")
+		stopCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		server.Shutdown(stopCtx)
+	}
 }
 
 func readChannelsConf(path string) ([]atsc.Channel, error) {
