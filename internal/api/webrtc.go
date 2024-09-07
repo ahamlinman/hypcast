@@ -67,10 +67,10 @@ func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request)
 }
 
 func (wh *WebRTCHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	wh.log.Info("WebRTCHandler connected")
+	wh.log.Info("Connected WebRTC socket")
 	defer func() {
 		wh.waitForCleanup()
-		wh.log.Info("WebRTCHandler disconnected", "error", context.Cause(wh.ctx))
+		wh.log.Info("Disconnected WebRTC socket", "error", context.Cause(wh.ctx))
 	}()
 
 	var err error
@@ -134,9 +134,9 @@ func (wh *WebRTCHandler) handleTrackUpdate(ts tuner.Tracks) {
 func (wh *WebRTCHandler) logTracks(ts tuner.Tracks) {
 	var zero tuner.Tracks
 	if ts == zero {
-		wh.log.Info("Sending empty tracks")
+		wh.log.Info("Clearing WebRTC tracks")
 	} else {
-		wh.log.Info("Sending audio and video tracks")
+		wh.log.Info("Sending WebRTC tracks")
 	}
 }
 
