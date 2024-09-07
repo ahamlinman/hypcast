@@ -1,5 +1,5 @@
-hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/assets.zip
-	go build -v -tags embedclientzip ./cmd/hypcast-server
+hypcast-server: go.mod go.sum $(shell find . -name '*.go') client/dist
+	go build -v -tags embedclient ./cmd/hypcast-server
 
 client/assets.zip: client/dist
 	rm -f client/assets.zip
@@ -14,7 +14,7 @@ client/node_modules: client/package.json client/yarn.lock
 	touch client/node_modules
 
 install: hypcast-server
-	go install -v -tags embedclientzip ./cmd/hypcast-server
+	go install -v -tags embedclient ./cmd/hypcast-server
 
 clean:
 	$(MAKE) -C client clean

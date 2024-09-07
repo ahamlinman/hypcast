@@ -1,4 +1,4 @@
-//go:build embedclientzip
+//go:build embedclientzip && !embedclient
 
 package client
 
