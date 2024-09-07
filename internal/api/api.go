@@ -4,6 +4,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -52,18 +53,20 @@ func (h *Handler) handleConfigChannels(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(h.tuner.ChannelNames())
 }
 
-func (h *Handler) rpcStop(_ struct{}) (code int, body any) {
+func (h *Handler) rpcStop(r *http.Request, _ struct{}) (code int, body any) {
+	slog.Info("Stopping tuner", "client", r.RemoteAddr)
 	if err := h.tuner.Stop(); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	return http.StatusNoContent, nil
 }
 
-func (h *Handler) rpcTune(params struct{ ChannelName string }) (code int, body any) {
+func (h *Handler) rpcTune(r *http.Request, params struct{ ChannelName string }) (code int, body any) {
 	if params.ChannelName == "" {
 		return http.StatusBadRequest, errors.New("channel name required")
 	}
 
+	slog.Info("Tuning to channel", "client", r.RemoteAddr, "channel", params.ChannelName)
 	err := h.tuner.Tune(params.ChannelName)
 	switch {
 	case errors.Is(err, tuner.ErrChannelNotFound):

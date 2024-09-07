@@ -20,11 +20,10 @@ func Example() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/rpc/setstatus",
-		rpc.HTTPHandler(func(params struct{ Enabled *bool }) (code int, body any) {
+		rpc.HTTPHandler(func(_ *http.Request, params struct{ Enabled *bool }) (code int, body any) {
 			if params.Enabled == nil {
 				return http.StatusBadRequest, errors.New(`missing "Enabled" parameter`)
 			}
-
 			setEnabled(*params.Enabled)
 			return http.StatusNoContent, nil
 		}))
@@ -45,7 +44,7 @@ func TestRPC(t *testing.T) {
 	rpc.MaxRequestBodySize = 32
 	defer func() { rpc.MaxRequestBodySize = originalMaxSize }()
 
-	handler := func(_ struct{}) (code int, body any) {
+	handler := func(_ *http.Request, _ struct{}) (code int, body any) {
 		return http.StatusNoContent, nil
 	}
 

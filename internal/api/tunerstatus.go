@@ -35,7 +35,7 @@ func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request
 }
 
 func (tsh *TunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	tsh.log.Info("Connected tuner status socket")
+	tsh.log.Info("Connecting tuner status socket")
 	defer func() {
 		tsh.waitForCleanup()
 		tsh.log.Info("Disconnected tuner status socket", "error", context.Cause(tsh.ctx))

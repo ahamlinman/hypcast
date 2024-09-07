@@ -67,7 +67,7 @@ func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request)
 }
 
 func (wh *WebRTCHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	wh.log.Info("Connected WebRTC socket")
+	wh.log.Info("Connecting WebRTC socket")
 	defer func() {
 		wh.waitForCleanup()
 		wh.log.Info("Disconnected WebRTC socket", "error", context.Cause(wh.ctx))

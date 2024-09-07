@@ -39,7 +39,7 @@ var MaxRequestBodySize int64 = 1024
 // object with an "Error" key containing the stringified error message.
 // Otherwise, when the body is non-nil, the framework encodes it to JSON
 // following standard json.Marshal rules.
-type HandlerFunc[T any] func(params T) (code int, body any)
+type HandlerFunc[T any] func(r *http.Request, params T) (code int, body any)
 
 // HTTPHandler conveniently boxes an RPC handler function into an http.Handler,
 // without requiring an explicit type argument for a HandlerFunc[T] conversion.
@@ -56,7 +56,7 @@ func (handler HandlerFunc[T]) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	var code int
 	var body any
 	if params, err := readRPCParams[T](r); err == nil {
-		code, body = handler(params)
+		code, body = handler(r, params)
 	} else {
 		code, body = errorHTTPCode(err), err
 	}
