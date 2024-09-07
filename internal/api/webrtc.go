@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sync"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/pion/webrtc/v3"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
-	"github.com/ahamlinman/hypcast/internal/log"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
@@ -44,18 +44,21 @@ func init() {
 }
 
 type WebRTCHandler struct {
+	log       *slog.Logger
 	tuner     *tuner.Tuner
-	socket    *websocket.Conn
-	rtcPeer   *webrtc.PeerConnection
-	watch     watch.Watch
 	ctx       context.Context
 	shutdown  context.CancelCauseFunc
 	waitGroup sync.WaitGroup
+
+	socket  *websocket.Conn
+	rtcPeer *webrtc.PeerConnection
+	watch   watch.Watch
 }
 
 func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request) {
 	ctx, shutdown := context.WithCancelCause(r.Context())
 	wh := &WebRTCHandler{
+		log:      slog.With("client", r.RemoteAddr),
 		tuner:    h.tuner,
 		ctx:      ctx,
 		shutdown: shutdown,
@@ -64,10 +67,10 @@ func (h *Handler) handleSocketWebRTCPeer(w http.ResponseWriter, r *http.Request)
 }
 
 func (wh *WebRTCHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Tprintf(wh, "Starting new connection")
+	wh.log.Info("WebRTCHandler connected")
 	defer func() {
 		wh.waitForCleanup()
-		log.Tprintf(wh, "Connection done: %v", context.Cause(wh.ctx))
+		wh.log.Info("WebRTCHandler disconnected", "error", context.Cause(wh.ctx))
 	}()
 
 	var err error
@@ -117,7 +120,7 @@ func (wh *WebRTCHandler) handleClientSessionAnswers() {
 }
 
 func (wh *WebRTCHandler) handleTrackUpdate(ts tuner.Tracks) {
-	log.Tprintf(wh, "Received tracks: %v", ts)
+	wh.logTracks(ts)
 	if err := wh.replaceTracks(ts); err != nil {
 		wh.shutdown(err)
 		return
@@ -125,6 +128,15 @@ func (wh *WebRTCHandler) handleTrackUpdate(ts tuner.Tracks) {
 	if err := wh.renegotiateSession(); err != nil {
 		wh.shutdown(err)
 		return
+	}
+}
+
+func (wh *WebRTCHandler) logTracks(ts tuner.Tracks) {
+	var zero tuner.Tracks
+	if ts == zero {
+		wh.log.Info("Sending empty tracks")
+	} else {
+		wh.log.Info("Sending audio and video tracks")
 	}
 }
 

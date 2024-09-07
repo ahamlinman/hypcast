@@ -2,28 +2,31 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"sync"
 
 	"github.com/gorilla/websocket"
 
 	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
-	"github.com/ahamlinman/hypcast/internal/log"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
 type TunerStatusHandler struct {
+	log       *slog.Logger
 	tuner     *tuner.Tuner
-	socket    *websocket.Conn
-	watch     watch.Watch
 	ctx       context.Context
 	shutdown  context.CancelCauseFunc
 	waitGroup sync.WaitGroup
+
+	socket *websocket.Conn
+	watch  watch.Watch
 }
 
 func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, shutdown := context.WithCancelCause(r.Context())
 	tsh := &TunerStatusHandler{
+		log:      slog.With("client", r.RemoteAddr),
 		tuner:    h.tuner,
 		ctx:      ctx,
 		shutdown: shutdown,
@@ -32,10 +35,10 @@ func (h *Handler) handleSocketTunerStatus(w http.ResponseWriter, r *http.Request
 }
 
 func (tsh *TunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Tprintf(tsh, "Starting new connection")
+	tsh.log.Info("TunerStatusHandler connected")
 	defer func() {
 		tsh.waitForCleanup()
-		log.Tprintf(tsh, "Connection done: %v", context.Cause(tsh.ctx))
+		tsh.log.Info("TunerStatusHandler disconnected", "error", context.Cause(tsh.ctx))
 	}()
 
 	var err error
@@ -58,12 +61,22 @@ func (tsh *TunerStatusHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func (tsh *TunerStatusHandler) sendNewTunerStatus(s tuner.Status) {
-	log.Tprintf(tsh, "Received tuner status: %v", s)
-
+	tsh.logTunerStatus(s)
 	msg := tsh.mapTunerStatusToMessage(s)
 	if err := tsh.socket.WriteJSON(msg); err != nil {
 		tsh.shutdown(err)
 	}
+}
+
+func (tsh *TunerStatusHandler) logTunerStatus(s tuner.Status) {
+	attrs := []slog.Attr{slog.Int("state", int(s.State))}
+	if s.ChannelName != "" {
+		attrs = append(attrs, slog.String("channel", s.ChannelName))
+	}
+	if s.Error != nil {
+		attrs = append(attrs, slog.String("error", s.Error.Error()))
+	}
+	tsh.log.LogAttrs(tsh.ctx, slog.LevelInfo, "Updating tuner status", attrs...)
 }
 
 func (tsh *TunerStatusHandler) drainClient() {

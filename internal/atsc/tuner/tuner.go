@@ -5,6 +5,7 @@ package tuner
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"text/template"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/ahamlinman/hypcast/internal/atsc"
 	"github.com/ahamlinman/hypcast/internal/gst"
-	"github.com/ahamlinman/hypcast/internal/log"
 	"github.com/ahamlinman/hypcast/internal/watch"
 )
 
@@ -194,12 +194,12 @@ func (t *Tuner) Tune(channelName string) (err error) {
 	t.pipeline.SetSink(sinkNameVideo, createTrackSink(vt))
 	t.pipeline.SetSink(sinkNameAudio, createTrackSink(at))
 
-	log.Tprintf(t, "Starting pipeline")
+	slog.Info("Starting transcode pipeline")
 	err = t.pipeline.Start()
 	if err != nil {
 		return err
 	}
-	log.Tprintf(t, "Started pipeline")
+	slog.Info("Started transcode pipeline")
 
 	t.status.Set(Status{
 		State:       StatePlaying,
@@ -299,6 +299,7 @@ func (t *Tuner) destroyAnyRunningPipeline() error {
 
 	err := t.pipeline.Close()
 	t.pipeline = nil
+	slog.Info("Destroyed transcode pipeline", "error", err)
 	return err
 }
 
