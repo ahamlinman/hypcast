@@ -1,4 +1,4 @@
-# syntax = docker.io/docker/dockerfile:1.9
+# syntax = docker.io/docker/dockerfile:1.10
 
 # The Alpine and Go base images must use the same release of Alpine.
 ARG ALPINE_BASE=docker.io/library/alpine:3.20
