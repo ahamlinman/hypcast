@@ -25,27 +25,22 @@ export default tseslint.config(
 
   js.configs.recommended,
 
+  // @ts-expect-error
   react.configs.flat.recommended,
   { settings: { react: { version: "detect" } } },
+
+  {
+    plugins: { "react-hooks": reactHooks },
+    rules: reactHooks.configs.recommended.rules,
+  },
 
   ...tseslint.configs.recommended.map((config) => ({
     files: ["**/*.ts?(x)"],
     ...config,
   })),
 
-  ...fixupConfigRules(
-    compat.extends(
-      "plugin:react-hooks/recommended",
-      "plugin:jsx-a11y/recommended",
-    ),
-  ),
-  {
-    plugins: {
-      // @ts-ignore
-      "react-hooks": fixupPluginRules(reactHooks),
-      "jsx-a11y": fixupPluginRules(jsxA11Y),
-    },
-  },
+  { plugins: { "jsx-a11y": fixupPluginRules(jsxA11Y) } },
+  ...fixupConfigRules(compat.extends("plugin:jsx-a11y/recommended")),
 
   {
     rules: {
