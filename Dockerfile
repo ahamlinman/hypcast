@@ -8,6 +8,16 @@ ARG NODEJS_BASE=docker.io/library/node:22-alpine
 # See https://gstreamer.freedesktop.org/news/.
 ARG GSTREAMER_VERSION=1.24.9
 
+# Mirror of https://gitlab.freedesktop.org/gstreamer/gstreamer.git.
+# Since this is formally marked as a "public mirror" in the GitHub web UI, my
+# understanding is that GitHub (the entity I trust to host and build Hypcast
+# itself) does the mirroring. Cloning from Git and doing a Meson build from the
+# checkout isn't as good as building real ".apk" files from a source tarball.
+# But until I put in the work to make this GStreamer build more than a pile of
+# shameful hacks, I'd rather use Microsoft's bandwidth and resources than those
+# of the freedesktop.org maintainers.
+ARG GSTREAMER_REPO=https://github.com/GStreamer/gstreamer.git
+
 
 # Let's get the client build out of the way, since it's much simpler than
 # everything that follows.
@@ -54,9 +64,8 @@ RUN \
 # Does Cerbero support the level of build customization we're looking for?)
 FROM --platform=$BUILDPLATFORM $ALPINE_BASE AS gst-build-base
 RUN apk add --no-cache bash git clang lld llvm pkgconf meson flex bison glib-dev
-ARG GSTREAMER_VERSION
-RUN git clone -b $GSTREAMER_VERSION --depth 1 \
-  https://gitlab.freedesktop.org/gstreamer/gstreamer.git /tmp/gstreamer
+ARG GSTREAMER_REPO GSTREAMER_VERSION
+RUN git clone -b $GSTREAMER_VERSION --depth 1 $GSTREAMER_REPO /tmp/gstreamer
 WORKDIR /tmp/gstreamer
 COPY build/hypcast-buildenv.sh /hypcast-buildenv.sh
 COPY build/gstreamer-build.bash .
