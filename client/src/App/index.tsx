@@ -1,5 +1,4 @@
 import React from "react";
-import { Helmet } from "react-helmet";
 
 import { useWebRTC } from "../WebRTC";
 import rpc from "../rpc";
@@ -21,7 +20,7 @@ export default function App() {
 
   return (
     <div className="AppContainer">
-      <Title />
+      <PageTitle />
       <Header />
       <ChannelSelector
         selected={selectedChannel}
@@ -32,19 +31,14 @@ export default function App() {
   );
 }
 
-function Title() {
+function PageTitle() {
   const tunerStatus = useTunerStatus();
-
   const titleText =
     tunerStatus.Connection === "Connected" && tunerStatus.State !== "Stopped"
       ? `${tunerStatus.ChannelName} | Hypcast`
       : "Hypcast";
 
-  return (
-    <Helmet>
-      <title>{titleText}</title>
-    </Helmet>
-  );
+  return <title>{titleText}</title>;
 }
 
 function VideoPlayer({ stream }: { stream: undefined | MediaStream }) {
