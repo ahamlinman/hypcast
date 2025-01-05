@@ -7,7 +7,7 @@ export interface State {
   MediaStream: undefined | MediaStream;
 }
 
-const Context = React.createContext<null | State>(null);
+const Context = React.createContext<State | null>(null);
 
 export const useWebRTC = (): State => {
   const state = React.useContext(Context);
@@ -39,7 +39,7 @@ export const WebRTCProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  return <Context.Provider value={state}>{children}</Context.Provider>;
+  return <Context value={state}>{children}</Context>;
 };
 
 const defaultState = (): State => ({

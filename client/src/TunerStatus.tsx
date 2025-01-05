@@ -8,7 +8,7 @@ export type Status =
   | { Connection: "Disconnected" | "Connecting" }
   | ({ Connection: "Connected" } & TunerStatus);
 
-const Context = React.createContext<null | Status>(null);
+const Context = React.createContext<Status | null>(null);
 
 export const useTunerStatus = (): Status => {
   const status = React.useContext(Context);
@@ -64,5 +64,5 @@ export const TunerStatusProvider = ({
     return close;
   }, []);
 
-  return <Context.Provider value={status}>{children}</Context.Provider>;
+  return <Context value={status}>{children}</Context>;
 };
