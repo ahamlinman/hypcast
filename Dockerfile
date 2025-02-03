@@ -6,7 +6,7 @@ ARG GOLANG_BASE=docker.io/library/golang:1.23-alpine3.21
 # The Node.js image does not require any particular OS.
 ARG NODEJS_BASE=docker.io/library/node:22-alpine
 # See https://gstreamer.freedesktop.org/news/.
-ARG GSTREAMER_VERSION=1.24.10
+ARG GSTREAMER_VERSION=1.24.12
 
 # Mirror of https://gitlab.freedesktop.org/gstreamer/gstreamer.git.
 # Since this is formally marked as a "public mirror" in the GitHub web UI, my
