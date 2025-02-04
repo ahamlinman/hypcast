@@ -221,6 +221,7 @@ func TestCancelInactiveHandler(t *testing.T) {
 
 	w.Cancel()
 	v.Set("bob")
+	forceRuntimeProgress()
 	assertBlocked(t, notify)
 }
 
@@ -321,10 +322,12 @@ func TestWait(t *testing.T) {
 		defer close(done)
 		w.Wait()
 	}()
+	forceRuntimeProgress()
 	assertBlocked(t, done)
 
 	// Cancel the watch, and ensure that we are still blocked.
 	w.Cancel()
+	forceRuntimeProgress()
 	assertBlocked(t, done)
 
 	// Allow the handler to finish. At this point, we should become unblocked.
@@ -341,7 +344,7 @@ func assertNextReceive[T comparable](t *testing.T, ch chan T, want T) {
 			t.Fatalf("got %v from channel, want %v", got, want)
 		}
 	case <-time.After(timeout):
-		t.Fatalf("watcher not notified within %v", timeout)
+		t.Fatalf("channel still blocked after %v", timeout)
 	}
 }
 
@@ -361,13 +364,19 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 	}
 }
 
+// assertBlocked fails a test if it receives a value from ch.
+//
+// The assertion is only valid if goroutines that might incorrectly send into ch
+// have exited or become durably blocked elsewhere. [forceRuntimeProgress] makes
+// a best effort to ensure this in all versions of Go. Future versions of Go may
+// provide a mechanism that robustly guarantees this for the goroutines involved
+// in a unit test.
 func assertBlocked[T any](t *testing.T, ch <-chan T) {
 	t.Helper()
 
-	forceRuntimeProgress()
 	select {
 	case <-ch:
-		t.Fatal("progress was not blocked")
+		t.Fatal("channel was not blocked")
 	default:
 	}
 }
