@@ -7,7 +7,7 @@ import (
 	"testing/synctest"
 )
 
-func TestSyncCancelInactiveHandler(t *testing.T) {
+func TestCancelInactiveHandlerSynctest(t *testing.T) {
 	// The usual case of canceling a watch, where no handler is active at the time
 	// of cancellation.
 	synctest.Run(func() {
@@ -33,7 +33,7 @@ func TestSyncCancelInactiveHandler(t *testing.T) {
 	})
 }
 
-func TestSyncDoubleCancelInactiveHandler(t *testing.T) {
+func TestDoubleCancelInactiveHandlerSynctest(t *testing.T) {
 	// A specific test for calling Cancel twice on an inactive handler.
 	synctest.Run(func() {
 		v := NewValue("alice")
@@ -48,7 +48,7 @@ func TestSyncDoubleCancelInactiveHandler(t *testing.T) {
 	})
 }
 
-func TestSyncWait(t *testing.T) {
+func TestWaitSynctest(t *testing.T) {
 	// A specific test to ensure that Wait properly blocks until the watch has
 	// terminated.
 	synctest.Run(func() {
