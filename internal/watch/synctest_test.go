@@ -9,7 +9,7 @@ import (
 
 func TestSyncCancelInactiveHandler(t *testing.T) {
 	// The usual case of canceling a watch, where no handler is active at the time
-	// of cancellation. Once we cancel, no further handler calls should be made.
+	// of cancellation.
 	synctest.Run(func() {
 		v := NewValue("alice")
 		notify := make(chan string, 1)
@@ -20,24 +20,28 @@ func TestSyncCancelInactiveHandler(t *testing.T) {
 			}
 		})
 
+		// Deal with the initial notification. Then, wait for the handler goroutine
+		// to exit before canceling the watch.
 		assertNextReceive(t, notify, "alice")
-
-		synctest.Wait() // Guarantee that the handler goroutine has exited.
+		synctest.Wait()
 		w.Cancel()
 
+		// Set another value, and ensure that we're not notified even after
+		// background goroutines have settled.
 		v.Set("bob")
 		assertBlockedAfter(synctest.Wait, t, notify)
 	})
 }
 
 func TestSyncDoubleCancelInactiveHandler(t *testing.T) {
-	// A specific test for calling Cancel twice on an inactive handler, and
-	// ensuring we don't panic.
+	// A specific test for calling Cancel twice on an inactive handler.
 	synctest.Run(func() {
 		v := NewValue("alice")
 		w := v.Watch(func(x string) {})
-		synctest.Wait() // Guarantee that the initial handler goroutine has exited.
 
+		// Wait for the initial handler to exit, then cancel the watch twice.
+		// The goal is simply to not panic.
+		synctest.Wait()
 		w.Cancel()
 		w.Cancel()
 		assertWatchTerminates(t, w)
@@ -67,7 +71,7 @@ func TestSyncWait(t *testing.T) {
 		}()
 		assertBlockedAfter(synctest.Wait, t, done)
 
-		// Cancel the watch, and ensure that we are still blocked.
+		// Cancel the watch, and ensure that Wait is still blocked.
 		w.Cancel()
 		assertBlockedAfter(synctest.Wait, t, done)
 
