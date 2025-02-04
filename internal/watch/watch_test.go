@@ -56,11 +56,7 @@ func TestValueStress(t *testing.T) {
 	// Our final Set, which every handler must see at least once.
 	v.Set(nWrites)
 
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		handlerGroup.Wait()
-	}()
+	done := makeWaitChannel(&handlerGroup)
 	select {
 	case <-done:
 	case <-time.After(timeout):
@@ -316,11 +312,7 @@ func TestWait(t *testing.T) {
 	block <- struct{}{}
 
 	// Start waiting in the background. We should remain blocked.
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		w.Wait()
-	}()
+	done := makeWaitChannel(w)
 	assertBlockedAfter(forceRuntimeProgress, t, done)
 
 	// Cancel the watch, and ensure that we are still blocked.
@@ -330,6 +322,16 @@ func TestWait(t *testing.T) {
 	// Allow the handler to finish. At this point, we should become unblocked.
 	assertNextReceive(t, notify, "alice")
 	assertWatchTerminates(t, w)
+}
+
+// makeWaitChannel returns a channel that will be closed after w.Wait returns.
+func makeWaitChannel(w interface{ Wait() }) chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		w.Wait()
+	}()
+	return done
 }
 
 func assertNextReceive[T comparable](t *testing.T, ch chan T, want T) {
@@ -348,12 +350,7 @@ func assertNextReceive[T comparable](t *testing.T, ch chan T, want T) {
 func assertWatchTerminates(t *testing.T, w Watch) {
 	t.Helper()
 
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		w.Wait()
-	}()
-
+	done := makeWaitChannel(w)
 	select {
 	case <-done:
 	case <-time.After(timeout):

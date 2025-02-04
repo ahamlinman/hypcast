@@ -64,11 +64,7 @@ func TestSyncWait(t *testing.T) {
 		block <- struct{}{}
 
 		// Start waiting in the background. We should remain blocked.
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
-			w.Wait()
-		}()
+		done := makeWaitChannel(w)
 		assertBlockedAfter(synctest.Wait, t, done)
 
 		// Cancel the watch, and ensure that Wait is still blocked.
