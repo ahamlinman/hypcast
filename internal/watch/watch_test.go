@@ -362,10 +362,11 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 // settle().
 //
 // The settle function should ensure that any goroutines that might incorrectly
-// send into ch have exited or become durably blocked on another condition.
-// [forceRuntimeProgress] makes a best-effort attempt to ensure this in all
-// versions of Go. Future versions of Go may provide a more robust mechanism
-// that robustly waits for the goroutines in a specific unit test to settle.
+// send into ch have progressed far enough to do so, ideally to the point that
+// they have exited or are durably blocked on another condition.
+// [forceRuntimeProgress] makes a best-effort attempt to ensure this in stable
+// versions of Go as of writing. Future versions of Go may provide a mechanism
+// to robustly guarantee this, like the experimental "testing/synctest" package.
 func assertBlockedAfter[T any](settle func(), t *testing.T, ch <-chan T) {
 	t.Helper()
 
