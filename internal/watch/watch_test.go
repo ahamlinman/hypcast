@@ -221,8 +221,7 @@ func TestCancelInactiveHandler(t *testing.T) {
 
 	w.Cancel()
 	v.Set("bob")
-	forceRuntimeProgress()
-	assertBlocked(t, notify)
+	assertBlockedAfter(forceRuntimeProgress, t, notify)
 }
 
 func TestDoubleCancelInactiveHandler(t *testing.T) {
@@ -322,13 +321,11 @@ func TestWait(t *testing.T) {
 		defer close(done)
 		w.Wait()
 	}()
-	forceRuntimeProgress()
-	assertBlocked(t, done)
+	assertBlockedAfter(forceRuntimeProgress, t, done)
 
 	// Cancel the watch, and ensure that we are still blocked.
 	w.Cancel()
-	forceRuntimeProgress()
-	assertBlocked(t, done)
+	assertBlockedAfter(forceRuntimeProgress, t, done)
 
 	// Allow the handler to finish. At this point, we should become unblocked.
 	assertNextReceive(t, notify, "alice")
@@ -364,16 +361,18 @@ func assertWatchTerminates(t *testing.T, w Watch) {
 	}
 }
 
-// assertBlocked fails a test if it receives a value from ch.
+// assertBlockedAfter fails a test if it receives a value from ch after calling
+// settle().
 //
-// The assertion is only valid if goroutines that might incorrectly send into ch
-// have exited or become durably blocked elsewhere. [forceRuntimeProgress] makes
-// a best effort to ensure this in all versions of Go. Future versions of Go may
-// provide a mechanism that robustly guarantees this for the goroutines involved
-// in a unit test.
-func assertBlocked[T any](t *testing.T, ch <-chan T) {
+// The settle function should ensure that any goroutines that might incorrectly
+// send into ch have exited or become durably blocked on another condition.
+// [forceRuntimeProgress] makes a best-effort attempt to ensure this in all
+// versions of Go. Future versions of Go may provide a more robust mechanism
+// that robustly waits for the goroutines in a specific unit test to settle.
+func assertBlockedAfter[T any](settle func(), t *testing.T, ch <-chan T) {
 	t.Helper()
 
+	settle()
 	select {
 	case <-ch:
 		t.Fatal("channel was not blocked")

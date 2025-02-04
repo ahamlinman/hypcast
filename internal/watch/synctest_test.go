@@ -26,8 +26,7 @@ func TestSyncCancelInactiveHandler(t *testing.T) {
 		w.Cancel()
 
 		v.Set("bob")
-		synctest.Wait()
-		assertBlocked(t, notify)
+		assertBlockedAfter(synctest.Wait, t, notify)
 	})
 }
 
@@ -66,13 +65,11 @@ func TestSyncWait(t *testing.T) {
 			defer close(done)
 			w.Wait()
 		}()
-		synctest.Wait()
-		assertBlocked(t, done)
+		assertBlockedAfter(synctest.Wait, t, done)
 
 		// Cancel the watch, and ensure that we are still blocked.
 		w.Cancel()
-		synctest.Wait()
-		assertBlocked(t, done)
+		assertBlockedAfter(synctest.Wait, t, done)
 
 		// Allow the handler to finish. At this point, we should become unblocked.
 		assertNextReceive(t, notify, "alice")
