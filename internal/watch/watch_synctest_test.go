@@ -13,14 +13,9 @@ func TestCancelInactiveHandlerSynctest(t *testing.T) {
 	// The usual case of canceling a watch, where no handler is active at the time
 	// of cancellation.
 	synctest.Run(func() {
+		notify := make(chan string)
 		v := NewValue("alice")
-		notify := make(chan string, 1)
-		w := v.Watch(func(x string) {
-			select {
-			case notify <- x:
-			default:
-			}
-		})
+		w := v.Watch(func(x string) { notify <- x })
 
 		// Deal with the initial notification. Then, wait for the handler goroutine
 		// to exit before canceling the watch.
@@ -59,16 +54,12 @@ func TestWaitSynctest(t *testing.T) {
 	// A specific test to ensure that Wait properly blocks until the watch has
 	// terminated.
 	synctest.Run(func() {
+		notify := make(chan string)
 		v := NewValue("alice")
+		w := v.Watch(func(x string) { notify <- x })
 
-		block, notify := make(chan struct{}), make(chan string)
-		w := v.Watch(func(x string) {
-			<-block
-			notify <- x
-		})
-
-		// Ensure that we have a handler in flight.
-		block <- struct{}{}
+		// Ensure that we have a handler in flight from the initial notification.
+		synctest.Wait()
 
 		// Start waiting in the background. We should remain blocked.
 		done := make(chan struct{})
