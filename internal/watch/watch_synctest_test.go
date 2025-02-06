@@ -5,6 +5,8 @@ package watch
 import (
 	"testing"
 	"testing/synctest"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCancelInactiveHandlerSynctest(t *testing.T) {
@@ -22,14 +24,19 @@ func TestCancelInactiveHandlerSynctest(t *testing.T) {
 
 		// Deal with the initial notification. Then, wait for the handler goroutine
 		// to exit before canceling the watch.
-		assertNextReceive(t, notify, "alice")
+		assert.Equal(t, "alice", <-notify)
 		synctest.Wait()
 		w.Cancel()
 
 		// Set another value, and ensure that we're not notified even after
 		// background goroutines have settled.
 		v.Set("bob")
-		assertBlockedAfter(synctest.Wait, t, notify)
+		synctest.Wait()
+		select {
+		case <-notify:
+			t.Error("watcher notified after being canceled")
+		default:
+		}
 	})
 }
 
@@ -44,7 +51,7 @@ func TestDoubleCancelInactiveHandlerSynctest(t *testing.T) {
 		synctest.Wait()
 		w.Cancel()
 		w.Cancel()
-		assertWatchTerminates(t, w)
+		w.Wait()
 	})
 }
 
@@ -64,15 +71,26 @@ func TestWaitSynctest(t *testing.T) {
 		block <- struct{}{}
 
 		// Start waiting in the background. We should remain blocked.
-		done := makeWaitChannel(w)
-		assertBlockedAfter(synctest.Wait, t, done)
+		done := make(chan struct{})
+		go func() { defer close(done); w.Wait() }()
+		synctest.Wait()
+		select {
+		case <-done:
+			t.Fatal("watcher finished waiting before cancellation") // Sketchy; not in the test goroutine
+		default:
+		}
 
 		// Cancel the watch, and ensure that Wait is still blocked.
 		w.Cancel()
-		assertBlockedAfter(synctest.Wait, t, done)
+		synctest.Wait()
+		select {
+		case <-done:
+			t.Fatal("watcher finished waiting before handler exit") // Sketchy; not in the test goroutine
+		default:
+		}
 
 		// Allow the handler to finish. At this point, we should become unblocked.
-		assertNextReceive(t, notify, "alice")
-		assertWatchTerminates(t, w)
+		assert.Equal(t, "alice", <-notify)
+		<-done
 	})
 }
