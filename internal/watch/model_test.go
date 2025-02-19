@@ -48,7 +48,8 @@ func TestModel(t *testing.T) {
 	}
 
 	t.Logf("compiling model under %v", tmpdir)
-	defer func() {
+	t.Chdir(tmpdir)
+	t.Cleanup(func() {
 		if t.Failed() {
 			t.Logf("keeping %v due to test failure", tmpdir)
 			return
@@ -58,11 +59,7 @@ func TestModel(t *testing.T) {
 		} else {
 			t.Logf("failed to clean up %v: %v", tmpdir, err)
 		}
-	}()
-
-	if err := os.Chdir(tmpdir); err != nil {
-		t.Fatalf("failed to change to compilation directory: %v", err)
-	}
+	})
 
 	spin := exec.Command("spin", "-a", "/dev/stdin")
 	spin.Stdin = strings.NewReader(modelFile)
