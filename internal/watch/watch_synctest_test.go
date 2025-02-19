@@ -67,7 +67,8 @@ func TestWaitSynctest(t *testing.T) {
 		synctest.Wait()
 		select {
 		case <-done:
-			t.Fatal("watcher finished waiting before cancellation") // Sketchy; not in the test goroutine
+			t.Error("watcher finished waiting before cancellation")
+			return
 		default:
 		}
 
@@ -76,7 +77,8 @@ func TestWaitSynctest(t *testing.T) {
 		synctest.Wait()
 		select {
 		case <-done:
-			t.Fatal("watcher finished waiting before handler exit") // Sketchy; not in the test goroutine
+			t.Error("watcher finished waiting before handler exit")
+			return
 		default:
 		}
 
