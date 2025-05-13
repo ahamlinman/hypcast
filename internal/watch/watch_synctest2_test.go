@@ -1,4 +1,4 @@
-//go:build goexperiment.synctest
+//go:build goexperiment.synctest && go1.25
 
 package watch
 
@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCancelInactiveHandlerSynctest(t *testing.T) {
+func TestCancelInactiveHandlerSynctest2(t *testing.T) {
 	// The usual case of canceling a watch, where no handler is active at the time
 	// of cancellation.
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		notify := make(chan string)
 		v := NewValue("alice")
 		w := v.Watch(func(x string) { notify <- x })
@@ -35,9 +35,9 @@ func TestCancelInactiveHandlerSynctest(t *testing.T) {
 	})
 }
 
-func TestDoubleCancelInactiveHandlerSynctest(t *testing.T) {
+func TestDoubleCancelInactiveHandlerSynctest2(t *testing.T) {
 	// A specific test for calling Cancel twice on an inactive handler.
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		v := NewValue("alice")
 		w := v.Watch(func(x string) {})
 
@@ -50,10 +50,10 @@ func TestDoubleCancelInactiveHandlerSynctest(t *testing.T) {
 	})
 }
 
-func TestWaitSynctest(t *testing.T) {
+func TestWaitSynctest2(t *testing.T) {
 	// A specific test to ensure that Wait properly blocks until the watch has
 	// terminated.
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		notify := make(chan string)
 		v := NewValue("alice")
 		w := v.Watch(func(x string) { notify <- x })
