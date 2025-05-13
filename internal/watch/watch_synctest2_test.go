@@ -67,8 +67,7 @@ func TestWaitSynctest2(t *testing.T) {
 		synctest.Wait()
 		select {
 		case <-done:
-			t.Error("watcher finished waiting before cancellation")
-			return
+			t.Fatal("watcher finished waiting before cancellation")
 		default:
 		}
 
@@ -77,8 +76,7 @@ func TestWaitSynctest2(t *testing.T) {
 		synctest.Wait()
 		select {
 		case <-done:
-			t.Error("watcher finished waiting before handler exit")
-			return
+			t.Fatal("watcher finished waiting before handler exit")
 		default:
 		}
 
