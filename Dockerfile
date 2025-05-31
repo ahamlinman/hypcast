@@ -1,12 +1,12 @@
-# syntax = docker.io/docker/dockerfile:1.14
+# syntax = docker.io/docker/dockerfile:1.16
 
 # The Alpine and Go base images must use the same release of Alpine.
 ARG ALPINE_BASE=docker.io/library/alpine:3.21
 ARG GOLANG_BASE=docker.io/library/golang:1.24-alpine3.21
 # The Node.js image does not require any particular OS.
-ARG NODEJS_BASE=docker.io/library/node:22-alpine
+ARG NODEJS_BASE=docker.io/library/node:24-alpine
 # See https://gstreamer.freedesktop.org/news/.
-ARG GSTREAMER_VERSION=1.26.1
+ARG GSTREAMER_VERSION=1.26.2
 
 # Mirror of https://gitlab.freedesktop.org/gstreamer/gstreamer.git.
 # Since this is formally marked as a "public mirror" in the GitHub web UI, my
