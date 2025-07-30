@@ -1,4 +1,4 @@
-module github.com/ahamlinman/hypcast
+module github.com/featherbread/hypcast
 
 go 1.24.0
 

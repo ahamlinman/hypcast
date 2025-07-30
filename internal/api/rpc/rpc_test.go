@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/ahamlinman/hypcast/internal/api/rpc"
+	"github.com/featherbread/hypcast/internal/api/rpc"
 )
 
 func Example() {

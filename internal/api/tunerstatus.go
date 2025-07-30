@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
-	"github.com/ahamlinman/hypcast/internal/watch"
+	"github.com/featherbread/hypcast/internal/atsc/tuner"
+	"github.com/featherbread/hypcast/internal/watch"
 )
 
 type TunerStatusHandler struct {

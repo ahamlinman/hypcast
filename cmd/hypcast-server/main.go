@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ahamlinman/hypcast/client"
-	"github.com/ahamlinman/hypcast/internal/api"
-	"github.com/ahamlinman/hypcast/internal/assets"
-	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
+	"github.com/featherbread/hypcast/client"
+	"github.com/featherbread/hypcast/internal/api"
+	"github.com/featherbread/hypcast/internal/assets"
+	"github.com/featherbread/hypcast/internal/atsc"
+	"github.com/featherbread/hypcast/internal/atsc/tuner"
 )
 
 var (

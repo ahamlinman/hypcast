@@ -10,8 +10,8 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/ahamlinman/hypcast/internal/api/rpc"
-	"github.com/ahamlinman/hypcast/internal/atsc/tuner"
+	"github.com/featherbread/hypcast/internal/api/rpc"
+	"github.com/featherbread/hypcast/internal/atsc/tuner"
 )
 
 var websocketUpgrader = &websocket.Upgrader{

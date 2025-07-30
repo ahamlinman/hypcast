@@ -19,7 +19,7 @@ synchronized live stream, even as you change channels.
 - This is version 2 of Hypcast, a complete rewrite of the original project
   using a radically different implementation and providing a completely new
   user interface. The original version of Hypcast remains available at
-  https://github.com/ahamlinman/hypcast-v1, but is not maintained.
+  https://github.com/featherbread/hypcast-v1, but is not maintained.
 
 [gstreamer]: https://gstreamer.freedesktop.org/
 [pion]: https://github.com/pion/webrtc
@@ -41,7 +41,7 @@ w_scan2 -f a -c us -X > channels.conf
 
 If you're okay with a software-based transcoding pipeline, it's probably
 easiest to run Hypcast using the container image published at
-`ghcr.io/ahamlinman/hypcast:latest`, with the following configuration:
+`ghcr.io/featherbread/hypcast:latest`, with the following configuration:
 
 - TV tuner devices passed through with `--device /dev/dvb`
 - `channels.conf` placed at `/etc/hypcast/channels.conf` inside the

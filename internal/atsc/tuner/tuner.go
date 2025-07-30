@@ -15,9 +15,9 @@ import (
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
 
-	"github.com/ahamlinman/hypcast/internal/atsc"
-	"github.com/ahamlinman/hypcast/internal/gst"
-	"github.com/ahamlinman/hypcast/internal/watch"
+	"github.com/featherbread/hypcast/internal/atsc"
+	"github.com/featherbread/hypcast/internal/gst"
+	"github.com/featherbread/hypcast/internal/watch"
 )
 
 // State represents the current state of the tuner.
