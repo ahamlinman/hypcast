@@ -22,7 +22,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         push: true
-        tags: ghcr.io/ahamlinman/hypcast:latest
+        tags: ghcr.io/${{ github.repository }}:latest
         platforms: |
           linux/amd64
           linux/arm64
